@@ -1,0 +1,60 @@
+- name: Ensure apt/yum package manager updated (Debian/Ubuntu style)
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install required packages (curl, socat, conntrack, ipset, ipvsadm, jq, git, nfs-common, open-iscsi)
+      package:
+        name:
+          - curl
+          - socat
+          - conntrack
+          - ipset
+          - ipvsadm
+          - jq
+          - git
+          - nfs-common
+          - open-iscsi
+          - python3-kubernetes
+          - python3
+        state: present
+
+- name: Disable swap (kubernetes requirement) - turn off swap now
+  become: true
+  shell: swapoff -a
+  register: swapoff_result
+  changed_when: swapoff_result.rc == 0
+
+- name: Disable swap (kubernetes requirement) - comment out swap lines in /etc/fstab (backup made)
+  become: true
+  replace:
+    path: /etc/fstab
+    # match any non-comment line that mentions swap in one of the mount columns
+    regexp: '^([^#].*\s+swap\s+.*)$'
+    replace: '# \1'
+    backup: yes
+
+- name: Ensure time sync
+  package:
+    name: chrony
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Longhorn disk checks (only run on worker nodes)
+  block:
+    - name: Ensure longhorn_disk var is set (default /dev/vdb)
+      set_fact:
+        longhorn_disk: "{{ longhorn_disk | default('/dev/vdb') }}"
+
+    - name: Ensure longhorn disk exists on nodes (warn if missing)
+      ansible.builtin.stat:
+        path: "{{ longhorn_disk }}"
+      register: longhorn_disk_stat
+
+    - name: Warn if longhorn disk missing (nodes)
+      ansible.builtin.debug:
+        msg: "Warning: {{ longhorn_disk }} not found on {{ inventory_hostname }}. Longhorn will fail if no disk available."
+      when: not longhorn_disk_stat.stat.exists
+  when: "'nodes' in group_names"

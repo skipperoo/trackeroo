@@ -1,0 +1,153 @@
+#cloud-config
+
+# Basic system configuration
+timezone: Europe/Rome
+locale: en_US.UTF-8
+
+# User configuration
+users:
+  - name: k3s-admin
+    passwd: $6$rounds=4096$v0k4/WEZZLQnikFD$1b5obdvCiCz.BffcjSUPS4MTPV7Ro6cr8J87HWpyonOQX7rX823rap/1mk/.plRFnMlhOvGLkuoWrgfCArZOb.
+    lock_passwd: false
+    groups: sudo
+    shell: /bin/bash
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII6/cdK31gsONZhnyDTUf1/lyVY5mg23jyWurMzyLITJ sdcadmin@loginnode
+
+# SSH configuration
+ssh_pwauth: false
+disable_root: true
+ssh_deletekeys: true
+ssh_genkeytypes: ["rsa", "ecdsa", "ed25519"]
+
+# Package updates and installations
+package_update: true
+package_upgrade: true
+packages:
+  - curl
+  - wget
+  - git
+  - htop
+  - vim
+  - nano
+  - tree
+  - zip
+  - unzip
+  - build-essential
+  - apt-transport-https
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - unattended-upgrades
+  - conntrack
+  - ipset
+  - ipvsadm
+  - jq
+  - nfs-common
+  - open-iscsi
+
+# Write configuration files
+write_files:
+  # Custom motd
+  - path: /etc/motd
+    content: |
+
+      ================================
+      SUBEMELARADIO - K3S SERVER
+      ================================
+
+      Please think twice before running any commands and always check paths!
+      System configured with cloud-init
+
+      Useful commands:
+        - kubectl get nodes
+        - systemctl status k3s
+        - journalctl -u k3s -f
+
+    permissions: "0644"
+
+  # Useful aliases and environment
+  - path: /home/k3s-admin/.bash_aliases
+    content: |
+      # Navigation aliases
+      alias ll='ls -alF'
+      alias la='ls -A'
+      alias l='ls -CF'
+      alias ..='cd ..'
+      alias ...='cd ../..'
+
+      # Colored output
+      alias grep='grep --color=auto'
+      alias fgrep='fgrep --color=auto'
+      alias egrep='egrep --color=auto'
+
+      # System monitoring
+      alias ports='netstat -tulanp'
+      alias meminfo='free -h'
+      alias diskusage='df -h'
+      alias processes='ps auxf'
+
+      # Docker aliases (if Docker is installed)
+      alias dps='docker ps'
+      alias dimg='docker images'
+      alias dlogs='docker logs'
+
+      # K3s aliases
+      alias k='kubectl'
+      alias kgp='kubectl get pods'
+      alias kgs='kubectl get services'
+      alias kgn='kubectl get nodes'
+    permissions: "0644"
+    owner: k3s-admin:k3s-admin
+
+# Run commands after boot
+runcmd:
+  # Update system
+  - apt-get update
+  - apt-get upgrade -y
+  - apt-get autoremove -y
+  - apt-get autoclean
+  - apt-get purge -y isc-dhcp-client
+  - apt-get purge -y isc-dhcp-common
+
+  # Configure unattended upgrades
+  - echo 'Unattended-Upgrade::Automatic-Reboot "false";' >> /etc/apt/apt.conf.d/50unattended-upgrades
+  - echo 'Unattended-Upgrade::Remove-Unused-Dependencies "true";' >> /etc/apt/apt.conf.d/50unattended-upgrades
+  - systemctl enable unattended-upgrades
+
+  # Set proper ownership for user files
+  - chown -R k3s-admin:k3s-admin /home/k3s-admin
+
+  # Optimize system for K3s
+  - echo 'net.bridge.bridge-nf-call-iptables = 1' >> /etc/sysctl.conf
+  - echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
+  - sysctl -p
+
+# System configuration
+bootcmd:
+  - echo 'Initializing system...' > /var/log/cloud-init-bootcmd.log
+
+# Power state (optional - uncomment if you want to reboot after setup)
+# power_state:
+#   mode: reboot
+#   message: "Rebooting after cloud-init setup"
+#   timeout: 30
+#   condition: true
+
+# Final message
+final_message: |
+  ========================================
+  VM setup completed successfully!
+  ========================================
+
+  System Information:
+  - User: k3s-admin
+  - SSH: Key-based authentication enabled
+  - Automatic updates: Enabled
+
+  To connect:
+    ssh k3s-admin@<vm-ip>
+
+  System is ready for K3s deployment!
+  ========================================

@@ -1,0 +1,9 @@
+---
+# Kube-VIP configuration
+kube_vip_version: "v0.8.0"
+kube_vip_interface: "{{ external_interface }}"
+kube_vip_vip: "{{ kube_api_vip }}"
+kube_vip_arp: true
+kube_vip_leader_election: true
+kube_vip_services: true
+kube_vip_log_level: "5"

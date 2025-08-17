@@ -1,0 +1,36 @@
+- name: Prepare all hosts
+  hosts: all
+  roles:
+    - common
+
+- name: Install k3s first server (cluster-init)
+  hosts: servers[0]
+  roles:
+    - k3s_server
+
+- name: Deploy kube-vip (VIP for API) on first server
+  hosts: servers[0]
+  roles:
+    - kube_vip
+
+- name: Install remaining k3s servers
+  hosts: servers[1:]
+  serial: 1
+  roles:
+    - k3s_server
+
+- name: Deploy MetalLB and configure IP pool
+  hosts: servers[0]
+  run_once: true
+  roles:
+    - metallb
+
+- name: Join nodes as k3s agents
+  hosts: nodes
+  roles:
+    - k3s_agent
+# - name: Install Longhorn using Helm
+#   hosts: servers[0]
+#   run_once: true
+#   roles:
+#     - longhorn

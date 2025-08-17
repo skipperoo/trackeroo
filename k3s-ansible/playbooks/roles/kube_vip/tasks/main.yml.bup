@@ -1,0 +1,88 @@
+---
+- name: Wait for k3s to be ready
+  wait_for:
+    port: 6443
+    host: "{{ hostvars[inventory_hostname].internal_ip }}"
+    delay: 10
+    timeout: 120
+
+- name: Create kube-vip namespace
+  kubernetes.core.k8s:
+    name: kube-vip
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+  # delegate_to: "{{ groups['servers'][0] }}"
+
+- name: Create kube-vip RBAC
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    definition:
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: kube-vip
+        namespace: kube-vip
+  run_once: true
+  # delegate_to: "{{ groups['servers'][0] }}"
+
+- name: Create kube-vip ClusterRole
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        annotations:
+          rbac.authorization.kubernetes.io/autoupdate: "true"
+        name: system:kube-vip-role
+      rules:
+        - apiGroups: [""]
+          resources: ["services", "services/status", "nodes", "endpoints"]
+          verbs: ["list", "get", "watch", "update"]
+        - apiGroups: ["coordination.k8s.io"]
+          resources: ["leases"]
+          verbs: ["list", "get", "watch", "update", "create"]
+  run_once: true
+  # delegate_to: "{{ groups['servers'][0] }}"
+
+- name: Create kube-vip ClusterRoleBinding
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: system:kube-vip-binding
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: system:kube-vip-role
+      subjects:
+        - kind: ServiceAccount
+          name: kube-vip
+          namespace: kube-vip
+  run_once: true
+  # delegate_to: "{{ groups['servers'][0] }}"
+
+- name: Generate kube-vip static pod manifest
+  template:
+    src: kube-vip.yaml.j2
+    dest: /var/lib/rancher/k3s/server/manifests/kube-vip.yaml
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart k3s
+
+- name: Wait for kube-vip VIP to be available
+  wait_for:
+    host: "{{ kube_vip_vip }}"
+    port: 6443
+    delay: 10
+    timeout: 120
+  run_once: true

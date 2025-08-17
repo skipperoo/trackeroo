@@ -1,0 +1,92 @@
+---
+- name: Check if this server is the first master (server1)
+  set_fact:
+    is_first_server: "{{ inventory_hostname == groups['servers'][0] }}"
+
+- name: Render k3s install script
+  template:
+    src: k3s_install.sh.j2
+    dest: /tmp/k3s_install.sh
+    mode: "0755"
+
+- name: Run k3s installer (first server)
+  shell: /tmp/k3s_install.sh
+  register: k3s_install
+  environment:
+    INTERNAL_IP: "{{ hostvars[inventory_hostname].internal_ip }}"
+  args:
+    creates: "{{ k3s_install_dir }}/bin/k3s"
+  when: is_first_server
+
+- name: Wait for kubectl to be available (kubeconfig) on first server
+  wait_for:
+    path: /etc/rancher/k3s/k3s.yaml
+    timeout: 120
+  when: is_first_server
+
+- name: Wait for node token to be created on first server
+  wait_for:
+    path: "{{ k3s_token_file }}"
+    timeout: 120
+  when: is_first_server
+
+- name: Wait for first server API to be ready
+  wait_for:
+    port: 6443
+    host: "{{ hostvars[inventory_hostname].internal_ip }}"
+    timeout: 180
+  when: is_first_server
+
+- name: Fetch node token from first server
+  slurp:
+    src: "{{ k3s_token_file }}"
+  register: token_data
+  delegate_to: "{{ groups['servers'][0] }}"
+  when: not is_first_server
+
+- name: Ensure k3s_token_file directory exists
+  file:
+    path: "{{ k3s_token_file | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: not is_first_server
+
+- name: Write token file to other servers
+  copy:
+    content: "{{ token_data['content'] | b64decode }}"
+    dest: "{{ k3s_token_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+  when: not is_first_server
+
+- name: Wait for primary server API (for joining)
+  wait_for:
+    port: 6443
+    host: "{{ hostvars[groups['servers'][0]].internal_ip }}"
+    timeout: 180
+  when: not is_first_server
+
+- name: Run k3s installer (additional servers)
+  shell: /tmp/k3s_install.sh
+  register: k3s_install
+  environment:
+    INTERNAL_IP: "{{ hostvars[inventory_hostname].internal_ip }}"
+    K3S_TOKEN: "{{ token_data['content'] | b64decode | trim }}"
+  args:
+    creates: "{{ k3s_install_dir }}/bin/k3s"
+  when: not is_first_server
+
+- name: Wait for k3s service to be running
+  systemd:
+    name: k3s
+    state: started
+    enabled: yes
+
+- name: Verify server is ready
+  wait_for:
+    port: 6443
+    host: "{{ hostvars[inventory_hostname].internal_ip }}"
+    timeout: 120

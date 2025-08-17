@@ -1,0 +1,7 @@
+# roles/kube_vip/handlers/main.yml
+---
+- name: restart k3s
+  systemd:
+    name: k3s
+    state: restarted
+  listen: restart k3s
