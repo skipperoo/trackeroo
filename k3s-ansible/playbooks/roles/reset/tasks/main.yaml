@@ -1,1 +1,9 @@
-# Placeholder
+- name: Reset servers
+  hosts: servers
+  become: true
+  command: /usr/local/bin/k3s-uninstall.sh
+
+- name: Reset nodes
+  hosts: nodes
+  become: true
+  command: /usr/local/bin/k3s-agent-uninstall.sh
