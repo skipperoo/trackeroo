@@ -1,0 +1,7 @@
+---
+- name: Reset k3s cluster
+  hosts: all
+  gather_facts: true
+  roles:
+    - role: reset
+      become: true
