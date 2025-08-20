@@ -55,31 +55,31 @@
     recurse: true
   when: inventory_hostname in groups['nodes']
 
-# - name: Add Longhorn Helm repo
-#   command: helm repo add longhorn https://charts.longhorn.io
-#   environment:
-#     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-#   delegate_to: "{{ groups['servers'][0] }}"
-#   run_once: true
+- name: Add Longhorn Helm repo
+  command: helm repo add longhorn https://charts.longhorn.io
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  delegate_to: "{{ groups['servers'][0] }}"
+  run_once: true
 
-# - name: Update Helm repos
-#   command: helm repo update
-#   environment:
-#     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-#   delegate_to: "{{ groups['servers'][0] }}"
-#   run_once: true
+- name: Update Helm repos
+  command: helm repo update
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  delegate_to: "{{ groups['servers'][0] }}"
+  run_once: true
 
-# - name: Install Longhorn via Helm
-#   command: >
-#     helm upgrade --install longhorn longhorn/longhorn
-#     --namespace longhorn-system
-#     --create-namespace
-#     --set defaultSettings.createDefaultDiskLabeledNodesOnly=true
-#     --set defaultSettings.defaultDataPath=/var/lib/longhorn
-#   environment:
-#     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-#   delegate_to: "{{ groups['servers'][0] }}"
-#   run_once: true
+- name: Install Longhorn via Helm
+  command: >
+    helm upgrade --install longhorn longhorn/longhorn
+    --namespace longhorn-system
+    --create-namespace
+    --set defaultSettings.createDefaultDiskLabeledNodesOnly=true
+    --set defaultSettings.defaultDataPath=/var/lib/longhorn
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  delegate_to: "{{ groups['servers'][0] }}"
+  run_once: true
 
 - name: Label worker nodes for Longhorn disk config
   kubernetes.core.k8s:
@@ -127,28 +127,6 @@
   loop: "{{ groups['servers'] }}"
   delegate_to: "{{ groups['servers'][0] }}"
   run_once: true
-
-# - name: Disable Longhorn scheduling on control-plane nodes
-#   vars:
-#     control_plane_names: >-
-#       {{ k8s_nodes.resources
-#          | selectattr('metadata.labels.node-role.kubernetes.io/control-plane', 'defined')
-#          | map(attribute='metadata.name')
-#          | list }}
-#   kubernetes.core.k8s:
-#     kubeconfig: /etc/rancher/k3s/k3s.yaml
-#     state: present
-#     definition:
-#       apiVersion: longhorn.io/v1beta2
-#       kind: Node
-#       metadata:
-#         name: "{{ item.metadata.name }}"
-#       spec:
-#         allowScheduling: false
-#   loop: "{{ longhorn_nodes.resources | list }}"
-#   when: item.metadata.name in control_plane_names
-#   delegate_to: "{{ groups['servers'][0] }}"
-#   run_once: true
 
 - name: Remove local-path as default StorageClass
   kubernetes.core.k8s:
