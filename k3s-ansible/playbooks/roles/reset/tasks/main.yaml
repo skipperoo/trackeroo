@@ -1,9 +1,8 @@
-- name: Reset servers
-  hosts: servers
-  become: true
-  command: /usr/local/bin/k3s-uninstall.sh
+---
+- name: Uninstall k3s server
+  shell: /usr/local/bin/k3s-uninstall.sh
+  when: "'servers' in group_names"
 
-- name: Reset nodes
-  hosts: nodes
-  become: true
-  command: /usr/local/bin/k3s-agent-uninstall.sh
+- name: Uninstall k3s agent
+  shell: /usr/local/bin/k3s-agent-uninstall.sh
+  when: "'nodes' in group_names"

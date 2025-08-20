@@ -1,0 +1,4 @@
+---
+longhorn_namespace: longhorn-system
+longhorn_chart_version: 1.7.2
+longhorn_ui_ip: 10.20.30.150

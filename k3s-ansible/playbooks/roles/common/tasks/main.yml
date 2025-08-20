@@ -58,3 +58,62 @@
         msg: "Warning: {{ longhorn_disk }} not found on {{ inventory_hostname }}. Longhorn will fail if no disk available."
       when: not longhorn_disk_stat.stat.exists
   when: "'nodes' in group_names"
+
+- name: Ensure .bash_aliases file exists
+  file:
+    path: /home/{{ ansible_user }}/.bash_aliases
+    state: touch
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+- name: Add bash aliases
+  blockinfile:
+    path: /home/{{ ansible_user }}/.bash_aliases
+    block: |
+      # Navigation aliases
+      alias ll='ls -alF'
+      alias la='ls -A'
+      alias l='ls -CF'
+      alias ..='cd ..'
+      alias ...='cd ../..'
+      # Colored output
+      alias grep='grep --color=auto'
+      alias fgrep='fgrep --color=auto'
+      alias egrep='egrep --color=auto'
+      # System monitoring
+      alias ports='netstat -tulanp'
+      alias meminfo='free -h'
+      alias diskusage='df -h'
+      alias processes='ps auxf'
+      # Docker aliases (if Docker is installed)
+      alias dps='docker ps'
+      alias dimg='docker images'
+      alias dlogs='docker logs'
+      # K3s aliases
+      alias k='kubectl'
+      alias kgp='kubectl get pods'
+      alias kgs='kubectl get services'
+      alias kgn='kubectl get nodes'
+      alias kga='kubectl get all -A'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - BASH ALIASES"
+    create: yes
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Ensure .bashrc has TERM export and sources .bash_aliases
+  blockinfile:
+    path: /home/{{ ansible_user }}/.bashrc
+    block: |
+      # Set terminal type
+      export TERM=xterm
+
+      # Source bash aliases if exists
+      if [ -f ~/.bash_aliases ]; then
+          . ~/.bash_aliases
+      fi
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - BASH SETTINGS"
+    insertafter: EOF
+    create: yes
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"

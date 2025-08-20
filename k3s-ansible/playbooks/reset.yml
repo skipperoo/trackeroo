@@ -1,5 +1,6 @@
 ---
 - name: Reset k3s cluster
+  hosts: all
   roles:
     - role: reset
       become: true

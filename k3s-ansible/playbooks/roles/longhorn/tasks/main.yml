@@ -1,41 +1,110 @@
-- name: Ensure Helm present (install if missing)
+---
+- name: Install open-iscsi package on worker nodes
+  package:
+    name: open-iscsi
+    state: present
+  when: inventory_hostname in groups['nodes']
+
+- name: Start and enable iscsid service on worker nodes
+  systemd:
+    name: iscsid
+    state: started
+    enabled: yes
+  when: inventory_hostname in groups['nodes']
+
+- name: Format Longhorn disk if needed on worker nodes
+  filesystem:
+    fstype: ext4
+    dev: "{{ longhorn_disk }}"
+    force: no
+  when: inventory_hostname in groups['nodes']
+
+- name: Create Longhorn directory on worker nodes
+  file:
+    path: /var/lib/longhorn
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: inventory_hostname in groups['nodes']
+
+- name: Mount Longhorn disk on worker nodes
+  mount:
+    path: /var/lib/longhorn
+    src: "{{ longhorn_disk }}"
+    fstype: ext4
+    state: mounted
+  when: inventory_hostname in groups['nodes']
+
+# Install Longhorn only once (on the control plane / first server)
+- name: Install Longhorn (run once on first server)
   shell: |
-    if ! command -v helm >/dev/null 2>&1; then
-      curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-    fi
-  args:
-    creates: /usr/local/bin/helm
-
-- name: Add Longhorn helm repo
-  shell: helm repo add longhorn https://charts.longhorn.io
-  args:
-    warn: false
-
-- name: Update helm repos
-  shell: helm repo update
-  args:
-    warn: false
-
-- name: Install Longhorn in longhorn-system namespace
-  shell: >
-    helm upgrade --install longhorn longhorn/longhorn
-      --namespace longhorn-system --create-namespace
-      --set persistence.defaultClass=true
-  args:
-    warn: false
-
-- name: Create a NodeSelector/DaemonSet label for longhorn disks on all nodes
-  shell: |
-    kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml label node {{ inventory_hostname }} longhorn-node=ready --overwrite
-  when: "'nodes' not in group_names" # only run from control host once
+    kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v{{ longhorn_chart_version }}/deploy/longhorn.yaml
   delegate_to: "{{ groups['servers'][0] }}"
   run_once: true
 
-- name: Patch Longhorn settings to allow using raw devices
+# - name: Create node selector for Longhorn (only schedule on worker nodes)
+#   shell: |
+#     kubectl patch daemonset engine-image-ei -n {{ longhorn_namespace }} -p '{"spec":{"template":{"spec":{"nodeSelector":{"node-role.kubernetes.io/worker":"true"}}}}}'
+#     kubectl patch daemonset longhorn-manager -n {{ longhorn_namespace }} -p '{"spec":{"template":{"spec":{"nodeSelector":{"node-role.kubernetes.io/worker":"true"}}}}}'
+#   delegate_to: "{{ groups['servers'][0] }}"
+#   run_once: true
+
+- name: Taint control plane nodes to prevent Longhorn scheduling
   shell: |
-    # Longhorn will discover block devices automatically in many cases,
-    # but you may want to set the disks via the UI or automation.
-    # This placeholder keeps room for automation (advanced).
-    true
-  args:
-    warn: false
+    kubectl taint nodes {{ hostvars[item].ansible_hostname | default(item) }} node-role.kubernetes.io/control-plane:NoSchedule --overwrite
+  loop: "{{ groups['servers'] }}"
+  delegate_to: "{{ groups['servers'][0] }}"
+  run_once: true
+
+- name: Wait for Longhorn pods to be ready on worker nodes
+  shell: |
+    kubectl get pods -n {{ longhorn_namespace }} -o wide --no-headers | grep -v Running | wc -l
+  register: longhorn_pods
+  until: longhorn_pods.stdout == "0"
+  retries: 30
+  delay: 10
+  delegate_to: "{{ groups['servers'][0] }}"
+  run_once: true
+
+- name: Create Longhorn UI LoadBalancer service
+  shell: |
+    kubectl apply -f - <<EOF
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: longhorn-frontend-lb
+      namespace: {{ longhorn_namespace }}
+    spec:
+      type: LoadBalancer
+      loadBalancerIP: {{ longhorn_ui_ip }}
+      ports:
+        - port: 80
+          targetPort: 8000
+      selector:
+        app: longhorn-ui
+    EOF
+  delegate_to: "{{ groups['servers'][0] }}"
+  run_once: true
+
+- name: Set Longhorn as default storage class
+  shell: 'kubectl patch storageclass longhorn -p "{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}"'
+  delegate_to: "{{ groups['servers'][0] }}"
+  run_once: true
+
+- name: Verify Longhorn node status
+  shell: |
+    kubectl get nodes -o wide
+    echo "=== Longhorn Node Status ==="
+    kubectl get nodes -l node-role.kubernetes.io/worker -o name | xargs -I {} kubectl describe {} | grep -A5 -B5 "longhorn"
+  delegate_to: "{{ groups['servers'][0] }}"
+  run_once: true
+  register: longhorn_status
+
+- name: Display Longhorn info
+  debug:
+    msg:
+      - "Longhorn UI available at: http://{{ longhorn_ui_ip }}"
+      - "Longhorn installed only on worker nodes"
+      - "Control plane nodes tainted to prevent scheduling"
+  run_once: true

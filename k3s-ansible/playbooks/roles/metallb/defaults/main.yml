@@ -1,3 +1,5 @@
 metal_lb_controller_tag_version: v0.15.2
 metal_lb_speaker_tag_version: v0.15.2
 metal_lb_type: native
+metallb_ip_range: 10.20.30.50-10.20.30.150
+metallb_interface: "{{ external_interface }}"

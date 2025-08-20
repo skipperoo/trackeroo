@@ -32,3 +32,40 @@
   loop_control:
     label: "{{ item.change }} => {{ item.to }}"
   when: is_first_server
+
+- name: Create MetalLB IPAddressPool configuration
+  ansible.builtin.copy:
+    dest: /var/lib/rancher/k3s/server/manifests/metallb-ippool.yaml
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      apiVersion: metallb.io/v1beta1
+      kind: IPAddressPool
+      metadata:
+        name: default-pool
+        namespace: metallb-system
+      spec:
+        addresses:
+        - {{ metallb_ip_range }}
+  when: is_first_server
+
+- name: Create MetalLB L2Advertisement configuration
+  ansible.builtin.copy:
+    dest: /var/lib/rancher/k3s/server/manifests/metallb-l2advertisement.yaml
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      apiVersion: metallb.io/v1beta1
+      kind: L2Advertisement
+      metadata:
+        name: default-advertisement
+        namespace: metallb-system
+      spec:
+        ipAddressPools:
+        - default-pool
+        interfaces:
+        - {{ metallb_interface }}
+
+  when: is_first_server
