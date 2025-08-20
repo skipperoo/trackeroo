@@ -1,0 +1,16 @@
+cnpg_operator_url: "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.27/releases/cnpg-1.27.0.yaml"
+tsdb_cluster_manifest: "files/tsdb-cluster.yaml"
+cnpg_namespace: "cnpg-system"
+tsdb_namespace: "data"
+cluster_name: tsdb
+instances: 3
+image: ghcr.io/skiby7/tsdb:latest
+storage_size: 20Gi
+storage_class: longhorn
+database_name: datadb
+database_user: postgres
+secret_name: tsdb-data-creds
+synchronous_method: any
+synchronous_number: 1
+data_durability: required
+max_connections: 300

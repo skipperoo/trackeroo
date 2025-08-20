@@ -1,0 +1,5 @@
+- name: Deploy tsdb
+  hosts: servers
+  tags: tsdb
+  roles:
+    - tsdb

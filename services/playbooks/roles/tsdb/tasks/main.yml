@@ -1,0 +1,59 @@
+---
+- name: Ensure CNPG namespace exists
+  k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ cnpg_namespace }}"
+  delegate_to: "{{ groups['servers'][0] }}"
+
+- name: Apply CNPG operator bundle
+  k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    src: "{{ cnpg_operator_url }}"
+  delegate_to: "{{ groups['servers'][0] }}"
+
+- name: Wait for CNPG Cluster CRD to be available
+  k8s_info:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    api_version: postgresql.cnpg.io/v1
+    kind: Cluster
+  register: cnpg_crd
+  retries: 10
+  delay: 5
+  until: cnpg_crd.resources is defined
+  delegate_to: "{{ groups['servers'][0] }}"
+
+- name: Wait for CNPG operator pod to be running
+  k8s_info:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    kind: Pod
+    namespace: "{{ cnpg_namespace }}"
+    label_selectors:
+      - app.kubernetes.io/name=cloudnative-pg
+  register: cnpg_operator
+  retries: 10
+  delay: 5
+  until: cnpg_operator.resources | length > 0 and
+    cnpg_operator.resources[0].status.phase == "Running"
+  delegate_to: "{{ groups['servers'][0] }}"
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    api_version: v1
+    kind: Namespace
+    name: "{{ tsdb_namespace }}"
+    state: present
+  delegate_to: "{{ groups['servers'][0] }}"
+
+- name: Apply PostgreSQL cluster manifest
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    definition: "{{ lookup('template', 'tsdb-cluster.yml.j2') }}"
+  delegate_to: "{{ groups['servers'][0] }}"
