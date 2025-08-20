@@ -1,0 +1,24 @@
+# Global variables - edit as needed
+external_interface: enp1s0
+internal_interface: enp2s0
+
+# VIP for the k8s API (on the external network). Pick a free IP on 10.20.30.0/24
+kube_api_vip: 10.20.30.40
+
+# pod/service network (defaults)
+pod_cidr: "10.42.0.0/16"
+service_cidr: "10.43.0.0/16"
+
+# MetalLB IPPool (external addresses to provide LoadBalancer IPs)
+metallb_pool_start: 10.20.30.50
+metallb_pool_end: 10.20.30.200
+
+# k3s install options
+k3s_version: "v1.30.14+k3s2" # or specify vX.Y.Z
+k3s_install_dir: "/var/lib/rancher/k3s"
+
+# Disk to use for Longhorn on worker nodes
+longhorn_disk: "/dev/vdb"
+
+# Node token file path (k3s will create this on the first server)
+k3s_token_file: "/var/lib/rancher/k3s/server/node-token"

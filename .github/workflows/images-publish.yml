@@ -1,0 +1,51 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "images/**" # only trigger if something in images/ changes
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      images: ${{ steps.filter.outputs.images }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            images:
+              - 'images/**'
+  build:
+    needs: changes
+    if: needs.changes.outputs.images == 'true'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write # needed to push to GHCR
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./images
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/pg17-ts-postgis:latest
+            ghcr.io/${{ github.repository_owner }}/pg17-ts-postgis:${{ github.sha }}
