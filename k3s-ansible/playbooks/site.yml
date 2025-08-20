@@ -30,7 +30,9 @@
   roles:
     - k3s_agent
 
-- hosts: all
+- name: Install Longhorn
+  hosts: all
   become: true
+  tags: longhorn
   roles:
     - longhorn

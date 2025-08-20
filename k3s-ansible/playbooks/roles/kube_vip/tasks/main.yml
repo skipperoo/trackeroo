@@ -44,3 +44,10 @@
     delay: 10
     timeout: 120
   run_once: true
+
+- name: Replace server IP in kubeconfig with VIP
+  replace:
+    path: /etc/rancher/k3s/k3s.yaml
+    regexp: "server: https://127.0.0.1:6443"
+    replace: "server: https://{{ kube_api_vip }}:6443"
+  run_once: true

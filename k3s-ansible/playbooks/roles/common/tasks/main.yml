@@ -19,6 +19,7 @@
           - open-iscsi
           - python3-kubernetes
           - python3
+          - cryptsetup
         state: present
 
 - name: Disable swap (kubernetes requirement) - turn off swap now

@@ -1,3 +1,6 @@
 #!/bin/bash
-
-ansible-playbook -i inventory/hosts.yml playbooks/site.yml -u k3s-admin
+RUN_TAG=""
+if [[ -n "$1" ]]; then
+    RUN_TAG="-t $1"
+fi
+ansible-playbook -i inventory/hosts.yml playbooks/site.yml $RUN_TAG
