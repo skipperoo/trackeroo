@@ -22,4 +22,4 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Enable TimescaleDB preload
-RUN echo "shared_preload_libraries='timescaledb'" >> /usr/share/postgresql/postgresql.conf.sample
+RUN echo "shared_preload_libraries='timescaledb'" >> /usr/share/postgresql/postgresql.conf

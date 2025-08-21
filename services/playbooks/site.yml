@@ -3,3 +3,9 @@
   tags: tsdb
   roles:
     - tsdb
+
+- name: Deploy pgAdmin
+  hosts: servers
+  tags: pgadmin
+  roles:
+    - pgadmin

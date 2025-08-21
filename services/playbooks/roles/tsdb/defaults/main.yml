@@ -4,7 +4,7 @@ cnpg_namespace: "cnpg-system"
 tsdb_namespace: "data"
 cluster_name: tsdb
 instances: 3
-image: ghcr.io/skiby7/tsdb:1.0.0
+image: ghcr.io/skiby7/tsdb:17
 storage_size: 20Gi
 storage_class: longhorn
 database_name: datadb

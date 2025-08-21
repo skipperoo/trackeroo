@@ -4,24 +4,18 @@ metadata:
   name: {{ cluster_name }}
   namespace: {{ tsdb_namespace }}
 spec:
+  postgresUID: 999
+  postgresGID: 999
   instances: {{ instances }}
   imageName: {{ image }}
-
   postgresql:
     parameters:
-      shared_preload_libraries: "timescaledb"
       max_connections: "{{ max_connections }}"
       timescaledb.telemetry_level: "off"
-    synchronous:
-      method: {{ synchronous_method }}
-      number: {{ synchronous_number }}
-      dataDurability: {{ data_durability }}
-
   storage:
     size: {{ storage_size }}
     storageClass: {{ storage_class }}
     resizeInUseVolumes: true
-
   bootstrap:
     initdb:
       database: {{ database_name }}
@@ -32,12 +26,3 @@ spec:
         - "CREATE EXTENSION IF NOT EXISTS timescaledb;"
         - "CREATE EXTENSION IF NOT EXISTS postgis;"
         - "CREATE EXTENSION IF NOT EXISTS postgis_topology;"
-
-  service:
-    type: ClusterIP
-    primary:
-      - name: rw
-    replicas:
-      - name: ro
-
-  walRetention: "3d"

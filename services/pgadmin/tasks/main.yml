@@ -1,0 +1,6 @@
+- name: Apply pgAdmin Deployment
+  k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    definition: "{{ lookup('template', 'pgadmin-deployment.yml.j2') }}"
+  delegate_to: "{{ groups['servers'][0] }}"

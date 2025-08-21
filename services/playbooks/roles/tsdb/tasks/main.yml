@@ -51,6 +51,21 @@
     state: present
   delegate_to: "{{ groups['servers'][0] }}"
 
+- name: Create Postgres credentials secret
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: tsdb-credentials
+        namespace: data
+      type: Opaque
+      stringData:
+        username: postgres
+        password: postgres
+
 - name: Apply PostgreSQL cluster manifest
   kubernetes.core.k8s:
     kubeconfig: /etc/rancher/k3s/k3s.yaml
