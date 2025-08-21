@@ -8,7 +8,10 @@ spec:
   postgresGID: 999
   instances: {{ instances }}
   imageName: {{ image }}
+  imagePullPolicy: Always
   postgresql:
+    shared_preload_libraries:
+      - "timescaledb"
     parameters:
       max_connections: "{{ max_connections }}"
       timescaledb.telemetry_level: "off"
@@ -16,13 +19,37 @@ spec:
     size: {{ storage_size }}
     storageClass: {{ storage_class }}
     resizeInUseVolumes: true
+  monitoring:
+    enabled: {{ monitoring_enabled | default(true) }}
   bootstrap:
     initdb:
       database: {{ database_name }}
       owner: {{ database_user }}
-      secret:
-        name: {{ secret_name }}
       postInitSQL:
         - "CREATE EXTENSION IF NOT EXISTS timescaledb;"
         - "CREATE EXTENSION IF NOT EXISTS postgis;"
         - "CREATE EXTENSION IF NOT EXISTS postgis_topology;"
+        - "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
+  managed:
+    roles:
+    # Admin user with full privileges
+    - name: {{ admin_user | default('admin') }}
+      ensure: present
+      passwordSecret:
+        name: "{{ cluster_name }}-admin-secret"
+      login: true
+      superuser: true
+      createdb: true
+      createrole: true
+      replication: true
+      bypassrls: true
+
+    # Application user with limited privileges
+    - name: {{ apps_user | default('apps') }}
+      ensure: present
+      passwordSecret:
+        name: "{{ cluster_name }}-apps-secret"
+      login: true
+      superuser: false
+      createdb: false
+      createrole: false
