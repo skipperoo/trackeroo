@@ -14,7 +14,7 @@ type handler struct {
 type middleware func(http.Handler) http.Handler
 type subroute struct {
 	Path   string
-	Handle http.Handler
+	Router *Router
 }
 
 type Router struct {
@@ -40,8 +40,8 @@ func (r *Router) AddMiddleware(mw middleware) *Router {
 	return r
 }
 
-func (r *Router) AddSubroute(path string, handler http.Handler) *Router {
-	r.subroutes = append(r.subroutes, subroute{path, handler})
+func (r *Router) AddSubroute(path string, sub *Router) *Router {
+	r.subroutes = append(r.subroutes, subroute{path, sub})
 	return r
 }
 
@@ -65,7 +65,7 @@ func (r *Router) Finalize() http.Handler {
 		// This removes the trailing /
 		prefix := strings.TrimSuffix(subroute.Path, "/")
 		// This crates an handler that removes the /subroute prefix
-		strippedHandler := http.StripPrefix(prefix, subroute.Handle)
+		strippedHandler := http.StripPrefix(prefix, subroute.Router.Finalize())
 
 		service.Debug("Adding subroute: %s", subroute.Path)
 		r.r.Handle(subroute.Path, strippedHandler)

@@ -35,8 +35,7 @@ func main() {
 	*/
 	service.Debug("Initializing login route")
 	loginRouter := router.NewRouter().
-		AddHandler("POST /", handler.HandleLogin).
-		Finalize()
+		AddHandler("POST /", handler.HandleLogin)
 
 	service.Debug("Initializing devices route")
 	devicesRouter := router.NewRouter().
@@ -45,8 +44,7 @@ func main() {
 		AddHandler("GET /{id}", handler.GetDevice).
 		AddHandler("PUT /{id}", handler.UpdateDevice).
 		AddHandler("DELETE /{id}", handler.DeleteDevice).
-		AddMiddleware(middleware.Auth).
-		Finalize()
+		AddMiddleware(middleware.Auth)
 
 	service.Debug("Initializing users router")
 	usersRouter := router.NewRouter().
@@ -54,9 +52,8 @@ func main() {
 		AddHandler("POST /", handler.CreateUser).
 		AddHandler("GET /{id}", handler.GetUser).
 		AddHandler("PUT /{id}", handler.UpdateUser).
-		AddHandler("DELETE /{id}", handler.DeleteUser).
-		// AddMiddleware(middleware.Auth).
-		Finalize()
+		AddHandler("DELETE /{id}", handler.DeleteUser)
+		// AddMiddleware(middleware.Auth)
 
 	/**
 	 	* Now, this is the main router:
