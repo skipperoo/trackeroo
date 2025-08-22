@@ -3,7 +3,7 @@ package router
 import (
 	"net/http"
 	"strings"
-	"trackeroo-backend/internal/service"
+	"trackeroo-backend/internal/logger"
 )
 
 type handler struct {
@@ -46,12 +46,12 @@ func (r *Router) AddSubroute(path string, handler http.Handler) *Router {
 }
 
 func createStack(mw []middleware) middleware {
-	service.Debug("Creating middleware stack with %d middlewares", len(mw))
+	logger.Debug("Creating middleware stack with %d middlewares", len(mw))
 	return func(next http.Handler) http.Handler {
-		service.Debug("Applying middleware stack to handler")
+		logger.Debug("Applying middleware stack to handler")
 		for i := len(mw) - 1; i >= 0; i-- {
 			x := mw[i]
-			service.Debug("Applying middleware %+v", x)
+			logger.Debug("Applying middleware %+v", x)
 			next = x(next)
 		}
 		return next
@@ -61,7 +61,7 @@ func createStack(mw []middleware) middleware {
 func (r *Router) Finalize() http.Handler {
 	for _, handler := range r.handlers {
 		r.r.HandleFunc(handler.Endpoint, handler.fn)
-		service.Debug("Adding handler: %s", handler.Endpoint)
+		logger.Debug("Adding handler: %s", handler.Endpoint)
 	}
 	for _, subroute := range r.subroutes {
 		// This removes the trailing /
@@ -69,7 +69,7 @@ func (r *Router) Finalize() http.Handler {
 		// This crates an handler that removes the /subroute prefix
 		strippedHandler := http.StripPrefix(prefix, subroute.Handle)
 
-		service.Debug("Adding subroute: %s", subroute.Path)
+		logger.Debug("Adding subroute: %s", subroute.Path)
 		r.r.Handle(subroute.Path, strippedHandler)
 	}
 	stack := createStack(r.middlewares)

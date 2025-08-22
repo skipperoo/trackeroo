@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"trackeroo-backend/internal/logger"
 	"trackeroo-backend/internal/model"
 	"trackeroo-backend/internal/service"
 )
@@ -25,7 +26,23 @@ func UserAuth(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "deny")
 		return
 	}
-	service.Info("Authenticating device: %s %s", form.Username, form.Password)
+	logger.Info("Authenticating device: %s ***", form.Username)
+	_, err := service.GetUserByName(ctx, form.Username)
+	if err == nil {
+		logger.Info("Found admin user %s, validating...", form.Username)
+		login := model.Login{
+			Username: form.Username,
+			Password: form.Password,
+		}
+		valid := service.ValidateLogin(ctx, login)
+		logger.Info("Valid: %v", valid)
+		if !valid {
+			fmt.Fprint(w, "deny")
+			return
+		}
+		fmt.Fprint(w, "allow administrator")
+		return
+	}
 	key, err := service.GetDeviceKey(ctx, form.Username)
 	if err != nil {
 		fmt.Fprint(w, "deny")
@@ -34,14 +51,15 @@ func UserAuth(w http.ResponseWriter, r *http.Request) {
 	if res, claims, err := service.ValidateDeviceJWT(key, form.Password); err != nil || !res || claims["sub"] != form.Username {
 		fmt.Fprint(w, "deny")
 		if err == nil {
-			service.Error("Failed to validate device JWT for %s", form.Username)
+			logger.Error("Failed to validate device JWT for %s", form.Username)
 		} else if claims["sub"] != form.Username {
-			service.Error("Invalid username in JWT: should be %s, found %s", form.Username, claims["sub"])
+			logger.Error("Invalid username in JWT: should be %s, found %s", form.Username, claims["sub"])
 		} else {
-			service.Error("Failed to validate device JWT for %s: %v", form.Username, err)
+			logger.Error("Failed to validate device JWT for %s: %v", form.Username, err)
 		}
 		return
 	}
+	logger.Info("Device %s authenticated", form.Username)
 	fmt.Fprint(w, "allow")
 }
 
@@ -57,15 +75,19 @@ func TopicAuth(w http.ResponseWriter, r *http.Request) {
 		Username:   r.FormValue("username"),
 		Vhost:      r.FormValue("vhost"),
 		Resource:   r.FormValue("resource"),
+		Topic:      r.FormValue("routing_key"),
 		Name:       r.FormValue("name"),
 		Permission: r.FormValue("permission"),
 	}
+	// service.Debug("%+v", r)
 
-	service.Info("Authenticating device %s for topic %s vhost %s resource %s permission %s", form.Username, form.Name, form.Vhost, form.Resource, form.Permission)
-	if strings.Contains(form.Name, form.Username) {
+	logger.Info("Authenticating device %s for topic %s vhost %s resource %s permission %s", form.Username, form.Topic, form.Vhost, form.Resource, form.Permission)
+	if strings.Contains(form.Topic, form.Username) {
+		logger.Info("Device %s authenticated for topic %s", form.Username, form.Topic)
 		fmt.Fprint(w, "allow")
 		return
 	}
+	logger.Info("Device %s not authenticated for topic %s", form.Username, form.Topic)
 	fmt.Fprint(w, "deny")
 }
 

@@ -37,5 +37,16 @@ func DefaultUsers() []User {
 		IssuedAt:     time.Now(),
 		ExpiresAt:    time.Now().Add(time.Hour * 24),
 	}
-	return []User{user1, user2}
+	/* RabbitMQ user */
+	user3 := User{
+		ID:           "",
+		Username:     "admin",
+		Role:         "admin",
+		PasswordHash: "$2b$12$w.6Q5rCSQfGkDLo2ZUPKt.rnrZnlygqC88tksctnDPCfAfJlN.Av6",
+		LastLogin:    time.Now(),
+		SessionToken: "",
+		IssuedAt:     time.Now(),
+		ExpiresAt:    time.Now().Add(time.Hour * 24),
+	}
+	return []User{user1, user2, user3}
 }

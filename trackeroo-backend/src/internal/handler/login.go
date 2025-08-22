@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+	"trackeroo-backend/internal/logger"
 	"trackeroo-backend/internal/model"
 	"trackeroo-backend/internal/service"
 )
@@ -17,7 +18,7 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	service.Info("Login request by: %+v", data)
+	logger.Info("Login request by: %+v", data)
 	if !service.ValidateLogin(r.Context(), data) {
 		w.WriteHeader(http.StatusUnauthorized)
 

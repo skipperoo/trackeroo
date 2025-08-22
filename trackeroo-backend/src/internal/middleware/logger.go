@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 	"time"
-	"trackeroo-backend/internal/service"
+	"trackeroo-backend/internal/logger"
 )
 
 type wrappedWriter struct {
@@ -25,9 +25,9 @@ func Logging(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(wrapped, r)
 		if wrapped.statusCode < 400 {
-			service.Info("%v %v %v %v", wrapped.statusCode, r.Method, r.URL.Path, time.Since(start))
+			logger.Info("%v %v %v %v", wrapped.statusCode, r.Method, r.URL.Path, time.Since(start))
 		} else {
-			service.Error("%v %v %v %v", wrapped.statusCode, r.Method, r.URL.Path, time.Since(start))
+			logger.Error("%v %v %v %v", wrapped.statusCode, r.Method, r.URL.Path, time.Since(start))
 		}
 	})
 }

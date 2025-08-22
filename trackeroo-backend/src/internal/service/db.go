@@ -3,8 +3,9 @@ package service
 import (
 	"context"
 	"errors"
-	"os"
 
+	"trackeroo-backend/internal/config"
+	"trackeroo-backend/internal/logger"
 	"trackeroo-backend/internal/model"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,7 +18,7 @@ var MongoClient *mongo.Client
 
 func InitDb(ctx context.Context) error {
 	var err error
-	mongoURI := os.Getenv("MONGO_URI")
+	mongoURI := config.Cfg.MongoUri
 	if mongoURI == "" {
 		return errors.New("MONGO_URI not set in environment")
 	}
@@ -143,6 +144,31 @@ func GetDevice(ctx context.Context, id string) (model.Device, error) {
 	return device, err
 }
 
+func GetDeviceCredentials(ctx context.Context, id string) (model.DeviceCredentials, error) {
+	collection := MongoClient.Database("trackeroo-backend").Collection("devices")
+	_ctx := ctx
+	if _ctx == nil {
+		_ctx = context.Background()
+	}
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return model.DeviceCredentials{}, err
+	}
+	device := model.Device{}
+	err = collection.FindOne(_ctx, bson.M{"_id": objID}).Decode(&device)
+	if err != nil {
+		return model.DeviceCredentials{}, err
+	}
+
+	creds := model.DeviceCredentials{
+		ID:         device.ID,
+		Name:       device.Name,
+		DeviceType: device.DeviceType,
+		PrivateKey: device.PrivateKey,
+	}
+	return creds, nil
+}
+
 func GetDeviceKey(ctx context.Context, id string) (string, error) {
 	collection := MongoClient.Database("trackeroo-backend").Collection("devices")
 	_ctx := ctx
@@ -205,7 +231,7 @@ func DeleteDevice(ctx context.Context, id string) error {
 	}
 	_, err = collection.DeleteOne(_ctx, bson.M{"_id": objID})
 	if err != nil {
-		Warning("Error deleting device: %v", err)
+		logger.Warning("Error deleting device: %v", err)
 	}
 	return nil
 }

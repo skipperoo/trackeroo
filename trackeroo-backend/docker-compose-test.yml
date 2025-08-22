@@ -11,14 +11,12 @@ services:
       start_period: 10s
     secrets:
       - users_key
-    ports:
-      - "8080:8080"
     depends_on:
       mongo:
         condition: service_healthy
     environment:
       MONGO_URI: mongodb://mongo:27017/trackeroo
-      LOG_LEVEL: debug
+      LOG_LEVEL: disabled
       MQTT_HOST: localhost
       MQTT_PORT: 1883
       MQTTS_PORT: 8883
@@ -33,24 +31,14 @@ services:
       retries: 5
       start_period: 5s
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672" # AMQP
-      - "15672:15672" # Management UI
-      - "1883:1883" # MQTT
-      - "8883:8883" # MQTT
-    environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: admin123
-      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: '-rabbitmq_mqtt tcp_listeners [{"0.0.0.0",1883}]'
-    volumes:
-      - ./rabbitmq/etc:/etc/rabbitmq/
-      - ./rabbitmq/data:/var/lib/rabbitmq
-    command: >
-      bash -c "rabbitmq-plugins enable --offline rabbitmq_mqtt;
-              rabbitmq-server"
+  trackeroo-backend-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      trackeroo-backend:
+        condition: service_healthy
+
 secrets:
   users_key:
     file: secrets/users_key

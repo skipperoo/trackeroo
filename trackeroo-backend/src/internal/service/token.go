@@ -74,6 +74,7 @@ func ValidateDeviceJWT(encodedKey string, tokenString string) (bool, jwt.MapClai
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return true, claims, nil
+
 	}
 
 	return false, nil, fmt.Errorf("invalid token")
