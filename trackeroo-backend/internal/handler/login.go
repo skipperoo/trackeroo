@@ -17,14 +17,18 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
+	service.Info("Login request by: %+v", data)
 	if !service.ValidateLogin(r.Context(), data) {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		w.WriteHeader(http.StatusUnauthorized)
+
+		json.NewEncoder(w).Encode(model.Error{Error: "Unauthorized"})
 		return
 	}
 	user, _ := service.GetUserByName(r.Context(), data.Username)
 	jwtToken, claims, err := service.GenerateJWT(user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(model.Error{Error: err.Error()})
 		return
 	}
 	user.LastLogin = time.Now()

@@ -31,7 +31,7 @@ WORKDIR /app
 COPY --from=builder /app/trackeroo-backend .
 
 # Expose the port your app listens on (adjust as needed)
-EXPOSE 8080
+EXPOSE 8081
 
 # Command to run the application
-CMD ["./trackeroo-backend"]
+ENTRYPOINT ["./trackeroo-backend"]

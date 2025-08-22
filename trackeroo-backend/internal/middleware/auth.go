@@ -10,7 +10,7 @@ import (
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		service.Debug("Checking auth...")
-		valid, err := service.ValidateJWT(r.Header.Get("Authorization"), "admin")
+		valid, err := service.ValidateUserJWT(r.Header.Get("Authorization"), "admin")
 
 		w.Header().Set("Content-Type", "application/json")
 		if err != nil {
@@ -25,10 +25,7 @@ func Auth(next http.Handler) http.Handler {
 			json.NewEncoder(w).Encode(model.Error{Error: "Unauthorized!"})
 			return
 		}
-
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(model.Details{Details: "Ok"})
-
+		service.Debug("User is authenticated")
 		next.ServeHTTP(w, r)
 	})
 }

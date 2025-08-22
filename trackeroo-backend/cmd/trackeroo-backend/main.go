@@ -16,7 +16,7 @@ import (
 
 func main() {
 
-	service.InitLogger(service.DEBUG, "")
+	service.InitLogger()
 	fmt.Println(service.Art)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -35,7 +35,8 @@ func main() {
 	*/
 	service.Debug("Initializing login route")
 	loginRouter := router.NewRouter().
-		AddHandler("POST /", handler.HandleLogin)
+		AddHandler("POST /", handler.HandleLogin).
+		Finalize()
 
 	service.Debug("Initializing devices route")
 	devicesRouter := router.NewRouter().
@@ -44,7 +45,8 @@ func main() {
 		AddHandler("GET /{id}", handler.GetDevice).
 		AddHandler("PUT /{id}", handler.UpdateDevice).
 		AddHandler("DELETE /{id}", handler.DeleteDevice).
-		AddMiddleware(middleware.Auth)
+		AddMiddleware(middleware.Auth).
+		Finalize()
 
 	service.Debug("Initializing users router")
 	usersRouter := router.NewRouter().
@@ -52,9 +54,17 @@ func main() {
 		AddHandler("POST /", handler.CreateUser).
 		AddHandler("GET /{id}", handler.GetUser).
 		AddHandler("PUT /{id}", handler.UpdateUser).
-		AddHandler("DELETE /{id}", handler.DeleteUser)
-		// AddMiddleware(middleware.Auth)
+		AddHandler("DELETE /{id}", handler.DeleteUser).
+		AddMiddleware(middleware.Auth).
+		Finalize()
 
+	service.Debug("Initializing auth router")
+	authRouter := router.NewRouter().
+		AddHandler("POST /user", handler.UserAuth).
+		AddHandler("POST /vhost", handler.VhostAuth).
+		AddHandler("POST /resource", handler.ResourceAuth).
+		AddHandler("POST /topic", handler.TopicAuth).
+		Finalize()
 	/**
 	 	* Now, this is the main router:
 		* it will provide the Logging middleware for all the subroutes
@@ -68,13 +78,14 @@ func main() {
 		AddSubroute("/login/", loginRouter).
 		AddSubroute("/devices/", devicesRouter).
 		AddSubroute("/users/", usersRouter).
+		AddSubroute("/auth/", authRouter).
 		Finalize()
 
 	server := http.Server{
-		Addr:    ":8081",
+		Addr:    ":8080",
 		Handler: mainRouter,
 	}
-	service.Info("Starting on port 8081")
+	service.Info("Starting on port 8080")
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 

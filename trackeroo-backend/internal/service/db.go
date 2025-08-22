@@ -8,6 +8,7 @@ import (
 	"trackeroo-backend/internal/model"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -51,7 +52,11 @@ func GetUser(ctx context.Context, id string) (model.User, error) {
 		_ctx = context.Background()
 	}
 	user := model.User{}
-	err := collection.FindOne(_ctx, bson.M{"_id": id}).Decode(&user)
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return model.User{}, err
+	}
+	err = collection.FindOne(_ctx, bson.M{"_id": objID}).Decode(&user)
 	return user, err
 }
 
@@ -62,7 +67,7 @@ func GetUserByName(ctx context.Context, name string) (model.User, error) {
 		_ctx = context.Background()
 	}
 	user := model.User{}
-	err := collection.FindOne(_ctx, bson.M{"name": name}).Decode(&user)
+	err := collection.FindOne(_ctx, bson.M{"username": name}).Decode(&user)
 	return user, err
 }
 
@@ -108,14 +113,19 @@ func DeleteUser(ctx context.Context, id string) error {
 	return err
 }
 
-func InsertDevice(ctx context.Context, id string, device model.Device) error {
+func InsertDevice(ctx context.Context, device model.Device) (model.Device, error) {
 	collection := MongoClient.Database("trackeroo-backend").Collection("devices")
 	_ctx := ctx
 	if _ctx == nil {
 		_ctx = context.Background()
 	}
-	_, err := collection.InsertOne(_ctx, device)
-	return err
+	res, err := collection.InsertOne(_ctx, device)
+	if err != nil {
+		return model.Device{}, err
+	}
+	_id := res.InsertedID.(primitive.ObjectID).Hex()
+	dev, err := GetDevice(ctx, _id)
+	return dev, err
 }
 
 func GetDevice(ctx context.Context, id string) (model.Device, error) {
@@ -125,8 +135,30 @@ func GetDevice(ctx context.Context, id string) (model.Device, error) {
 		_ctx = context.Background()
 	}
 	device := model.Device{}
-	err := collection.FindOne(_ctx, bson.M{"_id": id}).Decode(&device)
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return model.Device{}, err
+	}
+	err = collection.FindOne(_ctx, bson.M{"_id": objID}).Decode(&device)
 	return device, err
+}
+
+func GetDeviceKey(ctx context.Context, id string) (string, error) {
+	collection := MongoClient.Database("trackeroo-backend").Collection("devices")
+	_ctx := ctx
+	if _ctx == nil {
+		_ctx = context.Background()
+	}
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return "", err
+	}
+	device := model.Device{}
+	err = collection.FindOne(_ctx, bson.M{"_id": objID}).Decode(&device)
+	if err != nil {
+		return "", err
+	}
+	return device.PrivateKey, nil
 }
 
 func GetDevices(ctx context.Context) ([]model.Device, error) {
@@ -167,8 +199,15 @@ func DeleteDevice(ctx context.Context, id string) error {
 	if _ctx == nil {
 		_ctx = context.Background()
 	}
-	_, err := collection.DeleteOne(_ctx, bson.M{"_id": id})
-	return err
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	_, err = collection.DeleteOne(_ctx, bson.M{"_id": objID})
+	if err != nil {
+		Warning("Error deleting device: %v", err)
+	}
+	return nil
 }
 
 func EnsureUsers(ctx context.Context) error {

@@ -1,8 +1,11 @@
 package service
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 	"trackeroo-backend/internal/model"
 
@@ -18,7 +21,7 @@ func GenerateJWT(user model.User) (string, jwt.MapClaims, error) {
 	}
 	jwtKey := getKey("users_key")
 	if jwtKey == nil {
-		return "", nil, fmt.Errorf("failed to get jwt key")
+		return "", nil, fmt.Errorf("Failed to get jwt key")
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
@@ -29,8 +32,12 @@ func GenerateJWT(user model.User) (string, jwt.MapClaims, error) {
 	return tokenString, claims, nil
 }
 
-func ValidateJWT(tokenString string, role string) (bool, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+func ValidateUserJWT(authHeader string, role string) (bool, error) {
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) != 2 {
+		return false, fmt.Errorf("Invalid Authorization header format")
+	}
+	token, err := jwt.Parse(parts[1], func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -48,10 +55,44 @@ func ValidateJWT(tokenString string, role string) (bool, error) {
 	return true, nil
 }
 
+func ValidateDeviceJWT(encodedKey string, tokenString string) (bool, jwt.MapClaims, error) {
+	secret, err := base64.StdEncoding.DecodeString(encodedKey)
+	if err != nil {
+		return false, nil, fmt.Errorf("invalid base64 key: %w", err)
+	}
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return false, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return secret, nil
+	})
+
+	if err != nil {
+		return false, nil, err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return true, claims, nil
+	}
+
+	return false, nil, fmt.Errorf("invalid token")
+}
+
 func getKey(key string) []byte {
 	jwtKey, err := os.ReadFile(fmt.Sprintf("/run/secrets/%s", key))
 	if err != nil {
 		return nil
 	}
 	return jwtKey
+}
+
+func GenPrivateKey() (string, error) {
+	privateKey := make([]byte, 32)
+	_, err := rand.Read(privateKey)
+	if err != nil {
+		return "", err
+	}
+	encodedKey := base64.StdEncoding.EncodeToString(privateKey)
+	return encodedKey, nil
 }

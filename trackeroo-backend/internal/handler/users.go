@@ -3,27 +3,18 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-	"trackeroo-backend/internal/model"
 	"trackeroo-backend/internal/service"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	usersCollection := service.MongoClient.Database("trakeroo-backend").Collection("users")
-	cursor, err := usersCollection.Find(ctx, bson.M{})
+	users, err := service.GetUsers(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var devices []model.Device
-	if err := cursor.All(ctx, &devices); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(devices)
+	json.NewEncoder(w).Encode(users)
 }
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {

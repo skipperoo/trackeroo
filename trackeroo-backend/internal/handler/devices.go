@@ -29,25 +29,32 @@ func GetDevices(w http.ResponseWriter, r *http.Request) {
 
 func CreateDevice(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	devicesCollection := service.MongoClient.Database("trakeroo-backend").Collection("devices")
 
 	var req model.DeviceCreation
 	var device model.Device
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(model.Error{Error: err.Error()})
 		return
 	}
 	device.Name = req.Name
 	device.Type = req.Type
 	device.CreatedAt = time.Now()
-	res, err := devicesCollection.InsertOne(ctx, device)
+	key, err := service.GenPrivateKey()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(model.Error{Error: err.Error()})
 		return
 	}
-	device.ID = res.InsertedID.(string)
+	device.PrivateKey = key
+	dev, err := service.InsertDevice(ctx, device)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(model.Error{Error: err.Error()})
+		return
+	}
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(device)
+	json.NewEncoder(w).Encode(dev)
 }
 
 func GetDevice(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +79,8 @@ func DeleteDevice(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	err := service.DeleteDevice(ctx, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(model.Error{Error: err.Error()})
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

@@ -3,12 +3,12 @@ package service
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
 type Logger struct {
 	logLevel int
-	logFile  string
 }
 
 const (
@@ -22,15 +22,30 @@ const (
 
 var logger *Logger
 
-func newLogger(logLevel int, logFile string) *Logger {
+func newLogger(logLevel int) *Logger {
 	return &Logger{
 		logLevel: logLevel,
-		logFile:  logFile,
 	}
 }
 
-func InitLogger(logLevel int, logFile string) {
-	logger = newLogger(logLevel, logFile)
+func InitLogger() {
+	logLevel := strings.ToUpper(os.Getenv("LOG_LEVEL"))
+	switch logLevel {
+	case "DEBUG":
+		logger = newLogger(DEBUG)
+	case "INFO":
+		logger = newLogger(INFO)
+	case "WARNING":
+		logger = newLogger(WARNING)
+	case "ERROR":
+		logger = newLogger(ERROR)
+	case "FATAL":
+		logger = newLogger(FATAL)
+	case "DISABLED":
+		logger = newLogger(DISABLED)
+	default:
+		logger = newLogger(INFO)
+	}
 }
 
 func getPrefixLogString(level int) string {

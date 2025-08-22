@@ -1,0 +1,7 @@
+FROM python:3.13-alpine
+
+RUN pip install --upgrade pip
+RUN pip install pytest requests python-jose
+COPY tests /tests
+WORKDIR /tests
+ENTRYPOINT ["pytest", "-v"]
