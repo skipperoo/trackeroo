@@ -1,7 +1,7 @@
 services:
   trackeroo-backend:
     build:
-      context: .
+      context: src
       dockerfile: Dockerfile
     healthcheck:
       test: nc -z localhost 8080
