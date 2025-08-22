@@ -1,0 +1,17 @@
+services:
+  trackeroo-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8081"
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/trackeroo
+  mongo:
+    image: mongo:latest
+
+secrets:
+  users_key:
+    file: secrets/users_key
