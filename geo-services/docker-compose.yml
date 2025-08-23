@@ -1,0 +1,29 @@
+services:
+  nominatim:
+    image: mediagis/nominatim:4.4
+    container_name: nominatim
+    ports:
+      - "8081:8080"
+    environment:
+      - PBF_URL=https://download.geofabrik.de/europe/italy/centro-latest.osm.pbf
+      - REPLICATION_URL=https://download.geofabrik.de/europe/italy/centro-updates
+      - NOMINATIM_PASSWORD=password
+    volumes:
+      - ./nominatim-data:/var/lib/postgresql/14/main
+
+  osrm:
+    image: osrm/osrm-backend
+    container_name: osrm
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./osrm-data:/data
+    command: >
+      sh -c "
+        if [ ! -f /data/centro-latest.osrm ]; then
+          osrm-extract -p /opt/car.lua /data/centro-latest.osm.pbf &&
+          osrm-partition /data/centro-latest.osrm &&
+          osrm-customize /data/centro-latest.osrm;
+        fi &&
+        osrm-routed --algorithm mld /data/centro-latest.osrm
+      "

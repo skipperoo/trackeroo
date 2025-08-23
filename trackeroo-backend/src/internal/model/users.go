@@ -48,5 +48,15 @@ func DefaultUsers() []User {
 		IssuedAt:     time.Now(),
 		ExpiresAt:    time.Now().Add(time.Hour * 24),
 	}
-	return []User{user1, user2, user3}
+	user4 := User{
+		ID:           "",
+		Username:     "apps",
+		Role:         "user",
+		PasswordHash: "$2b$12$8Y2URxHnBABN9G6nj0eLxO65tvty8H8NyjQd1h35dMi8KiEuZS1bG",
+		LastLogin:    time.Now(),
+		SessionToken: "",
+		IssuedAt:     time.Now(),
+		ExpiresAt:    time.Now().Add(time.Hour * 24),
+	}
+	return []User{user1, user2, user3, user4}
 }

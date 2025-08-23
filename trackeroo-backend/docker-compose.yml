@@ -25,13 +25,16 @@ services:
 
   mongo:
     image: mongo:latest
-    command: ["mongod", "--bind_ip_all", "--logpath=/dev/null"]
+    command: ["mongod", "--bind_ip_all"]
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 5s
+    volumes:
+      - ./mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
+      - ./mongo/data:/data/db
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -51,6 +54,80 @@ services:
     command: >
       bash -c "rabbitmq-plugins enable --offline rabbitmq_mqtt;
               rabbitmq-server"
+
+  tsdb:
+    image: ghcr.io/skiby7/tsdb:latest
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tracker_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    container_name: tsdb
+    environment:
+      POSTGRES_DB: tracker_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+      # Custom Postgres parameters
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+
+    volumes:
+      - ./tsdb/data:/var/lib/postgresql/data
+      - ./tsdb/initdb:/docker-entrypoint-initdb.d
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8085:80"
+    volumes:
+      - ./tsdb/pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      tsdb:
+        condition: service_healthy
+
+  test-db-ingestion:
+    build:
+      context: brokeroo
+      dockerfile: Dockerfile
+    environment:
+      MQTT_BROKER: mqtt://rabbitmq:1883
+      MQTT_CLIENT_ID: apps
+      MQTT_USERNAME: "apps"
+      MQTT_PASSWORD: "apps"
+      POSTGRES_URL: postgres://admin:administrator@tsdb:5432/tracker_db?sslmode=disable
+      TOPIC_PATTERN: j/data/+/+
+    depends_on:
+      tsdb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    depends_on:
+      tsdb:
+        condition: service_healthy
+    environment:
+      # Default admin user
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+
+      # Optional: Configure Grafana to use Postgres as its own database
+      GF_DATABASE_TYPE: postgres
+      GF_DATABASE_HOST: tsdb:5432
+      GF_DATABASE_NAME: tracker_db
+      GF_DATABASE_USER: admin
+      GF_DATABASE_PASSWORD: administrator
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana:/var/lib/grafana
 secrets:
   users_key:
     file: secrets/users_key

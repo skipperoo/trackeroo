@@ -120,11 +120,12 @@ func InsertDevice(ctx context.Context, device model.Device) (model.Device, error
 	if _ctx == nil {
 		_ctx = context.Background()
 	}
+	device.ID = model.GenDeviceID()
 	res, err := collection.InsertOne(_ctx, device)
 	if err != nil {
 		return model.Device{}, err
 	}
-	_id := res.InsertedID.(primitive.ObjectID).Hex()
+	_id := res.InsertedID.(string)
 	dev, err := GetDevice(ctx, _id)
 	return dev, err
 }
@@ -136,11 +137,8 @@ func GetDevice(ctx context.Context, id string) (model.Device, error) {
 		_ctx = context.Background()
 	}
 	device := model.Device{}
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return model.Device{}, err
-	}
-	err = collection.FindOne(_ctx, bson.M{"_id": objID}).Decode(&device)
+
+	err := collection.FindOne(_ctx, bson.M{"_id": id}).Decode(&device)
 	return device, err
 }
 
@@ -150,12 +148,9 @@ func GetDeviceCredentials(ctx context.Context, id string) (model.DeviceCredentia
 	if _ctx == nil {
 		_ctx = context.Background()
 	}
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return model.DeviceCredentials{}, err
-	}
+
 	device := model.Device{}
-	err = collection.FindOne(_ctx, bson.M{"_id": objID}).Decode(&device)
+	err := collection.FindOne(_ctx, bson.M{"_id": id}).Decode(&device)
 	if err != nil {
 		return model.DeviceCredentials{}, err
 	}
@@ -175,12 +170,9 @@ func GetDeviceKey(ctx context.Context, id string) (string, error) {
 	if _ctx == nil {
 		_ctx = context.Background()
 	}
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return "", err
-	}
+
 	device := model.Device{}
-	err = collection.FindOne(_ctx, bson.M{"_id": objID}).Decode(&device)
+	err := collection.FindOne(_ctx, bson.M{"_id": id}).Decode(&device)
 	if err != nil {
 		return "", err
 	}

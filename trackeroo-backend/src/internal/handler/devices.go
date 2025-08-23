@@ -9,21 +9,14 @@ import (
 	"trackeroo-backend/internal/config"
 	"trackeroo-backend/internal/model"
 	"trackeroo-backend/internal/service"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 func GetDevices(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	devicesCollection := service.MongoClient.Database("trakeroo-backend").Collection("devices")
-	cursor, err := devicesCollection.Find(ctx, bson.M{})
+	devices, err := service.GetDevices(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var devices []model.Device
-	if err := cursor.All(ctx, &devices); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(model.Error{Error: err.Error()})
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -102,6 +95,13 @@ func GetDeviceCredentials(w http.ResponseWriter, r *http.Request) {
 		creds.MqttPort = config.Cfg.MqttPort
 		creds.MqttMode = "insecure"
 	}
+	device, err := service.GetDevice(ctx, id)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(model.Error{Error: err.Error()})
+		return
+	}
+	creds.DeviceType = device.DeviceType
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(creds)

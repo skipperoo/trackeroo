@@ -79,8 +79,12 @@ func TopicAuth(w http.ResponseWriter, r *http.Request) {
 		Name:       r.FormValue("name"),
 		Permission: r.FormValue("permission"),
 	}
-	// service.Debug("%+v", r)
 
+	if form.Username == "apps" {
+		logger.Info("App %s authenticated for topic %s", form.Username, form.Topic)
+		fmt.Fprint(w, "allow")
+		return
+	}
 	logger.Info("Authenticating device %s for topic %s vhost %s resource %s permission %s", form.Username, form.Topic, form.Vhost, form.Resource, form.Permission)
 	if strings.Contains(form.Topic, form.Username) {
 		logger.Info("Device %s authenticated for topic %s", form.Username, form.Topic)

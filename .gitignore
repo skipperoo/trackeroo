@@ -3,3 +3,13 @@
 secrets
 .pytest_cache
 __pycache__
+trackeroo-backend/rabbitmq
+trackeroo-backend/tsdb
+*cert*
+tdevice.json
+claim.py
+status
+brockeroo
+grafana
+trackeroo-backend/mongo/data
+geo-services/*data

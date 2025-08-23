@@ -1,6 +1,8 @@
 package model
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"time"
 )
 
@@ -40,4 +42,13 @@ type DeviceCredentials struct {
 	MqttPort   int    `bson:"mqtt_port" json:"mqtt_port"`
 	MqttMode   string `bson:"mqtt_mode" json:"mqtt_mode"`
 	CACert     string `bson:"ca_cert" json:"ca_cert"`
+}
+
+func GenDeviceID() string {
+	b := make([]byte, 8) // 4 bytes → 8 hex chars
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return "trk-" + hex.EncodeToString(b)
 }
