@@ -1,7 +1,7 @@
 - machine_type: server
   name: k3s-server-cronus
   cpu: 4
-  ram: 2048
+  ram: 4096
   os_storage: 20
   longhorn_storage: 0
   networks:
@@ -16,7 +16,7 @@
 - machine_type: server
   name: k3s-server-hyperion
   cpu: 4
-  ram: 2048
+  ram: 4096
   os_storage: 20
   longhorn_storage: 0
   networks:
@@ -31,7 +31,7 @@
 - machine_type: server
   name: k3s-server-oceanus
   cpu: 4
-  ram: 2048
+  ram: 4096
   os_storage: 20
   longhorn_storage: 0
   networks:
@@ -45,10 +45,10 @@
       mac: 52:54:00:9b:6e:0b
 - machine_type: node
   name: k3s-node-hermes
-  cpu: 4
+  cpu: 6
   ram: 4096
   os_storage: 20
-  longhorn_storage: 50
+  longhorn_storage: 100
   networks:
     - net_type: direct
       source: vlan.k3s
@@ -60,10 +60,10 @@
       mac: 52:54:00:36:8c:61
 - machine_type: node
   name: k3s-node-achilles
-  cpu: 4
+  cpu: 6
   ram: 4096
   os_storage: 20
-  longhorn_storage: 50
+  longhorn_storage: 100
   networks:
     - net_type: direct
       source: vlan.k3s
@@ -75,10 +75,10 @@
       mac: 52:54:00:ca:d5:31
 - machine_type: node
   name: k3s-node-odysseus
-  cpu: 4
+  cpu: 6
   ram: 4096
   os_storage: 20
-  longhorn_storage: 50
+  longhorn_storage: 100
   networks:
     - net_type: direct
       source: vlan.k3s

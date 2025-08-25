@@ -65,6 +65,47 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(device)
 }
 
+func GetCredentials(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := r.URL.Query()
+	secureParameter := params.Get("secure")
+	secure := false
+	var caCert []byte
+	if strings.ToLower(secureParameter) == "true" {
+		secure = true
+		var err error
+		caCert, err = os.ReadFile("/certs/ca_certificate.pem")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(model.Error{Error: err.Error()})
+			return
+		}
+	}
+	devices, err := service.GetDevices(ctx)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(model.Error{Error: err.Error()})
+		return
+	}
+	credentials := make([]model.DeviceCredentials, len(devices))
+	for i, device := range devices {
+		credentials[i], _ = service.GetDeviceCredentials(ctx, device.ID)
+
+		credentials[i].MqttHost = config.Cfg.MqttHost
+		if secure {
+			credentials[i].MqttPort = config.Cfg.MqttsPort
+			credentials[i].MqttMode = "secure"
+			credentials[i].CACert = string(caCert)
+		} else {
+			credentials[i].MqttPort = config.Cfg.MqttPort
+			credentials[i].MqttMode = "insecure"
+		}
+		credentials[i].DeviceType = device.DeviceType
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(credentials)
+}
+
 func GetDeviceCredentials(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := r.URL.Query()

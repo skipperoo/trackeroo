@@ -1,7 +1,5 @@
 package trackeroo
 
-import "os"
-
 type TaskManager struct {
 	Task
 	tasks []ITask
@@ -50,5 +48,5 @@ func (tm *TaskManager) Start() {
 		task.Kill() // Maybe add wg done group
 	}
 	Millisleep(5000)
-	os.Exit(1)
+	panic("Shutdown due to watchdog")
 }

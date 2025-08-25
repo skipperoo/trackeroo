@@ -25,11 +25,14 @@ type FoodSensors struct {
 }
 
 type Payload struct {
-	TS       int64                `json:"ts"`
-	Speed    float64              `json:"speed"`
-	Position trackeroo.Coordinate `json:"position"`
-	Status   string               `json:"status"`
-	Sensors  any                  `json:"sensors,omitempty"`
+	TS         int64                `json:"ts"`
+	Speed      float64              `json:"speed"`
+	Position   trackeroo.Coordinate `json:"position"`
+	DeviceType string               `json:"device_type"`
+	Status     string               `json:"status"`
+	Sensors    any                  `json:"sensors,omitempty"`
+	Start      trackeroo.Coordinate `json:"start"`
+	End        trackeroo.Coordinate `json:"end"`
 }
 
 func normalValuablesData(position trackeroo.DrivePosition) ValuableSensors {
@@ -78,23 +81,31 @@ func alteredFoodData(position trackeroo.DrivePosition) FoodSensors {
 	}
 }
 
-func main() {
+var taskManager *trackeroo.TaskManager
 
+func Init() {
 	trackeroo.InitLogger(trackeroo.INFO, "")
 	trackeroo.InitQueue("data")
-	taskManager := trackeroo.NewTaskManager()
+	taskManager = trackeroo.NewTaskManager()
 	go taskManager.Start()
+}
+
+func Terminate() {
+	taskManager.Shutdown(0)
+}
+
+func Loop() {
 	creds, _ := trackeroo.GetCredentials()
 	deviceType := creds.DeviceType
 	routingService := trackeroo.NewRoutingService(
 		os.Getenv("GEOCODING_SERVICE_URL"),
 		os.Getenv("ROUTING_SERVICE_URL"),
 	)
-	pubPeriod := time.Second * 2
+	pubPeriod := time.Millisecond * 2000
 	if period := os.Getenv("PUBLISH_PERIOD"); period != "" {
 		p, err := strconv.Atoi(period)
 		if err == nil {
-			pubPeriod = time.Duration(p) * time.Second
+			pubPeriod = time.Duration(p) * time.Millisecond
 		}
 	}
 	lastPublish := time.Now()
@@ -104,7 +115,7 @@ func main() {
 	normalRun := true
 	for {
 		route := trackeroo.GetRoute(lastEnd)
-
+		trackeroo.Info("Route: %+v", route)
 		lastEnd = route[len(route)-1]
 		drivingSimulator, err := trackeroo.NewDrivingSimulator(routingService, route, 60, 100)
 		if err != nil {
@@ -120,13 +131,16 @@ func main() {
 			if time.Since(lastPublish) > pubPeriod || lastStatus != position.Status {
 				lastStatus = position.Status
 				payload := Payload{
-					TS:    position.Timestamp.Unix(),
-					Speed: position.Speed,
+					TS:         position.Timestamp.Unix(),
+					Speed:      position.Speed,
+					DeviceType: creds.DeviceType,
 					Position: trackeroo.Coordinate{
 						Lat: position.Lat,
 						Lng: position.Lng,
 					},
 					Status: position.Status,
+					Start:  position.Start,
+					End:    position.End,
 				}
 
 				switch deviceType {

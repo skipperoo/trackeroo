@@ -10,6 +10,8 @@ BASE_IMAGE = "debian13"
 CLOUD_INIT_PATH = "cloud-init"
 BASE_IMAGE_PATH = f"{CLOUD_INIT_PATH}/debian-13-cloud-init.qcow2"
 DRY_RUN = os.environ.get("DRY_RUN", "false").lower() == "true"
+STORAGE_POOL = "/home/gigio/Data/fast_storage/VMs/disks/k3s_cluster"
+
 class NetworkSpec(BaseModel):
     network: Optional[str] = None
     net_type: Optional[str] = None
@@ -39,9 +41,9 @@ def create_command(spec: VMSpec) -> str:
     cmd.append(f"--name {spec.name}")
     cmd.append(f"--memory {spec.ram}")
     cmd.append(f"--vcpus {spec.cpu}")
-    cmd.append(f"--disk path={spec.name}.qcow2,format=qcow2")
+    cmd.append(f"--disk path={STORAGE_POOL}/{spec.name}.qcow2,format=qcow2")
     if spec.longhorn_storage:
-        cmd.append(f"--disk path={spec.name}-longhorn.qcow2,format=qcow2")
+        cmd.append(f"--disk path={STORAGE_POOL}/{spec.name}-longhorn.qcow2,format=qcow2")
     cmd.append(f"--os-variant {BASE_IMAGE}")
     for network in spec.networks:
         if network.network:
@@ -79,12 +81,12 @@ def prepare_env(spec: VMSpec) -> bool:
         file.write(f"local-hostname: {spec.name}\n")
 
     if DRY_RUN:
-        print(f"DRY RUN: qemu-img create -f qcow2 -F qcow2 -b {BASE_IMAGE_PATH} {spec.name}.qcow2 {spec.os_storage}G")
-        print(f"DRY RUN: qemu-img create -f qcow2 {spec.name}-longhorn.qcow2 {spec.longhorn_storage}")
+        print(f"DRY RUN: qemu-img create -f qcow2 -F qcow2 -b {BASE_IMAGE_PATH} {STORAGE_POOL}/{spec.name}.qcow2 {spec.os_storage}G")
+        print(f"DRY RUN: qemu-img create -f qcow2 {STORAGE_POOL}/{spec.name}-longhorn.qcow2 {spec.longhorn_storage}")
     else:
-        os.system(f"qemu-img create -f qcow2 -F qcow2 -b {BASE_IMAGE_PATH} {spec.name}.qcow2 {spec.os_storage}G")
+        os.system(f"qemu-img create -f qcow2 -F qcow2 -b {BASE_IMAGE_PATH} {STORAGE_POOL}/{spec.name}.qcow2 {spec.os_storage}G")
         if spec.longhorn_storage:
-            os.system(f"qemu-img create -f qcow2 {spec.name}-longhorn.qcow2 {spec.longhorn_storage}G")
+            os.system(f"qemu-img create -f qcow2 {STORAGE_POOL}/{spec.name}-longhorn.qcow2 {spec.longhorn_storage}G")
     return True
 
 

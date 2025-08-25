@@ -1,0 +1,95 @@
+
+variable "vms" {
+  type = list(object({
+    machine_type      = string
+    name              = string
+    cpu               = number
+    ram               = number
+    os_storage        = number
+    longhorn_storage  = number
+    networks          = list(object({
+      network       = optional(string)
+      net_type      = optional(string)
+      source        = optional(string)
+      source_mode   = optional(string)
+      model         = optional(string)
+      ip            = optional(string)
+      mac           = string
+    }))
+  }))
+
+  default = [
+    {
+      machine_type     = "server"
+      name             = "k3s-server-cronus"
+      cpu              = 4
+      ram              = 4096
+      os_storage       = 20
+      longhorn_storage = 0
+      networks = [
+        { net_type = "direct", source = "vlan.k3s", source_mode = "bridge", model = "virtio", mac = "52:54:00:19:b9:c3" },
+        { network = "k3s-internal-network", ip = "192.168.100.10", mac = "52:54:00:19:b9:c4" }
+      ]
+    },
+    {
+      machine_type     = "server"
+      name             = "k3s-server-hyperion"
+      cpu              = 4
+      ram              = 4096
+      os_storage       = 20
+      longhorn_storage = 0
+      networks = [
+        { net_type = "direct", source = "vlan.k3s", source_mode = "bridge", model = "virtio", mac = "52:54:00:ba:81:79" },
+        { network = "k3s-internal-network", ip = "192.168.100.11", mac = "52:54:00:ba:81:7a" }
+      ]
+    },
+    {
+      machine_type     = "server"
+      name             = "k3s-server-oceanus"
+      cpu              = 4
+      ram              = 4096
+      os_storage       = 20
+      longhorn_storage = 0
+      networks = [
+        { net_type = "direct", source = "vlan.k3s", source_mode = "bridge", model = "virtio", mac = "52:54:00:9b:6e:0a" },
+        { network = "k3s-internal-network", ip = "192.168.100.12", mac = "52:54:00:9b:6e:0b" }
+      ]
+    },
+    {
+      machine_type     = "node"
+      name             = "k3s-node-hermes"
+      cpu              = 4
+      ram              = 4096
+      os_storage       = 20
+      longhorn_storage = 100
+      networks = [
+        { net_type = "direct", source = "vlan.k3s", source_mode = "bridge", model = "virtio", mac = "52:54:00:36:8c:60" },
+        { network = "k3s-internal-network", ip = "192.168.100.20", mac = "52:54:00:36:8c:61" }
+      ]
+    },
+    {
+      machine_type     = "node"
+      name             = "k3s-node-achilles"
+      cpu              = 4
+      ram              = 4096
+      os_storage       = 20
+      longhorn_storage = 100
+      networks = [
+        { net_type = "direct", source = "vlan.k3s", source_mode = "bridge", model = "virtio", mac = "52:54:00:ca:d5:30" },
+        { network = "k3s-internal-network", ip = "192.168.100.21", mac = "52:54:00:ca:d5:31" }
+      ]
+    },
+    {
+      machine_type     = "node"
+      name             = "k3s-node-odysseus"
+      cpu              = 4
+      ram              = 4096
+      os_storage       = 20
+      longhorn_storage = 100
+      networks = [
+        { net_type = "direct", source = "vlan.k3s", source_mode = "bridge", model = "virtio", mac = "52:54:00:04:d4:1a" },
+        { network = "k3s-internal-network", ip = "192.168.100.22", mac = "52:54:00:04:d4:1b" }
+      ]
+    }
+  ]
+}

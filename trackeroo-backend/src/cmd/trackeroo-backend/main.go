@@ -39,6 +39,7 @@ func main() {
 		AddHandler("GET /", handler.GetDevices).
 		AddHandler("POST /", handler.CreateDevice).
 		AddHandler("GET /{id}", handler.GetDevice).
+		AddHandler("GET /credentials", handler.GetCredentials).
 		AddHandler("GET /{id}/credentials", handler.GetDeviceCredentials).
 		AddHandler("PUT /{id}", handler.UpdateDevice).
 		AddHandler("DELETE /{id}", handler.DeleteDevice).
