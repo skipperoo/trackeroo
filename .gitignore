@@ -3,7 +3,8 @@
 secrets
 .pytest_cache
 __pycache__
-trackeroo-backend/rabbitmq
+trackeroo-backend/rabbitmq/etc/certs
+trackeroo-backend/rabbitmq/data
 trackeroo-backend/tsdb
 *cert*
 tdevice.json
