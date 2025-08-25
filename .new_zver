@@ -1,7 +1,0 @@
-======= zagent =======
-prod: v3.1.48
-stage: v3.2.1-rc3
-test: v3.2.1-rc3
-=== zagent-manager ===
-prod: v2.0.9
-======================
