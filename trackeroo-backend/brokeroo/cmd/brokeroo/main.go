@@ -116,16 +116,25 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	tag := parts[3]
 
 	// Parse JSON payload
+	var data map[string]any
+	if err := json.Unmarshal(payload, &data); err != nil {
+		log.Printf("Invalid JSON payload for topic %s: %v", topic, err)
+		return
+	}
 	var jsonPayload json.RawMessage
 	if err := json.Unmarshal(payload, &jsonPayload); err != nil {
 		log.Printf("Invalid JSON payload for topic %s: %v", topic, err)
 		return
 	}
 
-	// Get current Unix timestamp
-	tsUnix := time.Now().Unix()
+	tsUnix, ok := data["ts"].(int64)
+	if !ok {
+		tsUnix = time.Now().Unix()
+	}
 
-	if err := s.insertData(tsUnix, devID, tag, jsonPayload); err != nil {
+	ts := time.Unix(tsUnix, 0).UTC()
+
+	if err := s.insertData(tsUnix, ts, devID, tag, jsonPayload); err != nil {
 		log.Printf("Failed to insert data: %v", err)
 		return
 	}
@@ -133,14 +142,14 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	log.Printf("Successfully inserted data for dev_id: %s, tag: %s", devID, tag)
 }
 
-func (s *Service) insertData(tsUnix int64, devID, tag string, payload json.RawMessage) error {
-	query := `INSERT INTO trackeroo.data (ts_unix, dev_id, tag, payload) VALUES ($1, $2, $3, $4)`
-
-	_, err := s.db.Exec(query, tsUnix, devID, tag, payload)
+func (s *Service) insertData(tsUnix int64, ts time.Time, devID, tag string, payload json.RawMessage) error {
+	query := `INSERT INTO trackeroo.data (ts_unix, ts, dev_id, tag, payload)
+              VALUES ($1, $2, $3, $4, $5)
+              ON CONFLICT (ts, dev_id) DO NOTHING`
+	_, err := s.db.Exec(query, tsUnix, ts, devID, tag, payload)
 	if err != nil {
 		return fmt.Errorf("failed to insert into database: %w", err)
 	}
-
 	return nil
 }
 
