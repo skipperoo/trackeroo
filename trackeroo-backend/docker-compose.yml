@@ -63,6 +63,7 @@ services:
       timeout: 5s
       retries: 5
     container_name: tsdb
+    command: ["postgres", "-c", "shared_preload_libraries=timescaledb"]
     environment:
       POSTGRES_DB: tracker_db
       POSTGRES_USER: postgres
@@ -70,7 +71,6 @@ services:
 
       # Custom Postgres parameters
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
-      POSTGRES_SHARED_PRELOAD_LIBRARIES: "pg_stat_statements,timescaledb"
 
     volumes:
       - ./tsdb/data:/var/lib/postgresql/data
