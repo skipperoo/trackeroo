@@ -22,6 +22,8 @@ services:
       MQTT_HOST: localhost
       MQTT_PORT: 1883
       MQTTS_PORT: 8883
+    volumes:
+      - trackeroo-backend-data:/app/data
 
   mongo:
     image: mongo:latest
@@ -33,27 +35,24 @@ services:
       retries: 5
       start_period: 5s
     volumes:
+      - mongo-data:/data/db
       - ./mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
-      - ./mongo/data:/data/db
 
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672" # AMQP
-      - "15672:15672" # Management UI
-      - "1883:1883" # MQTT
-      - "8883:8883" # MQTT
+      - "5672:5672"
+      - "15672:15672"
+      - "1883:1883"
+      - "8883:8883"
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin123
       RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: '-rabbitmq_mqtt tcp_listeners [{"0.0.0.0",1883}]'
     volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
       - ./rabbitmq/etc:/etc/rabbitmq/
-      - ./rabbitmq/data:/var/lib/rabbitmq
-    command: >
-      bash -c "rabbitmq-plugins enable --offline rabbitmq_mqtt;
-              rabbitmq-server"
 
   tsdb:
     image: ghcr.io/skiby7/tsdb:latest
@@ -63,16 +62,14 @@ services:
       timeout: 5s
       retries: 5
     container_name: tsdb
+    command: ["postgres", "-c", "shared_preload_libraries=timescaledb"]
     environment:
       POSTGRES_DB: tracker_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-
-      # Custom Postgres parameters
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
-
     volumes:
-      - ./tsdb/data:/var/lib/postgresql/data
+      - tsdb-data:/var/lib/postgresql/data
       - ./tsdb/initdb:/docker-entrypoint-initdb.d
 
   pgadmin:
@@ -85,7 +82,7 @@ services:
     ports:
       - "8085:80"
     volumes:
-      - ./tsdb/pgadmin_data:/var/lib/pgadmin
+      - pgadmin-data:/var/lib/pgadmin
     depends_on:
       tsdb:
         condition: service_healthy
@@ -106,6 +103,7 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_started
+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -114,11 +112,8 @@ services:
       tsdb:
         condition: service_healthy
     environment:
-      # Default admin user
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin123
-
-      # Optional: Configure Grafana to use Postgres as its own database
       GF_DATABASE_TYPE: postgres
       GF_DATABASE_HOST: tsdb:5432
       GF_DATABASE_NAME: tracker_db
@@ -127,7 +122,16 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./grafana:/var/lib/grafana
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  trackeroo-backend-data:
+  mongo-data:
+  rabbitmq-data:
+  tsdb-data:
+  pgadmin-data:
+  grafana-data:
+
 secrets:
   users_key:
     file: secrets/users_key
