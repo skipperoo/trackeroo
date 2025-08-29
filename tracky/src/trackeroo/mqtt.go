@@ -193,8 +193,21 @@ func (t *TdmClient) initClient() {
 	t.client = pahoMqtt.NewClient(opts)
 }
 
-func (t *TdmClient) Publish(tag string, payload string) error {
-	token := t.client.Publish(t.topicData+"/"+tag, byte(1), true, payload)
+func (t *TdmClient) Publish(tag string, data map[string]any) error {
+	msg := map[string]any{
+		"ts":      time.Now().Format(time.RFC3339),
+		"ts_unix": time.Now().Unix(), // timestamp in secondi
+		"dev_id":  t.clientId,        // il tuo ID (trk-xxxxxx)
+		"tag":     tag,               // es: "osrm"
+		"payload": data,              // i dati veri e propri
+	}
+
+	jsonValue, err := json.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("cannot marshal payload: %w", err)
+	}
+
+	token := t.client.Publish(t.topicData+"/"+tag, byte(1), true, string(jsonValue))
 	token.Wait()
 	return token.Error()
 }

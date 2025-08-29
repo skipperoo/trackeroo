@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	_ "github.com/lib/pq"
+	"github.com/segmentio/kafka-go"
 )
 
 type Config struct {
@@ -22,6 +24,7 @@ type Config struct {
 	MQTTPassword string
 	PostgresURL  string
 	TopicPattern string
+	KafkaBroker  string
 }
 
 type MQTTData struct {
@@ -32,14 +35,17 @@ type MQTTData struct {
 }
 
 type Service struct {
-	config     *Config
-	mqttClient mqtt.Client
-	db         *sql.DB
+	config      *Config
+	mqttClient  mqtt.Client
+	db          *sql.DB
+	kafkaWriter *kafka.Writer
+	knownTopics map[string]bool /* for caching kafka topics  */
 }
 
 func NewService(config *Config) *Service {
 	return &Service{
-		config: config,
+		config:      config,
+		knownTopics: make(map[string]bool),
 	}
 }
 
@@ -54,6 +60,68 @@ func (s *Service) connectPostgres() error {
 		return fmt.Errorf("failed to ping postgres: %w", err)
 	}
 
+	return nil
+}
+
+func (s *Service) connectKafka() error {
+	s.kafkaWriter = kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{s.config.KafkaBroker},
+	})
+
+	if err := s.ensureTopicExists("health-check"); err != nil {
+		log.Printf("failed to create first topic for healt-check: %v", err)
+	}
+
+	err := s.kafkaWriter.WriteMessages(context.Background(),
+		kafka.Message{
+			Topic: "health-check",
+			Value: []byte("ping"),
+		},
+	)
+	if err != nil {
+		log.Printf("Failed to write test message to Kafka: %v", err)
+		return err
+	}
+
+	log.Println("Successfully connected to Kafka at", s.config.KafkaBroker)
+	return nil
+}
+
+func (s *Service) ensureTopicExists(topic string) error {
+
+	if s.knownTopics[topic] {
+		return nil
+	}
+
+	conn, err := kafka.Dial("tcp", s.config.KafkaBroker)
+	if err != nil {
+		return fmt.Errorf("dial broker: %w", err)
+	}
+	defer conn.Close()
+
+	controller, err := conn.Controller()
+	if err != nil {
+		return fmt.Errorf("get controller: %w", err)
+	}
+
+	controllerConn, err := kafka.Dial("tcp", fmt.Sprintf("%s:%d", controller.Host, controller.Port))
+	if err != nil {
+		return fmt.Errorf("dial controller: %w", err)
+	}
+	defer controllerConn.Close()
+
+	err = controllerConn.CreateTopics(kafka.TopicConfig{
+		Topic:             topic,
+		NumPartitions:     1,
+		ReplicationFactor: 1,
+	})
+
+	if err != nil && !strings.Contains(err.Error(), "Topic with this name already exists") {
+		return fmt.Errorf("create topic %s: %w", topic, err)
+	}
+
+	s.knownTopics[topic] = true
+	log.Printf("Topic pronto: %s", topic)
 	return nil
 }
 
@@ -124,19 +192,51 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 
 	// Get current Unix timestamp
 	tsUnix := time.Now().Unix()
+	ts := time.Now()
 
-	if err := s.insertData(tsUnix, devID, tag, jsonPayload); err != nil {
+	/* postgress */
+	if err := s.insertData(ts, tsUnix, devID, tag, jsonPayload); err != nil {
 		log.Printf("Failed to insert data: %v", err)
 		return
+	}
+
+	/* kafka */
+	kafkaTopic := sanitizeTopic(topic)
+
+	/*TODO check ctx for timeout
+	tx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err := s.kafkaWriter.WriteMessages(ctx, kafka.Message{
+	    Topic: kafkaTopic,
+	    Key:   []byte(devID),
+	    Value: payload,
+	})
+	*/
+	if err := s.ensureTopicExists(kafkaTopic); err != nil {
+		log.Printf("Errore creazione topic %s: %v", kafkaTopic, err)
+		return
+	}
+
+	err := s.kafkaWriter.WriteMessages(context.Background(),
+		kafka.Message{
+			Topic: kafkaTopic,
+			Value: payload,
+		},
+	)
+	if err != nil {
+		log.Printf("Failed to write to Kafka: %v", err)
+	} else {
+		log.Printf("Message forwarded to Kafka topic: %s", kafkaTopic)
 	}
 
 	log.Printf("Successfully inserted data for dev_id: %s, tag: %s", devID, tag)
 }
 
-func (s *Service) insertData(tsUnix int64, devID, tag string, payload json.RawMessage) error {
-	query := `INSERT INTO trackeroo.data (ts_unix, dev_id, tag, payload) VALUES ($1, $2, $3, $4)`
+func (s *Service) insertData(ts time.Time, tsUnix int64, devID, tag string, payload json.RawMessage) error {
+	query := `INSERT INTO trackeroo.data (ts, ts_unix, dev_id, tag, payload) VALUES ($1, $2, $3, $4, $5)`
 
-	_, err := s.db.Exec(query, tsUnix, devID, tag, payload)
+	_, err := s.db.Exec(query, ts, tsUnix, devID, tag, payload)
 	if err != nil {
 		return fmt.Errorf("failed to insert into database: %w", err)
 	}
@@ -155,6 +255,10 @@ func (s *Service) Start() error {
 		return err
 	}
 
+	// Connect to Kafka
+	if err := s.connectKafka(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -171,6 +275,11 @@ func (s *Service) Stop() {
 		s.db.Close()
 		log.Println("Closed PostgreSQL connection")
 	}
+
+	if s.kafkaWriter != nil {
+		s.kafkaWriter.Close()
+		log.Println("Closed Kafka writer")
+	}
 }
 
 func loadConfig() *Config {
@@ -181,6 +290,7 @@ func loadConfig() *Config {
 		MQTTPassword: getEnvOrDefault("MQTT_PASSWORD", ""),
 		PostgresURL:  getEnvOrDefault("POSTGRES_URL", "postgres://user:password@localhost/dbname?sslmode=disable"),
 		TopicPattern: getEnvOrDefault("TOPIC_PATTERN", "j/data/+/+"),
+		KafkaBroker:  getEnvOrDefault("KAFKA_BROKER", "kafka:9092"),
 	}
 }
 
@@ -189,6 +299,10 @@ func getEnvOrDefault(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func sanitizeTopic(topic string) string {
+	return strings.ReplaceAll(topic, "/", "-")
 }
 
 func main() {
