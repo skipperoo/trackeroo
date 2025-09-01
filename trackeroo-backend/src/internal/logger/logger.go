@@ -26,7 +26,7 @@ var logger *Logger
 func newLogger(logLevel int) *Logger {
 	return &Logger{
 		logLevel: logLevel,
-		logChan:  make(chan map[string]any),
+		logChan:  make(chan map[string]any, 1024),
 	}
 }
 
