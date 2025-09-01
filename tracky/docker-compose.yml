@@ -1,361 +1,79 @@
 services:
-  trk-185ed4ee37ca7c3effa0a5b2:
+  trk-18608d12c8446943ffbf2df9:
     build:
       context: src
       dockerfile: Dockerfile
     environment:
       GEOCODING_SERVICE_URL: http://localhost:8081
       ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
+      PUBLISH_PERIOD: "500"
+      PIRATE: "false"
     volumes:
-    - ./trk-185ed4ee37ca7c3effa0a5b2:/app/credentials
+      - ./trk-18608d12c8446943ffbf2df9:/app/credentials
     network_mode: host
-    restart: 'no'
-  trk-185ed4ee37ccac29287f5bfc:
+    restart: "no"
+  trk-18608d12c84d9ce75be19956:
     build:
       context: src
       dockerfile: Dockerfile
     environment:
       GEOCODING_SERVICE_URL: http://localhost:8081
       ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
+      PUBLISH_PERIOD: "500"
+      PIRATE: "false"
     volumes:
-    - ./trk-185ed4ee37ccac29287f5bfc:/app/credentials
+      - ./trk-18608d12c84d9ce75be19956:/app/credentials
     network_mode: host
-    restart: 'no'
-  trk-185ed4ee37ccdc2145feb671:
+    restart: "no"
+  trk-18608d12c845c8050d2973c1:
     build:
       context: src
       dockerfile: Dockerfile
     environment:
       GEOCODING_SERVICE_URL: http://localhost:8081
       ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
+      PUBLISH_PERIOD: "500"
+      PIRATE: "false"
     volumes:
-    - ./trk-185ed4ee37ccdc2145feb671:/app/credentials
+      - ./trk-18608d12c845c8050d2973c1:/app/credentials
     network_mode: host
-    restart: 'no'
-  trk-185ed4ee37ccfde9d6c0d6e8:
+    restart: "no"
+  trk-18608d12c84770f5153b97ef:
     build:
       context: src
       dockerfile: Dockerfile
     environment:
       GEOCODING_SERVICE_URL: http://localhost:8081
       ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
+      PUBLISH_PERIOD: "500"
+      PIRATE: "false"
     volumes:
-    - ./trk-185ed4ee37ccfde9d6c0d6e8:/app/credentials
+      - ./trk-18608d12c84770f5153b97ef:/app/credentials
     network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cd2182bfe59e58:
+    restart: "no"
+  trk-18608d12c84b469627a640d9:
     build:
       context: src
       dockerfile: Dockerfile
     environment:
       GEOCODING_SERVICE_URL: http://localhost:8081
       ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
+      PUBLISH_PERIOD: "500"
+      PIRATE: "false"
     volumes:
-    - ./trk-185ed4ee37cd2182bfe59e58:/app/credentials
+      - ./trk-18608d12c84b469627a640d9:/app/credentials
     network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cd490baea45bda:
+    restart: "no"
+  trk-18608d12c84c5151bb792931:
     build:
       context: src
       dockerfile: Dockerfile
     environment:
       GEOCODING_SERVICE_URL: http://localhost:8081
       ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
+      PUBLISH_PERIOD: "500"
+      PIRATE: "false"
     volumes:
-    - ./trk-185ed4ee37cd490baea45bda:/app/credentials
+      - ./trk-18608d12c84c5151bb792931:/app/credentials
     network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cd6ed388af77cf:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37cd6ed388af77cf:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cd9c9ae6661e2a:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37cd9c9ae6661e2a:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cdc28785bce7c3:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37cdc28785bce7c3:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cdeb517d0f7754:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37cdeb517d0f7754:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37ce0c720dd6b6a7:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37ce0c720dd6b6a7:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37ce2fdf6aa5b0c2:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37ce2fdf6aa5b0c2:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37ce5573f69f6d9a:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37ce5573f69f6d9a:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37ce7a0dfb8b1f3e:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37ce7a0dfb8b1f3e:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37ceb441c570927d:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37ceb441c570927d:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cee05aaace21f4:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37cee05aaace21f4:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cf0317a6b1369e:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37cf0317a6b1369e:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cf279576ae7859:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37cf279576ae7859:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cf4ae833197cd7:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37cf4ae833197cd7:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cf703dc5aaff65:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37cf703dc5aaff65:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cf9e30f1e863d3:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37cf9e30f1e863d3:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cfc76e9abfc570:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37cfc76e9abfc570:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37cff0467daf9583:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37cff0467daf9583:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37d0145f6f8c7cbc:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37d0145f6f8c7cbc:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37d03b0718bd5337:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37d03b0718bd5337:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37d05c72bf5fa09b:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37d05c72bf5fa09b:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37d07d379e9bbf9a:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37d07d379e9bbf9a:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37d0a1a3e172b57e:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37d0a1a3e172b57e:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37d0d4ffb88e9b5d:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37d0d4ffb88e9b5d:/app/credentials
-    network_mode: host
-    restart: 'no'
-  trk-185ed4ee37d10d5563bdc108:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: '200'
-    volumes:
-    - ./trk-185ed4ee37d10d5563bdc108:/app/credentials
-    network_mode: host
-    restart: 'no'
+    restart: "no"
