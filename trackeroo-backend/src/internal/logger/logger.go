@@ -9,6 +9,7 @@ import (
 
 type Logger struct {
 	logLevel int
+	logChan  chan map[string]any
 }
 
 const (
@@ -25,7 +26,29 @@ var logger *Logger
 func newLogger(logLevel int) *Logger {
 	return &Logger{
 		logLevel: logLevel,
+		logChan:  make(chan map[string]any),
 	}
+}
+
+func (l *Logger) run() {
+	for msg := range l.logChan {
+		level, ok := msg["log_level"].(int)
+		if !ok {
+			continue
+		}
+		if level <= l.logLevel {
+			continue
+		}
+		message, ok := msg["message"].(string)
+		if !ok {
+			continue
+		}
+		fmt.Printf("%s %s", getPrefixLogString(level), message)
+	}
+}
+
+func (l Logger) close() {
+	close(l.logChan)
 }
 
 func InitLogger() {
@@ -46,6 +69,11 @@ func InitLogger() {
 	default:
 		logger = newLogger(INFO)
 	}
+	go logger.run()
+}
+
+func CloseLogger() {
+	logger.close()
 }
 
 func getPrefixLogString(level int) string {
@@ -65,27 +93,43 @@ func getPrefixLogString(level int) string {
 }
 
 func Debug(fmtStr string, args ...any) {
-	if logger.logLevel <= DEBUG {
-		fmt.Printf(getPrefixLogString(DEBUG)+fmtStr+"\n", args...)
+	logger.logChan <- map[string]any{
+		"log_level": DEBUG,
+		"message":   fmt.Sprintf(fmtStr+"\n", args...),
 	}
+	// if logger.logLevel <= DEBUG {
+	// 	fmt.Printf(getPrefixLogString(DEBUG)+fmtStr+"\n", args...)
+	// }
 }
 
 func Info(fmtStr string, args ...any) {
-	if logger.logLevel <= INFO {
-		fmt.Printf(getPrefixLogString(INFO)+fmtStr+"\n", args...)
+	logger.logChan <- map[string]any{
+		"log_level": INFO,
+		"message":   fmt.Sprintf(fmtStr+"\n", args...),
 	}
+	// if logger.logLevel <= INFO {
+	// 	fmt.Printf(getPrefixLogString(INFO)+fmtStr+"\n", args...)
+	// }
 }
 
 func Warning(fmtStr string, args ...any) {
-	if logger.logLevel <= WARNING {
-		fmt.Printf(getPrefixLogString(WARNING)+fmtStr+"\n", args...)
+	logger.logChan <- map[string]any{
+		"log_level": WARNING,
+		"message":   fmt.Sprintf(fmtStr+"\n", args...),
 	}
+	// if logger.logLevel <= WARNING {
+	// 	fmt.Printf(getPrefixLogString(WARNING)+fmtStr+"\n", args...)
+	// }
 }
 
 func Error(fmtStr string, args ...any) {
-	if logger.logLevel <= ERROR {
-		fmt.Printf(getPrefixLogString(ERROR)+fmtStr+"\n", args...)
+	logger.logChan <- map[string]any{
+		"log_level": ERROR,
+		"message":   fmt.Sprintf(fmtStr+"\n", args...),
 	}
+	// if logger.logLevel <= ERROR {
+	// 	fmt.Printf(getPrefixLogString(ERROR)+fmtStr+"\n", args...)
+	// }
 }
 
 func Fatal(fmtStr string, args ...any) {

@@ -19,6 +19,7 @@ import (
 func main() {
 
 	logger.InitLogger()
+	defer logger.CloseLogger()
 	fmt.Println(service.Art)
 	config.LoadConfig()
 

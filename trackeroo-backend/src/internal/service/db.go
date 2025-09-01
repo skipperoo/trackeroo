@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"trackeroo-backend/internal/config"
 	"trackeroo-backend/internal/logger"
@@ -15,6 +16,12 @@ import (
 )
 
 var MongoClient *mongo.Client
+
+var keysCache = NewSimpleCache()
+var devicesCache = NewSimpleCache()
+var credentialsCache = NewSimpleCache()
+var usersCache = NewSimpleCache()
+var isUserCache = NewSimpleCache()
 
 func InitDb(ctx context.Context) error {
 	var err error
@@ -47,6 +54,13 @@ func InsertUser(ctx context.Context, user model.User) error {
 }
 
 func GetUser(ctx context.Context, id string) (model.User, error) {
+	cacheEntry := usersCache.Get(id)
+	if cacheEntry != nil {
+		user, ok := cacheEntry.(model.User)
+		if ok {
+			return user, nil
+		}
+	}
 	collection := MongoClient.Database("trackeroo-backend").Collection("users")
 	_ctx := ctx
 	if _ctx == nil {
@@ -58,10 +72,21 @@ func GetUser(ctx context.Context, id string) (model.User, error) {
 		return model.User{}, err
 	}
 	err = collection.FindOne(_ctx, bson.M{"_id": objID}).Decode(&user)
+	usersCache.Set(id, user)
 	return user, err
 }
 
 func GetUserByName(ctx context.Context, name string) (model.User, error) {
+	if val, ok := isUserCache.Get(name).(bool); ok && !val {
+		return model.User{}, fmt.Errorf("%s is not a user", name)
+	}
+	cacheEntry := usersCache.Get(name)
+	if cacheEntry != nil {
+		user, ok := cacheEntry.(model.User)
+		if ok {
+			return user, nil
+		}
+	}
 	collection := MongoClient.Database("trackeroo-backend").Collection("users")
 	_ctx := ctx
 	if _ctx == nil {
@@ -69,6 +94,12 @@ func GetUserByName(ctx context.Context, name string) (model.User, error) {
 	}
 	user := model.User{}
 	err := collection.FindOne(_ctx, bson.M{"username": name}).Decode(&user)
+	if err == nil {
+		usersCache.Set(name, user)
+		isUserCache.Set(name, true)
+	} else {
+		isUserCache.Set(name, false)
+	}
 	return user, err
 }
 
@@ -101,6 +132,8 @@ func UpdateUser(ctx context.Context, user model.User) error {
 		_ctx = context.Background()
 	}
 	_, err := collection.UpdateOne(_ctx, bson.M{"_id": user.ID}, bson.M{"$set": user})
+	usersCache.Invalidate(user.ID)
+	usersCache.Invalidate(user.Username)
 	return err
 }
 
@@ -111,6 +144,7 @@ func DeleteUser(ctx context.Context, id string) error {
 		_ctx = context.Background()
 	}
 	_, err := collection.DeleteOne(_ctx, bson.M{"_id": id})
+	usersCache.Invalidate(id)
 	return err
 }
 
@@ -143,6 +177,14 @@ func GetDevice(ctx context.Context, id string) (model.Device, error) {
 }
 
 func GetDeviceCredentials(ctx context.Context, id string) (model.DeviceCredentials, error) {
+	cacheEntry := credentialsCache.Get(id)
+	if cacheEntry != nil {
+		creds, ok := cacheEntry.(model.DeviceCredentials)
+		if ok {
+			return creds, nil
+		}
+	}
+
 	collection := MongoClient.Database("trackeroo-backend").Collection("devices")
 	_ctx := ctx
 	if _ctx == nil {
@@ -161,10 +203,16 @@ func GetDeviceCredentials(ctx context.Context, id string) (model.DeviceCredentia
 		DeviceType: device.DeviceType,
 		PrivateKey: device.PrivateKey,
 	}
+	credentialsCache.Set(id, creds)
 	return creds, nil
 }
 
 func GetDeviceKey(ctx context.Context, id string) (string, error) {
+	key := keysCache.Get(id)
+	if key != nil {
+		return key.(string), nil
+	}
+
 	collection := MongoClient.Database("trackeroo-backend").Collection("devices")
 	_ctx := ctx
 	if _ctx == nil {
@@ -176,7 +224,9 @@ func GetDeviceKey(ctx context.Context, id string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return device.PrivateKey, nil
+	key = device.PrivateKey
+	keysCache.Set(id, key)
+	return key.(string), nil
 }
 
 func GetDevices(ctx context.Context) ([]model.Device, error) {
@@ -208,6 +258,8 @@ func UpdateDevice(ctx context.Context, id string, device model.Device) error {
 		_ctx = context.Background()
 	}
 	_, err := collection.UpdateOne(_ctx, bson.M{"_id": id}, bson.M{"$set": device})
+
+	devicesCache.Invalidate(id)
 	return err
 }
 
@@ -225,6 +277,7 @@ func DeleteDevice(ctx context.Context, id string) error {
 	if err != nil {
 		logger.Warning("Error deleting device: %v", err)
 	}
+	devicesCache.Invalidate(id)
 	return nil
 }
 
