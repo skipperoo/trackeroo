@@ -78,6 +78,7 @@ func (s *Service) connectKafka() error {
 			Value: []byte("ping"),
 		},
 	)
+
 	if err != nil {
 		log.Printf("Failed to write test message to Kafka: %v", err)
 		return err
@@ -203,31 +204,23 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	/* kafka */
 	kafkaTopic := sanitizeTopic(topic)
 
-	/*TODO check ctx for timeout
-	tx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	err := s.kafkaWriter.WriteMessages(ctx, kafka.Message{
-	    Topic: kafkaTopic,
-	    Key:   []byte(devID),
-	    Value: payload,
-	})
-	*/
 	if err := s.ensureTopicExists(kafkaTopic); err != nil {
 		log.Printf("Errore creazione topic %s: %v", kafkaTopic, err)
 		return
-	}
+	} else {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) /* 5 second timeout */
+		defer cancel()
 
-	err := s.kafkaWriter.WriteMessages(context.Background(),
-		kafka.Message{
+		err := s.kafkaWriter.WriteMessages(ctx, kafka.Message{
 			Topic: kafkaTopic,
 			Value: payload,
-		},
-	)
-	if err != nil {
-		log.Printf("Failed to write to Kafka: %v", err)
-	} else {
-		log.Printf("Message forwarded to Kafka topic: %s", kafkaTopic)
+		})
+
+		if err != nil {
+			log.Printf("Failed to write to Kafka: %v", err)
+		} else {
+			log.Printf("Message forwarded to Kafka topic: %s", kafkaTopic)
+		}
 	}
 
 	log.Printf("Successfully inserted data for dev_id: %s, tag: %s", devID, tag)
@@ -306,7 +299,7 @@ func sanitizeTopic(topic string) string {
 }
 
 func main() {
-	log.Println("Starting MQTT to PostgreSQL service...")
+	log.Println("Starting MQTT to Kafka and PostgreSQL service...")
 
 	config := loadConfig()
 	service := NewService(config)

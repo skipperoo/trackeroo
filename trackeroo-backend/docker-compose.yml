@@ -98,6 +98,7 @@ services:
       MQTT_PASSWORD: "apps"
       POSTGRES_URL: postgres://admin:administrator@tsdb:5432/tracker_db?sslmode=disable
       TOPIC_PATTERN: j/data/+/+
+      KAFKA_BROKER: kafka:9092
     depends_on:
       kafka: 
         condition: service_started
