@@ -53,6 +53,9 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
       - ./rabbitmq/etc:/etc/rabbitmq/
+    command: >
+      bash -c "rabbitmq-plugins enable --offline rabbitmq_mqtt;
+              rabbitmq-server"
 
   tsdb:
     image: ghcr.io/skiby7/tsdb:latest
@@ -145,6 +148,45 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT 
     depends_on:
       - zookeeper
+
+  flink-jobmanager:
+    image: flink:1.20-scala_2.12
+    container_name: flink-jobmanager
+    ports:
+      - "8081:8081" # dashboard web di Flink
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+    depends_on:
+      - kafka
+      - tsdb
+
+  flink-taskmanager:
+    image: flink:1.20-scala_2.12
+    container_name: flink-taskmanager
+    command: taskmanager
+    scale: 1
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 2
+    depends_on:
+      - flink-jobmanager
+
+  flink-job:
+    build:
+      context: ./flink_job
+      dockerfile: Dockerfile
+    depends_on:
+      - flink-jobmanager
+      - flink-taskmanager
+      - kafka
+      - tsdb
+    environment:
+      - FLINK_PARALLELISM=2
 
 volumes:
   trackeroo-backend-data:
