@@ -22,19 +22,29 @@ import java.util.regex.Pattern;
 
 public class AggregatorJob {
 
+    public static class Coordinate {
+        public double lat;
+        public double lon;
+    }
+
+    public static class Payload {
+        public long ts;
+        public double speed;
+        public Coordinate position;
+        public String device_type;
+        public String status;
+        public Object sensors; // può essere Map<String,Object> se vuoi più tipizzato
+        public Coordinate start;
+        public Coordinate end;
+    }
+    
     public static class Envelope {
         public long ts_unix;
         public String ts;
         public String dev_id;
         public String tag;
         public Payload payload;
-    }
-
-    public static class Payload {
-        public long ts;
-        public double speed;
-        public Object sensors;
-    }
+    } 
 
     public static class AggregatedRecord {
         public long ts_unix;
@@ -91,13 +101,13 @@ public class AggregatorJob {
             return valid;
         }).setParallelism(1);  // parallelism 1 per debug facile
 
-        // --- 1️⃣ DEBUG RAW KAFKA ---
+        // DEBUG RAW KAFKA 
         DataStream<String> debuggedStream = rawStream.map(value -> {
             System.out.printf(">>> [KAFKA_RAW] %s | Message length: %d%n", value, value.length());
             return value;
         }).setParallelism(1);
 
-        // --- 2️⃣ PARSING ---
+        // PARSING 
         DataStream<Envelope> parsed = debuggedStream.map(value -> {
             try {
                 Envelope envObj = mapper.readValue(value, Envelope.class);
