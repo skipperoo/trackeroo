@@ -26,7 +26,7 @@ func UserAuth(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "deny")
 		return
 	}
-	logger.Info("Authenticating device: %s ***", form.Username)
+	logger.Debug("Authenticating device: %s ***", form.Username)
 	_, err := service.GetUserByName(ctx, form.Username)
 	if err == nil {
 		logger.Info("Found admin user %s, validating...", form.Username)
@@ -35,7 +35,7 @@ func UserAuth(w http.ResponseWriter, r *http.Request) {
 			Password: form.Password,
 		}
 		valid := service.ValidateLogin(ctx, login)
-		logger.Info("Valid: %v", valid)
+		logger.Debug("Valid: %v", valid)
 		if !valid {
 			fmt.Fprint(w, "deny")
 			return
@@ -59,7 +59,7 @@ func UserAuth(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	logger.Info("Device %s authenticated", form.Username)
+	logger.Debug("Device %s authenticated", form.Username)
 	fmt.Fprint(w, "allow")
 }
 
@@ -81,17 +81,17 @@ func TopicAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if form.Username == "apps" {
-		logger.Info("App %s authenticated for topic %s", form.Username, form.Topic)
+		logger.Debug("App %s authenticated for topic %s", form.Username, form.Topic)
 		fmt.Fprint(w, "allow")
 		return
 	}
-	logger.Info("Authenticating device %s for topic %s vhost %s resource %s permission %s", form.Username, form.Topic, form.Vhost, form.Resource, form.Permission)
+	logger.Debug("Authenticating device %s for topic %s vhost %s resource %s permission %s", form.Username, form.Topic, form.Vhost, form.Resource, form.Permission)
 	if strings.Contains(form.Topic, form.Username) {
-		logger.Info("Device %s authenticated for topic %s", form.Username, form.Topic)
+		logger.Debug("Device %s authenticated for topic %s", form.Username, form.Topic)
 		fmt.Fprint(w, "allow")
 		return
 	}
-	logger.Info("Device %s not authenticated for topic %s", form.Username, form.Topic)
+	logger.Debug("Device %s not authenticated for topic %s", form.Username, form.Topic)
 	fmt.Fprint(w, "deny")
 }
 

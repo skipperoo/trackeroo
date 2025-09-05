@@ -1,3 +1,4 @@
+// Package service provides access to DB, cache, login validation and redis.
 package service
 
 import (
@@ -20,8 +21,5 @@ func ValidateLogin(ctx context.Context, data model.Login) bool {
 	}
 	logger.Debug("Checking login information for: %s", user.Username)
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(data.Password))
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
