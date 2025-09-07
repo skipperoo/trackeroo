@@ -1,5 +1,6 @@
 services:
   trackeroo-backend:
+    restart: no
     build:
       context: src
       dockerfile: Dockerfile
@@ -25,6 +26,7 @@ services:
 
   mongo:
     image: mongo:latest
+    restart: no
     command: ["mongod", "--bind_ip_all"]
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
@@ -38,6 +40,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
+    restart: no
     container_name: rabbitmq
     ports:
       - "5672:5672" # AMQP
@@ -56,6 +59,7 @@ services:
               rabbitmq-server"
 
   tsdb:
+    restart: no
     image: ghcr.io/skiby7/tsdb:latest
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d tracker_db"]
@@ -79,7 +83,7 @@ services:
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pgadmin
-    restart: always
+    restart: no
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -92,6 +96,7 @@ services:
         condition: service_healthy
 
   test-db-ingestion:
+    restart: no
     build:
       context: brokeroo
       dockerfile: Dockerfile
@@ -107,10 +112,11 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_started
+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
-    restart: unless-stopped
+    restart: no
     depends_on:
       tsdb:
         condition: service_healthy

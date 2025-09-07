@@ -29,6 +29,9 @@ func main() {
 		logger.Fatal(err.Error())
 	}
 
+	service.InitConnectivityCache()
+	defer service.DeinitConnectivityCache()
+
 	logger.Debug("Initializing login route")
 	loginRouter := router.NewRouter().
 		AddHandler("POST /", handler.HandleLogin).

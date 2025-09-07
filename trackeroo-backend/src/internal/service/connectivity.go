@@ -24,10 +24,7 @@ type DeviceStatus struct {
 	LastIP            string
 }
 
-func getRedisClient() (*redis.Client, *SimpleCache) {
-	if useFallback {
-		return nil, fallbackCache
-	}
+func InitConnectivityCache() {
 	ctx := context.Background()
 	if redisClient == nil {
 		options := redis.Options{
@@ -44,6 +41,21 @@ func getRedisClient() (*redis.Client, *SimpleCache) {
 	if fallbackCache == nil {
 		fallbackCache = NewSimpleCache()
 	}
+}
+
+func DeinitConnectivityCache() {
+	if !useFallback {
+		redisClient.Close()
+	}
+}
+
+func getRedisClient() (*redis.Client, *SimpleCache) {
+	if useFallback {
+		return nil, fallbackCache
+	}
+
+	// Always returning the fallbackCache so that it can be used
+	// if something goes wrong with redis
 	return redisClient, fallbackCache
 }
 
