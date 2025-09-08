@@ -124,7 +124,8 @@ func SetDeviceStatus(ctx context.Context, devID, ip string, timestamp time.Time,
 		} else {
 			data, err = getLastRedisKey(ctx, rdb, devID, "last_connection")
 		}
-		if err != nil {
+
+		if err == nil {
 			i, err := strconv.ParseInt(data, 10, 64)
 			if err == nil {
 				t = time.Unix(i, 0)
@@ -135,6 +136,7 @@ func SetDeviceStatus(ctx context.Context, devID, ip string, timestamp time.Time,
 				}
 			}
 		}
+
 		rdb.HSet(ctx, devID, structToMap(status))
 	} else {
 		data := fbc.Get(devID)

@@ -123,6 +123,7 @@ func runRabbitWatcher(ctx context.Context) {
 					time.Sleep(5 * time.Second)
 					break loop
 				}
+				msg.Ack(false)
 
 				// Parse and handle event
 

@@ -30,11 +30,7 @@ func UserAuth(w http.ResponseWriter, r *http.Request) {
 	_, err := service.GetUserByName(ctx, form.Username)
 	if err == nil {
 		logger.Info("Found admin user %s, validating...", form.Username)
-		login := model.Login{
-			Username: form.Username,
-			Password: form.Password,
-		}
-		valid := service.ValidateLogin(ctx, login)
+		valid := service.ValidateLogin(ctx, form)
 		logger.Debug("Valid: %v", valid)
 		if !valid {
 			fmt.Fprint(w, "deny")

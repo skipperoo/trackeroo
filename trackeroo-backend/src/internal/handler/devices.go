@@ -128,10 +128,7 @@ func GetDeviceCredentials(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := r.URL.Query()
 	secureParameter := params.Get("secure")
-	secure := false
-	if strings.ToLower(secureParameter) == "true" {
-		secure = true
-	}
+	secure := strings.ToLower(secureParameter) == "true"
 	id := r.PathValue("id")
 	creds, err := service.GetDeviceCredentials(ctx, id)
 	if err != nil {

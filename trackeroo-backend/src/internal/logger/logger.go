@@ -36,7 +36,7 @@ func (l *Logger) run() {
 		if !ok {
 			continue
 		}
-		if level <= l.logLevel {
+		if level < l.logLevel {
 			continue
 		}
 		message, ok := msg["message"].(string)
@@ -53,6 +53,7 @@ func (l Logger) close() {
 
 func InitLogger() {
 	logLevel := strings.ToUpper(os.Getenv("LOG_LEVEL"))
+	fmt.Println("######", logLevel)
 	switch logLevel {
 	case "DEBUG":
 		logger = newLogger(DEBUG)
