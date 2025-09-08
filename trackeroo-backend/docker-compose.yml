@@ -17,12 +17,26 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       MONGO_URI: mongodb://mongo:27017/trackeroo
-      LOG_LEVEL: debug
+      LOG_LEVEL: DEBUG
       MQTT_HOST: localhost
       MQTT_PORT: 1883
       MQTTS_PORT: 8883
+
+  redis:
+    image: redis:8.2.1-alpine
+    volumes:
+      - ./redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: no
 
   mongo:
     image: mongo:latest

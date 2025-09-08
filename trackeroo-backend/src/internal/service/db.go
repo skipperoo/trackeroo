@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
-
 	"trackeroo-backend/internal/config"
 	"trackeroo-backend/internal/logger"
 	"trackeroo-backend/internal/model"
@@ -17,13 +15,13 @@ import (
 
 var MongoClient *mongo.Client
 
-var keysCache = NewSimpleCache()
-var devicesCache = NewSimpleCache()
-var credentialsCache = NewSimpleCache()
-var usersCache = NewSimpleCache()
-var isUserCache = NewSimpleCache()
+var (
+	keysCache        = NewSimpleCache()
+	devicesCache     = NewSimpleCache()
+	credentialsCache = NewSimpleCache()
+)
 
-func InitDb(ctx context.Context) error {
+func InitDB(ctx context.Context) error {
 	var err error
 	mongoURI := config.Cfg.MongoUri
 	if mongoURI == "" {
@@ -31,15 +29,10 @@ func InitDb(ctx context.Context) error {
 	}
 
 	MongoClient, err = mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
-	if err != nil {
-		return err
-	}
-
-	err = EnsureUsers(ctx)
 	return err
 }
 
-func CloseDb(ctx context.Context) error {
+func CloseDB(ctx context.Context) error {
 	return MongoClient.Disconnect(ctx)
 }
 
@@ -54,13 +47,6 @@ func InsertUser(ctx context.Context, user model.User) error {
 }
 
 func GetUser(ctx context.Context, id string) (model.User, error) {
-	cacheEntry := usersCache.Get(id)
-	if cacheEntry != nil {
-		user, ok := cacheEntry.(model.User)
-		if ok {
-			return user, nil
-		}
-	}
 	collection := MongoClient.Database("trackeroo-backend").Collection("users")
 	_ctx := ctx
 	if _ctx == nil {
@@ -72,21 +58,10 @@ func GetUser(ctx context.Context, id string) (model.User, error) {
 		return model.User{}, err
 	}
 	err = collection.FindOne(_ctx, bson.M{"_id": objID}).Decode(&user)
-	usersCache.Set(id, user)
 	return user, err
 }
 
 func GetUserByName(ctx context.Context, name string) (model.User, error) {
-	if val, ok := isUserCache.Get(name).(bool); ok && !val {
-		return model.User{}, fmt.Errorf("%s is not a user", name)
-	}
-	cacheEntry := usersCache.Get(name)
-	if cacheEntry != nil {
-		user, ok := cacheEntry.(model.User)
-		if ok {
-			return user, nil
-		}
-	}
 	collection := MongoClient.Database("trackeroo-backend").Collection("users")
 	_ctx := ctx
 	if _ctx == nil {
@@ -94,12 +69,6 @@ func GetUserByName(ctx context.Context, name string) (model.User, error) {
 	}
 	user := model.User{}
 	err := collection.FindOne(_ctx, bson.M{"username": name}).Decode(&user)
-	if err == nil {
-		usersCache.Set(name, user)
-		isUserCache.Set(name, true)
-	} else {
-		isUserCache.Set(name, false)
-	}
 	return user, err
 }
 
@@ -132,8 +101,6 @@ func UpdateUser(ctx context.Context, user model.User) error {
 		_ctx = context.Background()
 	}
 	_, err := collection.UpdateOne(_ctx, bson.M{"_id": user.ID}, bson.M{"$set": user})
-	usersCache.Invalidate(user.ID)
-	usersCache.Invalidate(user.Username)
 	return err
 }
 
@@ -144,7 +111,6 @@ func DeleteUser(ctx context.Context, id string) error {
 		_ctx = context.Background()
 	}
 	_, err := collection.DeleteOne(_ctx, bson.M{"_id": id})
-	usersCache.Invalidate(id)
 	return err
 }
 
@@ -278,23 +244,5 @@ func DeleteDevice(ctx context.Context, id string) error {
 		logger.Warning("Error deleting device: %v", err)
 	}
 	devicesCache.Invalidate(id)
-	return nil
-}
-
-func EnsureUsers(ctx context.Context) error {
-	_ctx := ctx
-	if _ctx == nil {
-		_ctx = context.Background()
-	}
-	users := model.DefaultUsers()
-	for _, user := range users {
-		/* If the error is nil it means the user already exists */
-		if _, err := GetUserByName(_ctx, user.Username); err == nil {
-			continue
-		}
-		if err := InsertUser(_ctx, user); err != nil {
-			return err
-		}
-	}
 	return nil
 }

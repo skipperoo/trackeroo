@@ -15,15 +15,17 @@ const (
 )
 
 type DeviceStatus struct {
-	Connected   bool      `bson:"connected" json:"connected"`
-	LastMessage time.Time `bson:"last_message" json:"last_message"`
+	Connected         bool      `json:"connected"`
+	LastConnection    time.Time `json:"last_connection"`
+	LastDisconnection time.Time `json:"last_disconnection"`
+	LastIP            string    `json:"last_ip"`
 }
 
 type Device struct {
 	ID         string       `bson:"_id,omitempty" json:"id"`
 	Name       string       `bson:"name" json:"name"`
-	Status     DeviceStatus `bson:"status" json:"status"`
 	DeviceType string       `bson:"device_type" json:"device_type"`
+	Status     DeviceStatus `json:"status"`
 	PrivateKey string       `bson:"private_key" json:"private_key"`
 	CreatedAt  time.Time    `bson:"created_at" json:"created_at"`
 }
@@ -45,7 +47,7 @@ type DeviceCredentials struct {
 }
 
 func GenDeviceID() string {
-	b := make([]byte, 8) // 4 bytes → 8 hex chars
+	b := make([]byte, 8) // 8 bytes → 16 hex chars
 	_, err := rand.Read(b)
 	if err != nil {
 		panic(err)

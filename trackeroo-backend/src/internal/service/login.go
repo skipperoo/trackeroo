@@ -21,5 +21,6 @@ func ValidateLogin(ctx context.Context, data model.Login) bool {
 	}
 	logger.Debug("Checking login information for: %s", user.Username)
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(data.Password))
+	logger.Warning("Failed to authenticate %s: %v", data.Username, err)
 	return err == nil
 }

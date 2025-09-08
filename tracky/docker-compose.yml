@@ -6,74 +6,9 @@ services:
     environment:
       GEOCODING_SERVICE_URL: http://localhost:8081
       ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: "500"
-      PIRATE: "false"
+      PUBLISH_PERIOD: '500'
+      PIRATE: 'false'
     volumes:
-      - ./trk-18608d12c8446943ffbf2df9:/app/credentials
+    - ./trk-18608d12c8446943ffbf2df9:/app/credentials
     network_mode: host
-    restart: "no"
-  trk-18608d12c84d9ce75be19956:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: "500"
-      PIRATE: "false"
-    volumes:
-      - ./trk-18608d12c84d9ce75be19956:/app/credentials
-    network_mode: host
-    restart: "no"
-  trk-18608d12c845c8050d2973c1:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: "500"
-      PIRATE: "false"
-    volumes:
-      - ./trk-18608d12c845c8050d2973c1:/app/credentials
-    network_mode: host
-    restart: "no"
-  trk-18608d12c84770f5153b97ef:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: "500"
-      PIRATE: "false"
-    volumes:
-      - ./trk-18608d12c84770f5153b97ef:/app/credentials
-    network_mode: host
-    restart: "no"
-  trk-18608d12c84b469627a640d9:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: "500"
-      PIRATE: "false"
-    volumes:
-      - ./trk-18608d12c84b469627a640d9:/app/credentials
-    network_mode: host
-    restart: "no"
-  trk-18608d12c84c5151bb792931:
-    build:
-      context: src
-      dockerfile: Dockerfile
-    environment:
-      GEOCODING_SERVICE_URL: http://localhost:8081
-      ROUTING_SERVICE_URL: http://localhost:5000
-      PUBLISH_PERIOD: "500"
-      PIRATE: "false"
-    volumes:
-      - ./trk-18608d12c84c5151bb792931:/app/credentials
-    network_mode: host
-    restart: "no"
+    restart: 'no'

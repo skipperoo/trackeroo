@@ -1,5 +1,42 @@
 db = db.getSiblingDB("trackeroo-backend");
-
+db.users.insertMany([
+  {
+    username: "leonardo",
+    role: "admin",
+    password_hash: "$2b$12$PHQyHC3QX7hSaSNk3otnJe90Htsf5nIqNeqSMKCWrmCHwbDvEUrwm",
+    last_login: new Date(),
+    session_token: "",
+    issued_at: new Date(),
+    expires_at: new Date(Date.now() + 24*60*60*1000) // 24 hours from now
+  },
+  {
+    username: "simone",
+    role: "admin",
+    password_hash: "$2b$12$CCBM/Xy54gPzHkJyMWovm.fTmUUqjg73GWb1cBDTKPaMU4JsfSXd6",
+    last_login: new Date(),
+    session_token: "",
+    issued_at: new Date(),
+    expires_at: new Date(Date.now() + 24*60*60*1000)
+  },
+  {
+    username: "admin",
+    role: "admin",
+    password_hash: "$2b$12$3CaXyt.SvoUeQiR5TAFdReV4AjnAlNe46/oL6SBd75souC5SvKLAu",
+    last_login: new Date(),
+    session_token: "",
+    issued_at: new Date(),
+    expires_at: new Date(Date.now() + 24*60*60*1000)
+  },
+  {
+    username: "apps",
+    role: "admin",
+    password_hash: "$2b$12$ZhKtxqqkFfrcEXiKjgvM0.BqM9sVXTEZAQCP5/qhRxMBZn2cWWbJ6",
+    last_login: new Date(),
+    session_token: "",
+    issued_at: new Date(),
+    expires_at: new Date(Date.now() + 24*60*60*1000)
+  }
+]);
 db.devices.insertMany([
   {
     _id: "trk-18608d12c8414acfcb9165b1",

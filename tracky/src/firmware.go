@@ -192,5 +192,9 @@ func Loop() {
 		}
 		/* Routing terminated, waiting before next route */
 		time.Sleep(time.Second * 120)
+		if !normalRun {
+			/* Wait some more */
+			time.Sleep(time.Second * 120)
+		}
 	}
 }

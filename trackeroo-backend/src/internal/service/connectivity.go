@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 	"trackeroo-backend/internal/logger"
+	"trackeroo-backend/internal/model"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -17,18 +18,11 @@ var (
 	useFallback   bool          = false
 )
 
-type DeviceStatus struct {
-	Connected         bool
-	LastConnection    time.Time
-	LastDisconnection time.Time
-	LastIP            string
-}
-
 func InitConnectivityCache() {
 	ctx := context.Background()
 	if redisClient == nil {
 		options := redis.Options{
-			Addr: GetenvOrDefault("REDIS_DB", "redis:6379"),
+			Addr: GetenvOrDefault("REDIS_URI", "redis:6379"),
 		}
 		redisClient = redis.NewClient(&options)
 		_, err := redisClient.Ping(ctx).Result()
@@ -36,6 +30,8 @@ func InitConnectivityCache() {
 			logger.Warning("Could not connect to Redis: %v", err)
 			logger.Warning("Falling back to SimpleCache")
 			useFallback = true
+		} else {
+			logger.Info("Connected to Redis!")
 		}
 	}
 	if fallbackCache == nil {
@@ -59,23 +55,23 @@ func getRedisClient() (*redis.Client, *SimpleCache) {
 	return redisClient, fallbackCache
 }
 
-func mapToStruct(m map[string]string) (DeviceStatus, error) {
+func mapToStruct(m map[string]string) (model.DeviceStatus, error) {
 	connected, err := strconv.ParseBool(m["connected"])
 	if err != nil {
-		return DeviceStatus{}, err
+		return model.DeviceStatus{}, err
 	}
 
 	lastConn, err := strconv.ParseInt(m["last_connection"], 10, 64)
 	if err != nil {
-		return DeviceStatus{}, err
+		return model.DeviceStatus{}, err
 	}
 
 	lastDisconn, err := strconv.ParseInt(m["last_disconnection"], 10, 64)
 	if err != nil {
-		return DeviceStatus{}, err
+		return model.DeviceStatus{}, err
 	}
 
-	return DeviceStatus{
+	return model.DeviceStatus{
 		Connected:         connected,
 		LastConnection:    time.Unix(lastConn, 0),
 		LastDisconnection: time.Unix(lastDisconn, 0),
@@ -83,7 +79,7 @@ func mapToStruct(m map[string]string) (DeviceStatus, error) {
 	}, nil
 }
 
-func structToMap(status DeviceStatus) map[string]string {
+func structToMap(status model.DeviceStatus) map[string]string {
 	return map[string]string{
 		"connected":          strconv.FormatBool(status.Connected),
 		"last_connection":    strconv.FormatInt(status.LastConnection.Unix(), 10),
@@ -104,18 +100,18 @@ func getLastRedisKey(ctx context.Context, rdb *redis.Client, devID, key string) 
 	return data, err
 }
 
-func SetDeviceStatus(ctx context.Context, devID, ip string, connected bool) {
+func SetDeviceStatus(ctx context.Context, devID, ip string, timestamp time.Time, connected bool) {
 	rdb, fbc := getRedisClient()
-	status := DeviceStatus{
+	status := model.DeviceStatus{
 		Connected: connected,
 		LastIP:    ip,
 	}
 	if connected {
-		status.LastConnection = time.Now()
+		status.LastConnection = timestamp
 		status.LastDisconnection = time.Unix(0, 0)
 	} else {
 		status.LastConnection = time.Unix(0, 0)
-		status.LastDisconnection = time.Now()
+		status.LastDisconnection = timestamp
 	}
 	if rdb != nil {
 		var (
@@ -142,7 +138,7 @@ func SetDeviceStatus(ctx context.Context, devID, ip string, connected bool) {
 		rdb.HSet(ctx, devID, structToMap(status))
 	} else {
 		data := fbc.Get(devID)
-		s, ok := data.(DeviceStatus)
+		s, ok := data.(model.DeviceStatus)
 		if ok {
 			if connected {
 				status.LastDisconnection = s.LastDisconnection
@@ -154,28 +150,78 @@ func SetDeviceStatus(ctx context.Context, devID, ip string, connected bool) {
 	}
 }
 
-func GetDeviceStatus(ctx context.Context, devID string) (DeviceStatus, error) {
+func GetDeviceStatus(ctx context.Context, devID string) (model.DeviceStatus, error) {
 	rdb, fbc := getRedisClient()
 	var (
 		data   any
-		status DeviceStatus
+		status model.DeviceStatus
 		err    error
 		ok     bool
 	)
 	if rdb != nil {
 		data, err = rdb.HGetAll(ctx, devID).Result()
 		if err != nil {
-			return DeviceStatus{}, err
+			return model.DeviceStatus{}, err
 		}
 		d, _ := data.(map[string]string)
 		status, err = mapToStruct(d)
 	} else {
 		data := fbc.Get(devID)
-		status, ok = data.(DeviceStatus)
+		status, ok = data.(model.DeviceStatus)
 		if !ok {
 			err = fmt.Errorf("cannot find device %s", devID)
-			status = DeviceStatus{}
+			status = model.DeviceStatus{}
 		}
 	}
 	return status, err
+}
+
+func GetDevicesStatus(ctx context.Context, devIDs []string) (map[string]model.DeviceStatus, error) {
+	rdb, fbc := getRedisClient()
+	result := make(map[string]model.DeviceStatus)
+	var firstErr error
+
+	if rdb != nil {
+		pipe := rdb.Pipeline()
+		cmds := make([]*redis.MapStringStringCmd, len(devIDs))
+		for i, id := range devIDs {
+			cmds[i] = pipe.HGetAll(ctx, id)
+		}
+		_, err := pipe.Exec(ctx)
+		if err != nil {
+			firstErr = err
+		}
+
+		for i, cmd := range cmds {
+			d, err := cmd.Result()
+			if err != nil && firstErr == nil {
+				firstErr = err
+			}
+			if len(d) == 0 {
+				result[devIDs[i]] = model.DeviceStatus{}
+				continue
+			}
+			status, err := mapToStruct(d)
+			if err != nil && firstErr == nil {
+				firstErr = err
+			}
+			result[devIDs[i]] = status
+		}
+	} else {
+		for _, id := range devIDs {
+			data := fbc.Get(id)
+			if data != nil {
+				result[id] = model.DeviceStatus{}
+				continue
+			}
+			status, ok := data.(model.DeviceStatus)
+			if !ok {
+				result[id] = model.DeviceStatus{}
+				continue
+			}
+			result[id] = status
+		}
+	}
+
+	return result, firstErr
 }
