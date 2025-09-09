@@ -64,6 +64,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+        retry: 3
 
       - name: Read version.yml
         id: version
