@@ -28,6 +28,7 @@ services:
       MQTTS_PORT: 8883
     volumes:
       - trackeroo-backend-data:/app/data
+      - ./trackeroo-backend/certs:/certs:ro
 
   redis:
     container_name: redis

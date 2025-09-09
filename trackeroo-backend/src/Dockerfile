@@ -29,7 +29,6 @@ WORKDIR /app
 
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/trackeroo-backend .
-COPY certs /certs
 
 # Expose the port your app listens on (adjust as needed)
 EXPOSE 8081
