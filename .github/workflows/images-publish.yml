@@ -44,7 +44,7 @@ jobs:
             context: ./tsdb
             dockerfile: ./tsdb/Dockerfile
           - image: trackeroo-backend
-            context: ./trackeroo-backend
+            context: ./trackeroo-backend/src
             dockerfile: ./trackeroo-backend/src/Dockerfile
           - image: brokeroo
             context: ./brokeroo
