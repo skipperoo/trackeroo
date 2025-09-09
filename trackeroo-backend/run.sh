@@ -3,5 +3,5 @@
 cleanup() {
     docker compose down
 }
-#trap cleanup EXIT
-docker compose up --build -d
+trap cleanup EXIT
+docker compose up --build
