@@ -80,6 +80,7 @@ services:
       RABBITMQ_DEFAULT_PASS: admin123
       RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: '-rabbitmq_mqtt tcp_listeners [{"0.0.0.0",1883}]'
     volumes:
+      - ./rabbitmq/etc:/etc/rabbitmq/
       - rabbitmq-data:/var/lib/rabbitmq
     command: >
       bash -c "rabbitmq-plugins enable --offline rabbitmq_mqtt;
