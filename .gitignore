@@ -16,3 +16,5 @@ trackeroo-backend/mongo/data
 nominatim-data
 osrm-data
 trackeroo-backend/redis
+mqtt_client
+tracky/docker-compose.yml

@@ -75,7 +75,7 @@ def create_compose(credentials: List[Dict]):
                 "dockerfile": "Dockerfile"
             },
             environment={
-                "GEOCODING_SERVICE_URL": "http://localhost:8081",
+                "GEOCODING_SERVICE_URL": "http://localhost:8082",
                 "ROUTING_SERVICE_URL": "http://localhost:5000",
                 "PUBLISH_PERIOD": "500",
                 "PIRATE": "true" if random.randint(1, 100) < 10 else "false"
