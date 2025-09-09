@@ -41,9 +41,7 @@ services:
     restart: no
 
   mongo:
-    build:
-      context: mongo
-      dockerfile: Dockerfile
+    image: mongo:latest
     restart: no
     command: ["mongod", "--bind_ip_all"]
     healthcheck:
@@ -54,6 +52,7 @@ services:
       start_period: 5s
     volumes:
       - mongo-data:/data/db
+      - ./mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
 
   mongo-express:
     image: mongo-express:latest
@@ -82,6 +81,7 @@ services:
     volumes:
       - ./rabbitmq/etc:/etc/rabbitmq/
       - rabbitmq-data:/var/lib/rabbitmq
+      - ./rabbitmq/etc:/etc/rabbitmq/
     command: >
       bash -c "rabbitmq-plugins enable --offline rabbitmq_mqtt;
               rabbitmq-server"
@@ -105,6 +105,7 @@ services:
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
     volumes:
       - tsdb-data:/var/lib/postgresql/data
+      - ./tsdb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
 
   pgadmin:
     image: dpage/pgadmin4:latest
