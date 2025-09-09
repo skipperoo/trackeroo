@@ -15,10 +15,10 @@ const (
 )
 
 type DeviceStatus struct {
-	Connected         bool      `json:"connected"`
-	LastConnection    time.Time `json:"last_connection"`
-	LastDisconnection time.Time `json:"last_disconnection"`
-	LastIP            string    `json:"last_ip"`
+	Connected         bool      `bson:"connected" json:"connected"`
+	LastConnection    time.Time `bson:"last_connection" json:"last_connection"`
+	LastDisconnection time.Time `bson:"last_disconnection" json:"last_disconnection"`
+	LastIP            string    `bson:"last_ip" json:"last_ip"`
 }
 
 type Device struct {

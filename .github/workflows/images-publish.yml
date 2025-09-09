@@ -2,9 +2,12 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [master]
+    branches: [master, ls-dev]
     paths:
-      - "images/**"
+      - "tsdb/**"
+      - "trackeroo-backend/**"
+      - "brokeroo/**"
+      - "flink_job/**"
   workflow_dispatch:
 
 jobs:
@@ -22,7 +25,13 @@ jobs:
           list-files: shell
           filters: |
             tsdb:
-              - 'images/tsdb/**'
+              - 'tsdb/**'
+            trackeroo-backend:
+              - "trackeroo-backend/**"
+            brokeroo:
+              - "brokeroo/**"
+            flink_job:
+              - "flink_job/**"
 
   build:
     needs: detect
@@ -47,13 +56,13 @@ jobs:
       - name: Read version.yml
         id: version
         run: |
-          VERSION=$(yq e '.version' images/${{ matrix.image }}/version.yml)
+          VERSION=$(yq e '.version' ${{ matrix.image }}/version.yml)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build and Push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ./images/${{ matrix.image }}
+          context: ./${{ matrix.image }}
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ steps.version.outputs.version }}

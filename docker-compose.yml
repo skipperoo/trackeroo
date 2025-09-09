@@ -1,5 +1,6 @@
 services:
   trackeroo-backend:
+    container_name: trackeroo-backend
     restart: no
     build:
       context: trackeroo-backend/src
@@ -29,6 +30,7 @@ services:
       - trackeroo-backend-data:/app/data
 
   redis:
+    container_name: redis
     image: redis:8.2.1-alpine
     volumes:
       - redis-data:/data
@@ -41,6 +43,7 @@ services:
     restart: no
 
   mongo:
+    container_name: mongo
     image: mongo:latest
     restart: no
     command: ["mongod", "--bind_ip_all"]
@@ -87,6 +90,7 @@ services:
               rabbitmq-server"
 
   tsdb:
+    container_name: tsdb
     restart: no
     build:
       context: tsdb
@@ -96,7 +100,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    container_name: tsdb
     command: ["postgres", "-c", "shared_preload_libraries=timescaledb"]
     environment:
       POSTGRES_DB: tracker_db
@@ -123,6 +126,7 @@ services:
         condition: service_healthy
 
   brokeroo:
+    container_name: brokeroo
     restart: no
     build:
       context: brokeroo
@@ -164,12 +168,14 @@ services:
       - grafana-data:/var/lib/grafana
 
   zookeeper:
+    container_name: zookeeper
     image: confluentinc/cp-zookeeper:7.5.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
   kafka:
+    container_name: kafka
     image: confluentinc/cp-kafka:7.5.0
     ports:
       - "9092:9092"
@@ -210,6 +216,7 @@ services:
       - flink-jobmanager
 
   flink-job:
+    container_name: flink-job
     build:
       context: ./flink_job
       dockerfile: Dockerfile
