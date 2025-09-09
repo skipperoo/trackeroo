@@ -41,7 +41,9 @@ services:
     restart: no
 
   mongo:
-    image: mongo:latest
+    build:
+      context: mongo
+      dockerfile: Dockerfile
     restart: no
     command: ["mongod", "--bind_ip_all"]
     healthcheck:
@@ -52,7 +54,17 @@ services:
       start_period: 5s
     volumes:
       - mongo-data:/data/db
-      - ./mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    restart: unless-stopped
+    ports:
+      - "8083:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+    depends_on:
+      - mongo
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -69,14 +81,15 @@ services:
       RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: '-rabbitmq_mqtt tcp_listeners [{"0.0.0.0",1883}]'
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
-      - ./rabbitmq/etc:/etc/rabbitmq/
     command: >
       bash -c "rabbitmq-plugins enable --offline rabbitmq_mqtt;
               rabbitmq-server"
 
   tsdb:
     restart: no
-    image: ghcr.io/skiby7/tsdb:latest
+    build:
+      context: tsdb
+      dockerfile: Dockerfile
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d tracker_db"]
       interval: 10s
@@ -91,7 +104,6 @@ services:
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
     volumes:
       - tsdb-data:/var/lib/postgresql/data
-      - ./tsdb/initdb:/docker-entrypoint-initdb.d
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -218,4 +230,4 @@ volumes:
 
 secrets:
   users_key:
-    file: secrets/users_key
+    file: trackeroo-backend/secrets/users_key
