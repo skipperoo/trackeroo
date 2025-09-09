@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 from typing import Dict, List, Optional, Union
 from pydantic import BaseModel
@@ -65,7 +66,7 @@ def create_compose(credentials: List[Dict]):
     """
     compose = DockerCompose(services={} )#, include=["geo-services/docker-compose.yml"])
     print("SELECT * FROM ( VALUES ")
-    for cred in credentials:
+    for i, cred in enumerate(credentials):
         # print(f"Processing device {cred}")
         # continue
         compose.services[cred["id"]] = ServiceConfig(
@@ -76,17 +77,23 @@ def create_compose(credentials: List[Dict]):
             environment={
                 "GEOCODING_SERVICE_URL": "http://localhost:8081",
                 "ROUTING_SERVICE_URL": "http://localhost:5000",
-                "PUBLISH_PERIOD": "200"
+                "PUBLISH_PERIOD": "500",
+                "PIRATE": "true" if random.randint(1, 100) < 10 else "false"
             },
             # depends_on=["nominatim", "osrm"],
             network_mode="host",
             volumes=[f"./{cred["id"]}:/app/credentials"],
             restart="no",
         )
+        # if compose.services[cred["id"]].environment["PIRATE"] == "true":
+        #     print(f"{cred['id']} is a pirate 🏴‍☠️")
         os.makedirs(f"{cred['id']}", exist_ok=True)
         with open(f"{cred['id']}/tdevice.json", "w") as f:
             json.dump(cred, f, indent=2)
-        print(f"('{cred['name']}', '{cred['id']}'),")
+        if i == len(credentials) - 1:
+            print(f"('{cred['name']}', '{cred['id']}')")
+        else:
+            print(f"('{cred['name']}', '{cred['id']}'),")
     print(") AS t (__text, __value)")
     with open("docker-compose.yml", "w") as f:
         compose_dict = compose.model_dump(exclude_none=True)
@@ -110,7 +117,7 @@ def main():
         print(f"Error fetching credentials: {e}")
         sys.exit(1)
 
-    create_compose(credentials)
+    create_compose(sorted(credentials, key=lambda x: x["name"]))
 
 if __name__ == "__main__":
     main()

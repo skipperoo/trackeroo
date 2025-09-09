@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-
 	"trackeroo-backend/internal/config"
 	"trackeroo-backend/internal/logger"
 	"trackeroo-backend/internal/model"
@@ -16,7 +15,13 @@ import (
 
 var MongoClient *mongo.Client
 
-func InitDb(ctx context.Context) error {
+var (
+	keysCache        = NewSimpleCache()
+	devicesCache     = NewSimpleCache()
+	credentialsCache = NewSimpleCache()
+)
+
+func InitDB(ctx context.Context) error {
 	var err error
 	mongoURI := config.Cfg.MongoUri
 	if mongoURI == "" {
@@ -24,15 +29,10 @@ func InitDb(ctx context.Context) error {
 	}
 
 	MongoClient, err = mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
-	if err != nil {
-		return err
-	}
-
-	err = EnsureUsers(ctx)
 	return err
 }
 
-func CloseDb(ctx context.Context) error {
+func CloseDB(ctx context.Context) error {
 	return MongoClient.Disconnect(ctx)
 }
 
@@ -143,6 +143,14 @@ func GetDevice(ctx context.Context, id string) (model.Device, error) {
 }
 
 func GetDeviceCredentials(ctx context.Context, id string) (model.DeviceCredentials, error) {
+	cacheEntry := credentialsCache.Get(id)
+	if cacheEntry != nil {
+		creds, ok := cacheEntry.(model.DeviceCredentials)
+		if ok {
+			return creds, nil
+		}
+	}
+
 	collection := MongoClient.Database("trackeroo-backend").Collection("devices")
 	_ctx := ctx
 	if _ctx == nil {
@@ -161,10 +169,16 @@ func GetDeviceCredentials(ctx context.Context, id string) (model.DeviceCredentia
 		DeviceType: device.DeviceType,
 		PrivateKey: device.PrivateKey,
 	}
+	credentialsCache.Set(id, creds)
 	return creds, nil
 }
 
 func GetDeviceKey(ctx context.Context, id string) (string, error) {
+	key := keysCache.Get(id)
+	if key != nil {
+		return key.(string), nil
+	}
+
 	collection := MongoClient.Database("trackeroo-backend").Collection("devices")
 	_ctx := ctx
 	if _ctx == nil {
@@ -176,7 +190,9 @@ func GetDeviceKey(ctx context.Context, id string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return device.PrivateKey, nil
+	key = device.PrivateKey
+	keysCache.Set(id, key)
+	return key.(string), nil
 }
 
 func GetDevices(ctx context.Context) ([]model.Device, error) {
@@ -208,6 +224,8 @@ func UpdateDevice(ctx context.Context, id string, device model.Device) error {
 		_ctx = context.Background()
 	}
 	_, err := collection.UpdateOne(_ctx, bson.M{"_id": id}, bson.M{"$set": device})
+
+	devicesCache.Invalidate(id)
 	return err
 }
 
@@ -225,23 +243,6 @@ func DeleteDevice(ctx context.Context, id string) error {
 	if err != nil {
 		logger.Warning("Error deleting device: %v", err)
 	}
-	return nil
-}
-
-func EnsureUsers(ctx context.Context) error {
-	_ctx := ctx
-	if _ctx == nil {
-		_ctx = context.Background()
-	}
-	users := model.DefaultUsers()
-	for _, user := range users {
-		/* If the error is nil it means the user already exists */
-		if _, err := GetUserByName(_ctx, user.Username); err == nil {
-			continue
-		}
-		if err := InsertUser(_ctx, user); err != nil {
-			return err
-		}
-	}
+	devicesCache.Invalidate(id)
 	return nil
 }

@@ -39,7 +39,7 @@ func (a *Agent) run() {
 				}
 				Ack("data", id)
 
-				Info("Published %v!", str)
+				Debug("Published %v!", str)
 
 			} else {
 				Error("Cannot publish data != string -> %v", data)

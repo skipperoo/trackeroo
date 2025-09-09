@@ -25,14 +25,21 @@ type FoodSensors struct {
 }
 
 type Payload struct {
-	TS         int64                `json:"ts"`
-	Speed      float64              `json:"speed"`
-	Position   trackeroo.Coordinate `json:"position"`
-	DeviceType string               `json:"device_type"`
-	Status     string               `json:"status"`
-	Sensors    any                  `json:"sensors,omitempty"`
-	Start      trackeroo.Coordinate `json:"start"`
-	End        trackeroo.Coordinate `json:"end"`
+	TS                 int64                `json:"ts"`
+	Speed              float64              `json:"speed"`
+	SpeedLimit         float64              `json:"speed_limit"`
+	SpeedStats         map[string]any       `json:"speed_stats"`
+	Position           trackeroo.Coordinate `json:"position"`
+	DeviceName         string               `json:"device_name"`
+	DeviceType         string               `json:"device_type"`
+	DeviceID           string               `json:"device_id"`
+	Status             string               `json:"status"`
+	Sensors            any                  `json:"sensors,omitempty"`
+	Start              trackeroo.Coordinate `json:"start"`
+	End                trackeroo.Coordinate `json:"end"`
+	InstantConsumption float64              `json:"instant_consumption"`
+	ConsumptionStats   map[string]any       `json:"consumption_stats"`
+	DeltaDistance      float64              `json:"delta_distance"`
 }
 
 func normalValuablesData(position trackeroo.DrivePosition) ValuableSensors {
@@ -48,7 +55,7 @@ func normalValuablesData(position trackeroo.DrivePosition) ValuableSensors {
 func robberyValuablesData() ValuableSensors {
 	return ValuableSensors{
 		Alarm:          true,
-		Vibration:      rand.Float64() * 300,
+		Vibration:      100 + rand.Float64()*300,
 		RearHatchOpen:  true,
 		FrontHatchOpen: rand.Float32() < 0.5,
 		Collision:      true,
@@ -109,44 +116,60 @@ func Loop() {
 		}
 	}
 	lastPublish := time.Now()
-
+	isPirate := os.Getenv("PIRATE") == "true" || os.Getenv("PIRATE") == "1"
+	trackeroo.Info("Is pirate: %t", isPirate)
 	lastStatus := ""
 	lastEnd := ""
 	normalRun := true
+	deltaDistance := 0.0
+	speedVar := trackeroo.NewStatVar[float64]()
+	consumptionVar := trackeroo.NewStatVar[float64]()
 	for {
+		trackeroo.Info("Getting route from %s", lastEnd)
 		route := trackeroo.GetRoute(lastEnd)
 		trackeroo.Info("Route: %+v", route)
-		lastEnd = route[len(route)-1]
-		drivingSimulator, err := trackeroo.NewDrivingSimulator(routingService, route, 60, 100)
+		drivingSimulator, err := trackeroo.NewDrivingSimulator(routingService, route, 60, 100, isPirate, creds.DeviceType)
 		if err != nil {
 			trackeroo.Error("Error initializing driving simulator %v", err)
 			continue
 		}
+		lastEnd = route[len(route)-1]
 
 		positionChan := drivingSimulator.SimulateDrive()
 		if rand.Float64() < 0.05 || os.Getenv("NORMAL_RUN") == "false" {
 			normalRun = false
 		}
 		for position := range positionChan {
+			deltaDistance += position.Distance
+			speedVar.Add(position.Speed)
+			consumptionVar.Add(position.Consumption)
 			if time.Since(lastPublish) > pubPeriod || lastStatus != position.Status {
 				lastStatus = position.Status
 				payload := Payload{
 					TS:         position.Timestamp.Unix(),
 					Speed:      position.Speed,
+					SpeedStats: speedVar.Get(),
+					SpeedLimit: position.SpeedLimit,
+					DeviceName: creds.Name,
 					DeviceType: creds.DeviceType,
 					Position: trackeroo.Coordinate{
 						Lat: position.Lat,
 						Lng: position.Lng,
 					},
-					Status: position.Status,
-					Start:  position.Start,
-					End:    position.End,
+					Status:             position.Status,
+					Start:              position.Start,
+					End:                position.End,
+					InstantConsumption: position.Consumption,
+					ConsumptionStats:   consumptionVar.Get(),
+					DeltaDistance:      deltaDistance,
 				}
+				deltaDistance = 0
 
 				switch deviceType {
 				case trackeroo.VALUABLES:
 					vsensors := normalValuablesData(position)
-					if !normalRun {
+					/* For the sake of simplicity the robbery happens when the vehicle arrives */
+					if !normalRun && position.Status == trackeroo.ARRIVED {
 						vsensors = robberyValuablesData()
 					}
 					payload.Sensors = vsensors
@@ -169,5 +192,9 @@ func Loop() {
 		}
 		/* Routing terminated, waiting before next route */
 		time.Sleep(time.Second * 120)
+		if !normalRun {
+			/* Wait some more */
+			time.Sleep(time.Second * 120)
+		}
 	}
 }

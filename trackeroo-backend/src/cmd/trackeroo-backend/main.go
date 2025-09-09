@@ -17,17 +17,22 @@ import (
 )
 
 func main() {
-
 	logger.InitLogger()
+	defer logger.CloseLogger()
 	fmt.Println(service.Art)
 	config.LoadConfig()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := service.InitDb(ctx); err != nil {
+	if err := service.InitDB(ctx); err != nil {
 		logger.Fatal(err.Error())
 	}
+
+	service.InitConnectivityCache()
+	defer service.DeinitConnectivityCache()
+
+	service.StartRabbitWatcher(ctx)
 
 	logger.Debug("Initializing login route")
 	loginRouter := router.NewRouter().
@@ -101,7 +106,7 @@ func main() {
 	}
 
 	// Disconnect MongoDB
-	if err := service.CloseDb(shutdownCtx); err != nil {
+	if err := service.CloseDB(shutdownCtx); err != nil {
 		logger.Fatal("MongoDB disconnect failed: %s", err.Error())
 	}
 }

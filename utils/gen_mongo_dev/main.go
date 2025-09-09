@@ -32,6 +32,26 @@ var containerNames = []string{
 	"confident_faraday", "cool_ohm", "cranky_ampere", "crazy_coulomb",
 	"curious_feynman", "dazzling_maxwell", "determined_kelvin", "distracted_planck",
 	"dreamy_euler", "eager_gauss", "ecstatic_riemann", "elastic_fourier",
+	"elegant_lagrange", "elated_laplace", "eloquent_leibniz", "enchanting_poincare",
+	"energetic_hilbert", "epic_cantor", "exciting_godel", "exotic_turing",
+	"fabulous_ramanujan", "faithful_hardy", "fancy_erdos", "fascinated_noether",
+	"fearless_galois", "fervent_abel", "flamboyant_jacobi", "focused_cauchy",
+	"friendly_weierstrass", "frosty_dedekind", "funny_peano", "furious_russell",
+	"gallant_whitehead", "gentle_church", "gifted_kleene", "goofy_markov",
+	"graceful_chebyshev", "great_kolmogorov", "grieving_wiener", "groovy_shannon",
+	"happy_nyquist", "hardcore_bell", "heartwarming_bose", "heuristic_fermi",
+	"hopeful_bardeen", "hungry_cooper", "hyper_shockley", "inspiring_bardeen",
+	"interesting_watson", "inventive_crick", "iron_franklin", "jaunty_pauling",
+	"jovial_mendeleev", "keen_bohr", "laughing_rutherford", "lucid_heisenberg",
+	"magical_dirac", "magnificent_feynman", "merry_schwinger", "modest_dyson",
+	"motivated_penrose", "nervous_hawking", "noble_weinberg", "nostalgic_salam",
+	"objective_glashow", "optimized_higgs", "original_yang", "outstanding_lee",
+	"patient_wu", "pedantic_pauli", "phenomenal_born", "pious_planck",
+	"playful_compton", "polite_millikan", "practical_michelson", "proud_morley",
+	"puzzled_fizeau", "quizzical_doppler", "romantic_hertz", "sad_marconi",
+	"serene_tesla", "sharp_edison", "silly_westinghouse", "sleepy_siemens",
+	"stoic_ohm", "strange_ampere", "suspicious_volta", "sweet_galvani",
+	"tender_faraday", "thirsty_henry", "thoughtful_weber", "thrilled_gauss",
 }
 
 var deviceTypes = []string{VALUABLES, FOOD, PRIVATE_TRANSPORT, PUBLIC_TRANSPORT, OTHER}
@@ -150,7 +170,7 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	// Generate 5 objects by default (max 50 due to name uniqueness)
-	count := 30
+	count := 100
 
 	if count > len(containerNames) {
 		fmt.Printf("Warning: Requested %d objects but only %d unique names available. Using %d objects.\n",
