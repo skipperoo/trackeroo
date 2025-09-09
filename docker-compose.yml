@@ -2,7 +2,7 @@ services:
   trackeroo-backend:
     restart: no
     build:
-      context: src
+      context: trackeroo-backend/src
       dockerfile: Dockerfile
     healthcheck:
       test: nc -z localhost 8080
@@ -31,7 +31,7 @@ services:
   redis:
     image: redis:8.2.1-alpine
     volumes:
-      - ./redis:/data
+      - redis-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -108,7 +108,7 @@ services:
       tsdb:
         condition: service_healthy
 
-  test-db-ingestion:
+  brokeroo:
     restart: no
     build:
       context: brokeroo
@@ -214,6 +214,7 @@ volumes:
   tsdb-data:
   pgadmin-data:
   grafana-data:
+  redis-data: 
 
 secrets:
   users_key:

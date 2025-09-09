@@ -23,3 +23,4 @@ RUN apt-get update && apt-get install -y \
 
 # Enable TimescaleDB preload
 RUN echo "shared_preload_libraries='timescaledb'" >> /usr/share/postgresql/postgresql.conf
+COPY docker-entrypoint-initdb.d/ /docker-entrypoint-initdb.d/
