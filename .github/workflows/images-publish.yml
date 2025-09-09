@@ -39,7 +39,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        image: ${{ fromJSON(needs.detect.outputs.images) }}
+        include:
+          - image: tsdb
+            context: ./tsdb
+            dockerfile: ./tsdb/Dockerfile
+          - image: trackeroo-backend
+            context: ./trackeroo-backend
+            dockerfile: ./trackeroo-backend/src/Dockerfile
+          - image: brokeroo
+            context: ./brokeroo
+            dockerfile: ./brokeroo/Dockerfile
+          - image: flink_job
+            context: ./flink_job
+            dockerfile: ./flink_job/Dockerfile
     permissions:
       contents: read
       packages: write
@@ -56,13 +68,14 @@ jobs:
       - name: Read version.yml
         id: version
         run: |
-          VERSION=$(yq e '.version' ${{ matrix.image }}/version.yml)
+          VERSION=$(yq e '.version' ${{ matrix.context }}/version.yml)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build and Push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ./${{ matrix.image }}
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ steps.version.outputs.version }}
