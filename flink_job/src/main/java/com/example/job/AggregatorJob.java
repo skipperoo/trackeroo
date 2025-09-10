@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
+import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
@@ -18,7 +19,11 @@ import org.apache.flink.util.Collector;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
+
+import java.security.MessageDigest;
 
 // aggiungere consumo massimo, consumo avg, speed massima, avg speed, speed limit 
 public class AggregatorJob {
@@ -28,15 +33,40 @@ public class AggregatorJob {
         public double lon;
     }
 
+    public static String hashCoordinates(Coordinate start, Coordinate end) {
+        try {
+            String input = start.lat + "," + start.lon + ";" + end.lat + "," + end.lon;
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes());
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                hexString.append(String.format("%02x", b));
+            }
+
+            return hexString.toString().substring(0, 16);
+        } catch (Exception e) {
+            throw new RuntimeException("Error computing route hash", e);
+        }
+    }
+
+
     public static class Payload {
         public long ts;
         public double speed;
+        public double speed_limit;
+        public Map<String, Object> speed_stats;
         public Coordinate position;
+        public String device_name;
         public String device_type;
+        public String device_id;
         public String status;
         public Object sensors;
         public Coordinate start;
         public Coordinate end;
+        public double instant_consumption;
+        public Map<String, Object> consumption_stats;
+        public double delta_distance;
     }
 
     public static class Envelope {
@@ -44,7 +74,7 @@ public class AggregatorJob {
         public String ts;
         public String dev_id;
         public String tag;
-        public Payload payload;
+        public Payload payloadJson;
     }
 
     public static class AggregatedRecord {
@@ -52,6 +82,7 @@ public class AggregatorJob {
         public Timestamp ts;
         public String dev_id;
         public String tag;
+        public String route_hash;
         public String payloadJson;
     }
 
@@ -106,14 +137,18 @@ public class AggregatorJob {
                     @Override
                     public void process(String key, Context context, Iterable<Envelope> elements, Collector<AggregatedRecord> out) {
                         int count = 0;
+                        String route_hash = " ";
                         double sum = 0.0;
                         long maxTs = 0;
 
                         for (Envelope env : elements) {
-                            if (env.payload != null) {
+                            if (count == 0) {
+                                route_hash = hashCoordinates(env.payloadJson.start, env.payloadJson.end);
+                            }
+                            if (env.payloadJson != null) {
                                 count++;
-                                sum += env.payload.speed;
-                                if (env.payload.ts > maxTs) maxTs = env.payload.ts;
+                                sum += env.payloadJson.speed;
+                                if (env.payloadJson.ts > maxTs) maxTs = env.payloadJson.ts;
                             }
                         }
 
@@ -124,6 +159,7 @@ public class AggregatorJob {
                             AggregatedRecord record = new AggregatedRecord();
                             record.ts_unix = maxTs;
                             record.ts = Timestamp.from(Instant.ofEpochMilli(maxTs));
+                            record.route_hash = route_hash;
                             record.dev_id = key;
                             record.tag = "avg_speed";
                             record.payloadJson = String.format("{\"avg_speed\": %.2f, \"count\": %d}", avg, count);
@@ -135,32 +171,45 @@ public class AggregatorJob {
                 });
 
             aggregated.addSink(JdbcSink.sink(
-                "INSERT INTO trackeroo.aggregated (ts_unix, ts, dev_id, insertion_time, tag, payload) " +
-                "VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO trackeroo.aggregated (ts_unix, ts, dev_id, route_hash, insertion_time, tag, payload) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?) " +
+                "ON CONFLICT (route_hash, ts ,dev_id) DO UPDATE SET " +
+                "ts_unix = EXCLUDED.ts_unix, " +
+                "ts = EXCLUDED.ts, " +
+                "insertion_time = NOW(), " +
+                "payload = EXCLUDED.payload",
 
                 (ps, record) -> {
                     try {
-                        ps.setLong(1, record.ts_unix);
-                        ps.setTimestamp(2, record.ts);                // ts (PK)
-                        ps.setString(3, record.dev_id);               // dev_id (PK)
-                        ps.setTimestamp(4, new Timestamp(System.currentTimeMillis())); // insertion_time = now()
-                        ps.setString(5, record.tag);                  // tag
-                        ps.setObject(6, record.payloadJson, java.sql.Types.OTHER); // payload jsonb
-                        System.out.printf(">>> [DB_INSERT] dev_id=%s ok%n", record.dev_id);
+                        ps.setLong(1, record.ts_unix);                       // ts_unix
+                        ps.setTimestamp(2, record.ts);                       // ts
+                        ps.setString(3, record.dev_id);                      // dev_id
+                        ps.setString(4, record.route_hash);                  // route_hash (NEW)
+                        ps.setTimestamp(5, new Timestamp(System.currentTimeMillis())); // insertion_time
+                        ps.setString(6, record.tag);                         // tag
+                        ps.setObject(7, record.payloadJson, java.sql.Types.OTHER); // payload jsonb
+                        System.out.printf(">>> [DB_INSERT/UPSERT] dev_id=%s route=%s ok%n", record.dev_id, record.route_hash);
                     } catch (Exception e) {
-                        System.err.printf(">>> [DB_ERROR] dev_id=%s | %s%n", record.dev_id, e.getMessage());
+                        System.err.printf(">>> [DB_ERROR] dev_id=%s route=%s | %s%n",
+                                record.dev_id, record.route_hash, e.getMessage());
                         throw e;
                     }
-                },
+                },    
+
+                JdbcExecutionOptions.builder()
+                                .withBatchSize(1000)
+                                .withBatchIntervalMs(200)
+                                .withMaxRetries(5)
+                                .build(),
 
                 new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
-                    .withUrl("jdbc:postgresql://tsdb:5432/tracker_db")
+                    .withUrl("jdbc:postgresql://tsdb:5432/tracker_db?sslmode=disable")
                     .withDriverName("org.postgresql.Driver")
-                    .withUsername("postgres")
-                    .withPassword("postgres")
+                    .withUsername("admin")
+                    .withPassword("administrator")
                     .build()
                 ));
 
-             env.execute("Dynamic Kafka Aggregator Job (with minimal debug)");
+                env.execute("Dynamic Kafka Aggregator Job (with minimal debug)");
     }
 }

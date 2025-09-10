@@ -11,11 +11,11 @@ COPY --from=builder /app/build/libs/job-all.jar /job/job.jar
 
 # Script per attendere il JobManager
 RUN echo '#!/bin/bash\n\
-until curl -s http://localhost:8081/overview; do\n\
+until curl -s http://flink-jobmanager:8081/overview; do\n\
   echo "Waiting for Flink JobManager..."\n\
   sleep 5\n\
 done\n\
-exec flink run -m localhost:8081 -c com.example.job.AggregatorJob /job/job.jar' > /job/start.sh \
+exec flink run -m flink-jobmanager:8081 -c com.example.job.AggregatorJob /job/job.jar' > /job/start.sh \
     && chmod +x /job/start.sh
 
 ENTRYPOINT ["/job/start.sh"]
