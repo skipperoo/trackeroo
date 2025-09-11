@@ -30,3 +30,31 @@ func Auth(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func MqttAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.Debug("Checking mqtt auth...")
+		ctx := r.Context()
+		username := r.Header.Get("Username")
+		key, err := service.GetDeviceKey(ctx, username)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(model.Error{Error: "Unauthorized!"})
+			return
+		}
+		if res, claims, err := service.ValidateDeviceJWT(key, r.Header.Get("Authorization")); err != nil || !res || claims["sub"] != username {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(model.Error{Error: "Unauthorized!"})
+			if err == nil {
+				logger.Error("Failed to validate device JWT for %s", username)
+			} else if claims["sub"] != username {
+				logger.Error("Invalid username in JWT: should be %s, found %s", username, claims["sub"])
+			} else {
+				logger.Error("Failed to validate device JWT for %s: %v", username, err)
+			}
+			return
+		}
+		logger.Debug("Device %s authenticated", username)
+		next.ServeHTTP(w, r)
+	})
+}

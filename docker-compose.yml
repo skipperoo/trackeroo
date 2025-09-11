@@ -22,7 +22,7 @@ services:
         condition: service_healthy
     environment:
       MONGO_URI: mongodb://mongo:27017/trackeroo
-      LOG_LEVEL: info
+      LOG_LEVEL: debug
       MQTT_HOST: localhost
       MQTT_PORT: 1883
       MQTTS_PORT: 8883

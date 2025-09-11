@@ -33,6 +33,11 @@ func main() {
 	defer service.DeinitConnectivityCache()
 
 	service.StartRabbitWatcher(ctx)
+	service.InitQueue("data")
+	go service.QueuesCleanUp()
+	tdmClient := service.NewTdmClient()
+	tdmClient.Start()
+	defer tdmClient.Stop()
 
 	logger.Debug("Initializing login route")
 	loginRouter := router.NewRouter().
@@ -69,6 +74,12 @@ func main() {
 		AddHandler("POST /topic", handler.TopicAuth).
 		Finalize()
 
+	logger.Debug("Initializing publish router")
+	publishRouter := router.NewRouter().
+		AddHandler("POST /publish", handler.PublishPayload).
+		AddMiddleware(middleware.MqttAuth).
+		Finalize()
+
 	logger.Debug("Initializing main route")
 	mainRouter := router.NewRouter().
 		AddHandler("GET /health", handler.HealthCheck).
@@ -78,6 +89,7 @@ func main() {
 		AddSubroute("/devices/", devicesRouter).
 		AddSubroute("/users/", usersRouter).
 		AddSubroute("/auth/", authRouter).
+		AddSubroute("/tdm/", publishRouter).
 		Finalize()
 
 	server := http.Server{
