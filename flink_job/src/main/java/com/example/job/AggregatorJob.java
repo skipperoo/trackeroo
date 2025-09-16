@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
 
 import java.security.MessageDigest;
 
-// aggiungere consumo massimo, consumo avg, speed massima, avg speed, speed limit 
 public class AggregatorJob {
 
     public static class Coordinate {
@@ -139,12 +138,10 @@ public class AggregatorJob {
             }
         });
 
-        // --- Filtro per record validi ---
         DataStream<Envelope> validParsed = parsed.filter(e ->
                 e.dev_id != null && !e.dev_id.equals("unknown")
         );
 
-        // --- Aggregazione ---
         DataStream<AggregatedRecord> aggregated = validParsed
                 .keyBy(e -> e.dev_id)
                 .window(TumblingProcessingTimeWindows.of(Duration.ofSeconds(4)))
@@ -174,7 +171,6 @@ public class AggregatorJob {
                         boolean is_valuable = false;
                         boolean alarm = false;
  
-                        /* si cicla gli elementi della window */
                         for (Envelope env : elements) {
                             last_element = env;
                             if (env.payloadJson != null) {
@@ -187,7 +183,6 @@ public class AggregatorJob {
                                 delta_sum += env.payloadJson.delta_distance;
                                 if (env.payloadJson.device_type.equals("food") && env.payloadJson.sensors != null){
                                     is_food = true;
-                                    //FoodSensors food_sensor = mapper.readValue(env.sensors, FoodSensors.class);
                                     FoodSensors food_sensor = mapper.convertValue(env.payloadJson.sensors, FoodSensors.class);
                                     sum_humidity += food_sensor.humidity;
                                     sum_pressure += food_sensor.pressure;
@@ -196,7 +191,6 @@ public class AggregatorJob {
                                     System.out.printf(">>> [PARSED_FOOD OK] dev_type=%s%n", env.payloadJson.device_type);
                                 } else if (env.payloadJson.device_type.equals("valuable") && env.payloadJson.sensors != null) {
                                     is_valuable = true;
-                                    //ValuableSensors valuable_sensor = mapper.readValue(env.sensors, ValuableSensors.class);
                                     ValuableSensors valuable_sensor = mapper.convertValue(env.payloadJson.sensors, ValuableSensors.class);
                                     if (valuable_sensor.collision)
                                         collision = true;
@@ -267,13 +261,13 @@ public class AggregatorJob {
 
                 (ps, record) -> {
                     try {
-                        ps.setLong(1, record.ts_unix);                       // ts_unix
-                        ps.setTimestamp(2, record.ts);                       // ts
-                        ps.setString(3, record.dev_id);                      // dev_id
-                        ps.setString(4, record.route_hash);                  // route_hash (NEW)
-                        ps.setTimestamp(5, new Timestamp(System.currentTimeMillis())); // insertion_time
-                        ps.setString(6, record.tag);                         // tag
-                        ps.setObject(7, record.payloadJson, java.sql.Types.OTHER); // payload jsonb
+                        ps.setLong(1, record.ts_unix);                       
+                        ps.setTimestamp(2, record.ts);                       
+                        ps.setString(3, record.dev_id);                      
+                        ps.setString(4, record.route_hash);                  
+                        ps.setTimestamp(5, new Timestamp(System.currentTimeMillis()));
+                        ps.setString(6, record.tag);                        
+                        ps.setObject(7, record.payloadJson, java.sql.Types.OTHER); 
                         System.out.printf(">>> [DB_INSERT/UPSERT] dev_id=%s route=%s ok%n", record.dev_id, record.route_hash);
                     } catch (Exception e) {
                         System.err.printf(">>> [DB_ERROR] dev_id=%s route=%s | %s%n",
@@ -300,15 +294,3 @@ public class AggregatorJob {
     }
 }
 
-
-                    // fato TODO: mettere il nostro timestamp
-                    // TODO: a seconda del device type leggere il sensore giusto e aggregare.  Solo valueable e food hanno il sensore, 
-                    // mettere la somma dei delta per la distanza totale.
-                    // TODO: grafana, dash board mappa generale con magari drop down dove si seglie il device
-                    // TODO: dashboard di statistiche generale di tutto il sistema, quanti pirati. Cibi marci, o scassinamento. 
-                    // TODO: dashboard di soli eventi, quindi una temperatura sopra un certa soglia o il sensore sopra. 
-                    // TODO: piu tabelle per device anche aggregati e anche quelle normali su brookeroo quando esiste. (controllare e fare solamente una volta if not exist table).
-
-                    /*
-                    senti mi aggreghi la stringa status anche dell'ultimo del ciclo elements, sempre dell'ultimo se aggiungi ai dati aggregati la sua instant consuption, e le consumption stat che su go sono date da questa funzione se riesci a capirci: func (sv *StatVar[T]) Get() map[string]any { res := map[string]any{ "avg_speed": sv.Avg_speed, "min": sv.Min, "max": sv.Max, "count": sv.Count, } sv.Avg_speed = 0.0 sv.Min = 0 sv.Max = 0 sv.Count = 0 return res } poi se puoi aggregare nei valuable sensors, se c'è stata un'allarme allora lo aggrega, la vibrazione la piu grande vista, se c'è stata una collisione mentre nei food sensors prendi la temperatura media, la umidita media e la pressione media.
-                    */
