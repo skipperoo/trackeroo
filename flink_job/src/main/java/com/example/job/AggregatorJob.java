@@ -50,7 +50,6 @@ public class AggregatorJob {
         }
     }
 
-
     public static class Payload {
         public long ts;
         public double speed;
@@ -67,6 +66,22 @@ public class AggregatorJob {
         public double instant_consumption;
         public Map<String, Object> consumption_stats;
         public double delta_distance;
+    }
+
+    public static class ValuableSensors {
+    	public boolean alarm;
+    	public double vibration;
+    	public boolean rear_hatch_open;
+    	public boolean front_hatch_open;
+    	public boolean collision;
+    }
+
+    public static class FoodSensors {
+    	public boolean rear_hatch_open;  
+    	public boolean front_hatch_open;
+    	public Double temperature;  
+    	public Double humidity;
+    	public Double pressure;   
     }
 
     public static class Envelope {
@@ -132,39 +147,110 @@ public class AggregatorJob {
         // --- Aggregazione ---
         DataStream<AggregatedRecord> aggregated = validParsed
                 .keyBy(e -> e.dev_id)
-                .window(TumblingProcessingTimeWindows.of(Duration.ofSeconds(5)))
+                .window(TumblingProcessingTimeWindows.of(Duration.ofSeconds(4)))
                 .process(new ProcessWindowFunction<Envelope, AggregatedRecord, String, TimeWindow>() {
+
                     @Override
                     public void process(String key, Context context, Iterable<Envelope> elements, Collector<AggregatedRecord> out) {
+                        Envelope last_element = null;
                         int count = 0;
                         String route_hash = " ";
-                        double sum = 0.0;
-                        long maxTs = 0;
-
+                        String tag = " ";
+                        String status = " ";
+                        double delta_sum = 0.0;
+                        double speed_limit = 0.0;
+                        double sum_vibration = 0.0;
+                        double sum_humidity = 0.0;
+                        double sum_temperature = 0.0;
+                        double sum_pressure = 0.0;
+                        double avg_consumption = 0.0;
+                        double min_consumption = 0.0;
+                        double max_consumption = 0.0;
+                        double avg_speed = 0.0;
+                        double min_speed = 0.0;
+                        double max_speed = 0.0;
+                        boolean collision = false;
+                        boolean is_food = false;
+                        boolean is_valuable = false;
+                        boolean alarm = false;
+ 
+                        /* si cicla gli elementi della window */
                         for (Envelope env : elements) {
-                            if (count == 0) {
-                                route_hash = hashCoordinates(env.payloadJson.start, env.payloadJson.end);
-                            }
+                            last_element = env;
                             if (env.payloadJson != null) {
+                                if (count == 0) {
+                                    speed_limit = env.payloadJson.speed_limit;
+                                    tag = env.tag;
+                                    route_hash = hashCoordinates(env.payloadJson.start, env.payloadJson.end);
+                                }
                                 count++;
-                                sum += env.payloadJson.speed;
-                                if (env.payloadJson.ts > maxTs) maxTs = env.payloadJson.ts;
+                                delta_sum += env.payloadJson.delta_distance;
+                                if (env.payloadJson.device_type.equals("food") && env.payloadJson.sensors != null){
+                                    is_food = true;
+                                    //FoodSensors food_sensor = mapper.readValue(env.sensors, FoodSensors.class);
+                                    FoodSensors food_sensor = mapper.convertValue(env.payloadJson.sensors, FoodSensors.class);
+                                    sum_humidity += food_sensor.humidity;
+                                    sum_pressure += food_sensor.pressure;
+                                    sum_temperature += food_sensor.temperature;
+
+                                    System.out.printf(">>> [PARSED_FOOD OK] dev_type=%s%n", env.payloadJson.device_type);
+                                } else if (env.payloadJson.device_type.equals("valuable") && env.payloadJson.sensors != null) {
+                                    is_valuable = true;
+                                    //ValuableSensors valuable_sensor = mapper.readValue(env.sensors, ValuableSensors.class);
+                                    ValuableSensors valuable_sensor = mapper.convertValue(env.payloadJson.sensors, ValuableSensors.class);
+                                    if (valuable_sensor.collision)
+                                        collision = true;
+                                    if (valuable_sensor.alarm)
+                                        alarm = true;
+                                    sum_vibration += valuable_sensor.vibration;
+
+                                    System.out.printf(">>> [PARSED_VALUABLE OK] dev_type=%s%n", env.payloadJson.device_type);
+                                }
                             }
+                        }
+
+                        if (last_element != null) {
+                            status = last_element.payloadJson.status;
+                            Payload payload = last_element.payloadJson;
+                            avg_consumption = payload.consumption_stats.get("avg") != null ? ((Number) payload.consumption_stats.get("avg")).doubleValue() : 0.0;
+                            min_consumption = payload.consumption_stats.get("min") != null ? ((Number) payload.consumption_stats.get("min")).doubleValue() : 0.0;
+                            max_consumption = payload.consumption_stats.get("max") != null ? ((Number) payload.consumption_stats.get("max")).doubleValue() : 0.0;
+
+                            avg_speed = payload.speed_stats.get("avg") != null ? ((Number) payload.speed_stats.get("avg")).doubleValue() : 0.0;
+                            min_speed = payload.speed_stats.get("min") != null ? ((Number) payload.speed_stats.get("min")).doubleValue() : 0.0;
+                            max_speed = payload.speed_stats.get("max") != null ? ((Number) payload.speed_stats.get("max")).doubleValue() : 0.0;
+
+
                         }
 
                         System.out.printf(">>> [WINDOW] dev_id=%s, count=%d%n", key, count);
 
                         if (count > 0) {
-                            double avg = sum / count;
+                            long now = System.currentTimeMillis();
+                            double avg_vibration = sum_vibration / count;
+                            double avg_pressure = sum_pressure / count;
+                            double avg_humidity = sum_humidity / count;
+                            double avg_temperature = sum_temperature / count;
                             AggregatedRecord record = new AggregatedRecord();
-                            record.ts_unix = maxTs;
-                            record.ts = Timestamp.from(Instant.ofEpochMilli(maxTs));
+                            record.ts_unix = now / 1000L; /* in seconds */
+                            record.ts = new Timestamp(now);
                             record.route_hash = route_hash;
                             record.dev_id = key;
-                            record.tag = "avg_speed";
-                            record.payloadJson = String.format("{\"avg_speed\": %.2f, \"count\": %d}", avg, count);
+                            record.tag = tag;
 
-                            System.out.printf(">>> [AGGREGATED] dev_id=%s avg_speed=%.2f count=%d%n", key, avg, count);
+                            if (is_food) {
+                                record.payloadJson = String.format("{\"avg_speed\": %.2f, \"count\": %d, \"delta_sum\": %.2f, \"speed_limit\": %.2f, \"avg_humidity\": %.2f, \"avg_pressure\": %.2f, \"avg_temperature\": %.2f}", avg_speed, count, delta_sum, speed_limit, avg_humidity, avg_pressure, avg_temperature);
+                                System.out.printf(">>> [AGGREGATED_FOOD] dev_id=%s avg_speed=%.2f count=%d delta_sum=%.2f speed_limit=%.2f%n", key, avg_speed, count, delta_sum, speed_limit);
+                            } else if (is_valuable) {
+                                record.payloadJson = String.format("{\"avg_speed\": %.2f, \"count\": %d, \"delta_sum\": %.2f, \"speed_limit\": %.2f, \"collision\": %b, \"alarm\": %b, \"avg_vibration\": %.2f}", avg_speed, count, delta_sum, speed_limit, collision, alarm, avg_vibration);
+                                System.out.printf(">>> [AGGREGATED_VALUABLE] dev_id=%s avg_speed=%.2f count=%d delta_sum=%.2f speed_limit=%.2f%n", key, avg_speed, count, delta_sum, speed_limit);
+                            } else {
+                                record.payloadJson = String.format("{\"avg_speed\": %.2f, \"count\": %d, \"delta_sum\": %.2f, \"speed_limit\": %.2f, \"max_speed\": %.2f, \"min_speed\": %.2f, \"avg_consumption\": %.2f, \"min_consumption\": %.2f, \"max_consumption\": %.2f}", avg_speed, count, delta_sum, speed_limit, max_speed, min_speed, avg_consumption, min_consumption, max_consumption);
+
+                                System.out.printf(">>> [AGGREGATED] dev_id=%s avg_speed_speed=%.2f count=%d delta_sum=%.2f speed_limit=%.2f%n", key, avg_speed, count, delta_sum, speed_limit);
+                            }
+
+
                             out.collect(record);
                         }
                     }
@@ -213,3 +299,16 @@ public class AggregatorJob {
                 env.execute("Dynamic Kafka Aggregator Job (with minimal debug)");
     }
 }
+
+
+                    // fato TODO: mettere il nostro timestamp
+                    // TODO: a seconda del device type leggere il sensore giusto e aggregare.  Solo valueable e food hanno il sensore, 
+                    // mettere la somma dei delta per la distanza totale.
+                    // TODO: grafana, dash board mappa generale con magari drop down dove si seglie il device
+                    // TODO: dashboard di statistiche generale di tutto il sistema, quanti pirati. Cibi marci, o scassinamento. 
+                    // TODO: dashboard di soli eventi, quindi una temperatura sopra un certa soglia o il sensore sopra. 
+                    // TODO: piu tabelle per device anche aggregati e anche quelle normali su brookeroo quando esiste. (controllare e fare solamente una volta if not exist table).
+
+                    /*
+                    senti mi aggreghi la stringa status anche dell'ultimo del ciclo elements, sempre dell'ultimo se aggiungi ai dati aggregati la sua instant consuption, e le consumption stat che su go sono date da questa funzione se riesci a capirci: func (sv *StatVar[T]) Get() map[string]any { res := map[string]any{ "avg_speed": sv.Avg_speed, "min": sv.Min, "max": sv.Max, "count": sv.Count, } sv.Avg_speed = 0.0 sv.Min = 0 sv.Max = 0 sv.Count = 0 return res } poi se puoi aggregare nei valuable sensors, se c'è stata un'allarme allora lo aggrega, la vibrazione la piu grande vista, se c'è stata una collisione mentre nei food sensors prendi la temperatura media, la umidita media e la pressione media.
+                    */

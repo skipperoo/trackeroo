@@ -1,0 +1,1387 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_TRACKER_DB",
+      "label": "tracker_db",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "grafana-postgresql-datasource",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "gauge",
+      "name": "Gauge",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "geomap",
+      "name": "Geomap",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "12.1.1"
+    },
+    {
+      "type": "datasource",
+      "id": "grafana-postgresql-datasource",
+      "name": "PostgreSQL",
+      "version": "12.1.1"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "state-timeline",
+      "name": "State timeline",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_TRACKER_DB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_TRACKER_DB}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH route_data AS (\n  SELECT \n    (payload->'start'->>'lat')::float AS start_lat,\n    (payload->'start'->>'lon')::float AS start_lon,\n    (payload->'end'->>'lat')::float AS end_lat,\n    (payload->'end'->>'lon')::float AS end_lon,\n    (payload->'position'->>'lat')::float AS current_lat,\n    (payload->'position'->>'lon')::float AS current_lon\n  FROM trackeroo.data\n  WHERE dev_id = '$dev_id'\n    AND payload->'start'->>'lat' IS NOT NULL\n    AND payload->'end'->>'lat' IS NOT NULL\n    AND payload->'position'->>'lat' IS NOT NULL\n  ORDER BY ts DESC\n  LIMIT 1\n)\nSELECT \n  CASE \n    WHEN ST_Distance(\n      ST_GeogFromText('POINT(' || start_lon || ' ' || start_lat || ')'),\n      ST_GeogFromText('POINT(' || end_lon || ' ' || end_lat || ')')\n    ) > 0 THEN\n      ROUND((ST_Distance(\n        ST_GeogFromText('POINT(' || start_lon || ' ' || start_lat || ')'),\n        ST_GeogFromText('POINT(' || current_lon || ' ' || current_lat || ')')\n      ) / ST_Distance(\n        ST_GeogFromText('POINT(' || start_lon || ' ' || start_lat || ')'),\n        ST_GeogFromText('POINT(' || end_lon || ' ' || end_lat || ')')\n      ) * 100)::numeric, 2)\n    ELSE 0\n  END AS \"Progress\"\nFROM route_data;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Progress",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_TRACKER_DB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "m"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_TRACKER_DB}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH route_data AS (\n  SELECT \n    (payload->'start'->>'lat')::float AS start_lat,\n    (payload->'start'->>'lon')::float AS start_lon,\n    (payload->'end'->>'lat')::float AS end_lat,\n    (payload->'end'->>'lon')::float AS end_lon,\n    (payload->'position'->>'lat')::float AS current_lat,\n    (payload->'position'->>'lon')::float AS current_lon\n  FROM trackeroo.data\n  WHERE dev_id = '$dev_id'\n    AND payload->'start'->>'lat' IS NOT NULL\n    AND payload->'end'->>'lat' IS NOT NULL\n    AND payload->'position'->>'lat' IS NOT NULL\n  ORDER BY ts DESC\n  LIMIT 1\n),\navg_speed AS (\n  SELECT \n    AVG(COALESCE((payload->'speed')::float, 0)) AS speed_kmh\n  FROM trackeroo.data\n  WHERE dev_id = '$dev_id'\n    AND payload->'speed' IS NOT NULL\n    AND (payload->'speed')::float > 0\n    AND ts >= NOW() - INTERVAL '30 minutes'\n)\nSELECT \n  CASE \n    WHEN s.speed_kmh > 0 THEN\n      ROUND((ST_Distance(\n        ST_GeogFromText('POINT(' || rd.current_lon || ' ' || rd.current_lat || ')'),\n        ST_GeogFromText('POINT(' || rd.end_lon || ' ' || rd.end_lat || ')')\n      ) / 1000.0 / s.speed_kmh * 60)::numeric, 0)\n    ELSE NULL\n  END AS \"ETA\"\nFROM route_data rd\nCROSS JOIN avg_speed s;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "ETA",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_TRACKER_DB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 5,
+        "x": 8,
+        "y": 0
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT \n\npayload->'device_name' \nAS \"Device Name\"\nFROM trackeroo.data \nWHERE\n  (payload->'speed_stats'->>'avg')::float > (payload->'speed_limit')::float*1.3\n\nGROUP BY payload->'device_name'",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          },
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_TRACKER_DB}"
+          }
+        }
+      ],
+      "title": "Pirates",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_TRACKER_DB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "id": 2,
+      "options": {
+        "basemap": {
+          "config": {},
+          "name": "Layer 0",
+          "type": "default"
+        },
+        "controls": {
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showDebug": false,
+          "showMeasure": true,
+          "showScale": true,
+          "showZoom": true
+        },
+        "layers": [
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "fixed": "light-green"
+                },
+                "opacity": 0.2,
+                "rotation": {
+                  "fixed": 0,
+                  "max": 360,
+                  "min": -360,
+                  "mode": "mod"
+                },
+                "size": {
+                  "fixed": 3,
+                  "max": 15,
+                  "min": 2
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            },
+            "filterData": {
+              "id": "byRefId",
+              "options": "A"
+            },
+            "location": {
+              "mode": "auto"
+            },
+            "name": "Trace",
+            "tooltip": true,
+            "type": "markers"
+          },
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "fixed": "blue"
+                },
+                "opacity": 1,
+                "rotation": {
+                  "fixed": 0,
+                  "max": 360,
+                  "min": -360,
+                  "mode": "mod"
+                },
+                "size": {
+                  "fixed": 5,
+                  "max": 15,
+                  "min": 2
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "text": {
+                  "field": "Dev Name",
+                  "fixed": "",
+                  "mode": "field"
+                },
+                "textConfig": {
+                  "fontSize": 8,
+                  "offsetX": 0,
+                  "offsetY": -4,
+                  "textAlign": "center",
+                  "textBaseline": "bottom"
+                }
+              }
+            },
+            "filterData": {
+              "id": "byRefId",
+              "options": "B"
+            },
+            "location": {
+              "mode": "auto"
+            },
+            "name": "Curr pos",
+            "tooltip": true,
+            "type": "markers"
+          },
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "fixed": "green"
+                },
+                "opacity": 1,
+                "rotation": {
+                  "fixed": 0,
+                  "max": 360,
+                  "min": -360,
+                  "mode": "mod"
+                },
+                "size": {
+                  "fixed": 8,
+                  "max": 15,
+                  "min": 2
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/x-mark.svg",
+                  "mode": "fixed"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            },
+            "filterData": {
+              "id": "byRefId",
+              "options": "C"
+            },
+            "location": {
+              "mode": "auto"
+            },
+            "name": "Start",
+            "tooltip": true,
+            "type": "markers"
+          },
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "fixed": "orange"
+                },
+                "opacity": 1,
+                "rotation": {
+                  "fixed": 0,
+                  "max": 360,
+                  "min": -360,
+                  "mode": "mod"
+                },
+                "size": {
+                  "fixed": 9,
+                  "max": 15,
+                  "min": 2
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/x-mark.svg",
+                  "mode": "fixed"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            },
+            "filterData": {
+              "id": "byRefId",
+              "options": "D"
+            },
+            "location": {
+              "mode": "auto"
+            },
+            "name": "End",
+            "tooltip": true,
+            "type": "markers"
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        },
+        "view": {
+          "allLayers": true,
+          "id": "coords",
+          "lat": 43.538469,
+          "lon": 11.382836,
+          "zoom": 8.12
+        }
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_TRACKER_DB}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT \nts,\npayload->'position'->>'lat' as lat,\npayload->'position'->>'lon' as lon\nFROM trackeroo.data\nWHERE $__timeFilter(ts)\nand dev_id = '$dev_id'\nORDER BY ts DESC",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_TRACKER_DB}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT \nts,\npayload->'position'->>'lat' as lat,\npayload->'position'->>'lon' as lon,\npayload->'device_name' as \"Dev Name\"\nFROM trackeroo.data\nWHERE $__timeFilter(ts)\nand dev_id = '$dev_id'\nORDER BY ts desc\nLIMIT 1",
+          "refId": "B",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_TRACKER_DB}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT \nts,\npayload->'start'->>'lat' as lat,\npayload->'start'->>'lon' as lon\nFROM trackeroo.data\nWHERE  dev_id = '$dev_id'\nORDER BY ts DESC\nlimit 1",
+          "refId": "C",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_TRACKER_DB}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT \nts,\npayload->'end'->>'lat' as lat,\npayload->'end'->>'lon' as lon\nFROM trackeroo.data\nWHERE  dev_id = '$dev_id'\nORDER BY ts DESC\nlimit 1",
+          "refId": "D",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Map",
+      "type": "geomap"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_TRACKER_DB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 8,
+      "options": {
+        "basemap": {
+          "config": {},
+          "name": "Layer 0",
+          "type": "default"
+        },
+        "controls": {
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showDebug": false,
+          "showMeasure": true,
+          "showScale": true,
+          "showZoom": true
+        },
+        "layers": [
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "fixed": "blue"
+                },
+                "opacity": 1,
+                "rotation": {
+                  "fixed": 0,
+                  "max": 360,
+                  "min": -360,
+                  "mode": "mod"
+                },
+                "size": {
+                  "fixed": 5,
+                  "max": 15,
+                  "min": 2
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "text": {
+                  "field": "Dev Name",
+                  "fixed": "",
+                  "mode": "field"
+                },
+                "textConfig": {
+                  "fontSize": 8,
+                  "offsetX": 0,
+                  "offsetY": -4,
+                  "textAlign": "center",
+                  "textBaseline": "bottom"
+                }
+              }
+            },
+            "filterData": {
+              "id": "byRefId",
+              "options": "A"
+            },
+            "location": {
+              "mode": "auto"
+            },
+            "name": "Curr pos",
+            "tooltip": true,
+            "type": "markers"
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        },
+        "view": {
+          "allLayers": true,
+          "id": "coords",
+          "lat": 43.538469,
+          "lon": 11.382836,
+          "zoom": 8.12
+        }
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_TRACKER_DB}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT DISTINCT ON (dev_id)\n    ts,\n    payload->'position'->>'lat' as lat,\n    payload->'position'->>'lon' as lon,\n    payload->'device_name' as \"Dev Name\",\n    dev_id\nFROM trackeroo.data\nWHERE $__timeFilter(ts)\nORDER BY dev_id, ts DESC;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Map",
+      "type": "geomap"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_TRACKER_DB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Speed limit"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "unit",
+                "value": "velocitykmh"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Max consumption"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-orange",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "unit",
+                "value": ""
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Avg consumption"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "light-orange",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "unit"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Avg speed"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "unit",
+                "value": "velocitykmh"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Max speed"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-blue",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "unit",
+                "value": "velocitykmh"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      },
+      "id": 1,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_TRACKER_DB}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT \nts as Time,\n(payload->'speed_stats'->>'avg')::float as \"Avg speed\",\n(payload->'speed_stats'->>'max')::float as \"Max speed\",\n(payload->'speed_limit')::float as \"Speed limit\",\n(payload->'consumption_stats'->>'avg')::float as \"Avg consumption\",\n(payload->'consumption_stats'->>'max')::float as \"Max consumption\"\nFROM trackeroo.data \n-- WHERE dev_id = 'trk-185ed4ee37d05c72bf5fa09b'\nWHERE $__timeFilter(ts) \nand dev_id = '$dev_id'\nORDER BY ts DESC\nLIMIT 1",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Last data",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_TRACKER_DB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "fillOpacity": 70,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineWidth": 0,
+            "spanNulls": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "\"accelerating\"": {
+                  "color": "blue",
+                  "index": 3,
+                  "text": "A"
+                },
+                "\"driving\"": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "D"
+                },
+                "\"slowing\"": {
+                  "color": "yellow",
+                  "index": 2,
+                  "text": "SL"
+                },
+                "\"stopped\"": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "ST"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 45
+      },
+      "id": 3,
+      "options": {
+        "alignValue": "left",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "auto",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_TRACKER_DB}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ts as Time,\n\n  payload->'status' as Status\n FROM trackeroo.data \nWHERE $__timeFilter(ts) \nand dev_id = '$dev_id'\nORDER BY ts DESC  ",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Vehicle status",
+      "type": "state-timeline"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_TRACKER_DB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Speed limit"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Max consumption"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Avg consumption"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "light-orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Avg speed"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Max speed"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 16,
+        "w": 24,
+        "x": 0,
+        "y": 49
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_TRACKER_DB}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT \nts as Time,\n(payload->'speed_stats'->>'avg')::float as \"Avg speed\",\n(payload->'speed_stats'->>'max')::float as \"Max speed\",\n(payload->'speed_limit')::float as \"Speed limit\",\n(payload->'consumption_stats'->>'avg')::float as \"Avg consumption\",\n(payload->'consumption_stats'->>'max')::float as \"Max consumption\"\nFROM trackeroo.data \n-- WHERE dev_id = 'trk-185ed4ee37d05c72bf5fa09b'\nWHERE $__timeFilter(ts) \nand dev_id = '$dev_id'\nORDER BY ts DESC",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "New panel",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_TRACKER_DB}"
+        },
+        "definition": "SELECT * FROM ( VALUES\n('admiring_bohr', 'trk-18608d12c8446943ffbf2df9'),\n('adoring_morse', 'trk-18608d12c84d9ce75be19956'),\n('agitated_planck', 'trk-18608d12c845c8050d2973c1'),\n('amazing_turing', 'trk-18608d12c84770f5153b97ef'),\n('boring_heisenberg', 'trk-18608d12c84b469627a640d9'),\n('boring_wozniak', 'trk-18608d12c84c5151bb792931'),\n('brave_schrodinger', 'trk-18608d12c844b01d0d668fce'),\n('charming_dirac', 'trk-18608d12c844fccd26144714'),\n('clever_fermi', 'trk-18608d12c8449838a8eb28eb'),\n('clever_newton', 'trk-18608d12c846ca7bab489e30'),\n('competent_rutherford', 'trk-18608d12c848eb34f8760e19'),\n('condescending_volta', 'trk-18608d12c84d62f4adb3c923'),\n('cool_ohm', 'trk-18608d12c84ba2911c4a675e'),\n('cranky_ampere', 'trk-18608d12c84742df27b88f6b'),\n('curious_feynman', 'trk-18608d12c84c678173241105'),\n('dazzling_maxwell', 'trk-18608d12c846e0a3e38974e5'),\n('determined_kelvin', 'trk-18608d12c845df659619c7e6'),\n('distracted_planck', 'trk-18608d12c8498d777941e066'),\n('dreamy_tesla', 'trk-18608d12c84cdbbc4c9327d2'),\n('eager_darwin', 'trk-18608d12c84aa049b09a2169'),\n('eager_gauss', 'trk-18608d12c84a892c3aad3955'),\n('ecstatic_riemann', 'trk-18608d12c8472b9f0905b3ad'),\n('elastic_fourier', 'trk-18608d12c84db5aa45ada38e'),\n('elegant_lagrange', 'trk-18608d12c847064ce1bdf7ee'),\n('eloquent_leibniz', 'trk-18608d12c84b8b83746dbc8b'),\n('enchanting_poincare', 'trk-18608d12c84acd0d1c7fc74a'),\n('energetic_hilbert', 'trk-18608d12c84759c8a9ef04f8'),\n('epic_cantor', 'trk-18608d12c84823aa3e06b7da'),\n('exciting_godel', 'trk-18608d12c84e12b161fb52f1'),\n('exotic_turing', 'trk-18608d12c84eaef489342f7e'),\n('fabulous_ramanujan', 'trk-18608d12c84e473a6d897698'),\n('faithful_hardy', 'trk-18608d12c84b74702fe3e85c'),\n('fascinated_noether', 'trk-18608d12c848b620cb14aa25'),\n('fearless_galois', 'trk-18608d12c84976fefd57d1ff'),\n('fervent_abel', 'trk-18608d12c84bde9e8b791f18'),\n('friendly_curie', 'trk-18608d12c844e58e640b9ea1'),\n('frosty_dedekind', 'trk-18608d12c8486259917b5535'),\n('funny_peano', 'trk-18608d12c8479d828433ff9a'),\n('gallant_whitehead', 'trk-18608d12c84685251cdaf35c'),\n('gentle_church', 'trk-18608d12c8456a397013ce6b'),\n('gifted_kleene', 'trk-18608d12c84ec5eea3a8dae1'),\n('goofy_markov', 'trk-18608d12c84de3a8df5efbcc'),\n('great_kolmogorov', 'trk-18608d12c84d0b5fc332f041'),\n('grieving_wiener', 'trk-18608d12c84c23101fa0a8b6'),\n('groovy_shannon', 'trk-18608d12c84bf63dcc1fb3e7'),\n('happy_einstein', 'trk-18608d12c84786f21e4edc5e'),\n('hardcore_bell', 'trk-18608d12c84ab6d05b8082ad'),\n('heartwarming_bose', 'trk-18608d12c8487a58b5c5651d'),\n('heuristic_fermi', 'trk-18608d12c84640a54b9bd528'),\n('hopeful_bardeen', 'trk-18608d12c8483aeb4dce2724'),\n('hyper_shockley', 'trk-18608d12c8460bf33167dbdc'),\n('inspiring_bardeen', 'trk-18608d12c84afa2c10aa6c55'),\n('interesting_watson', 'trk-18608d12c84d2247a477b6ff'),\n('iron_franklin', 'trk-18608d12c8451452004ec96d'),\n('jaunty_pauling', 'trk-18608d12c849d409351613c2'),\n('jovial_mendeleev', 'trk-18608d12c84cf3df4741680f'),\n('keen_bohr', 'trk-18608d12c84480bd0ad4656f'),\n('kind_torvalds', 'trk-18608d12c848919ae0a5ac8f'),\n('laughing_rutherford', 'trk-18608d12c8469c00840cc49b'),\n('lucid_heisenberg', 'trk-18608d12c84ee5a2e49c6f83'),\n('magical_dirac', 'trk-18608d12c8491a91b1f888a9'),\n('merry_schwinger', 'trk-18608d12c8443834a667d6c2'),\n('modest_dyson', 'trk-18608d12c84b2feca3792861'),\n('nervous_hawking', 'trk-18608d12c84e95effa9dc925'),\n('noble_weinberg', 'trk-18608d12c84c7e6385d059d6'),\n('objective_glashow', 'trk-18608d12c84b11c367999861'),\n('optimistic_babbage', 'trk-18608d12c849a50c845c25a9'),\n('optimized_higgs', 'trk-18608d12c84c3ae0fd8aad7e'),\n('patient_wu', 'trk-18608d12c8480b18fe88b4af'),\n('peaceful_pascal', 'trk-18608d12c8494897112ba78e'),\n('pedantic_pauli', 'trk-18608d12c8490334a6303366'),\n('phenomenal_born', 'trk-18608d12c845ad105b9a60db'),\n('pious_planck', 'trk-18608d12c8462309d5e746cc'),\n('practical_michelson', 'trk-18608d12c84581a0b80ca1c5'),\n('proud_morley', 'trk-18608d12c84ae3dffff2e52d'),\n('puzzled_fizeau', 'trk-18608d12c848d48480a5d5b6'),\n('quirky_shannon', 'trk-18608d12c84e7f725b9dd529'),\n('quizzical_doppler', 'trk-18608d12c84caba1375500b4'),\n('relaxed_turing', 'trk-18608d12c84dfa6590d8fbda'),\n('romantic_hertz', 'trk-18608d12c8466e529b599dc4'),\n('sad_marconi', 'trk-18608d12c846b3600123a417'),\n('serene_hopper', 'trk-18608d12c84a5f766256c9e2'),\n('serene_tesla', 'trk-18608d12c84931d6fa2d6232'),\n('sharp_edison', 'trk-18608d12c846577d4ec97cfb'),\n('silly_westinghouse', 'trk-18608d12c84cc3de436f7bde'),\n('stoic_ohm', 'trk-18608d12c8495fd71857ce3f'),\n('strange_ampere', 'trk-18608d12c84b5cae4cff3133'),\n('suspicious_volta', 'trk-18608d12c84a2e54a6ffdd76'),\n('sweet_galvani', 'trk-18608d12c84e2a4a52da79d9'),\n('tender_faraday', 'trk-18608d12c849bd6d485879c1'),\n('thirsty_henry', 'trk-18608d12c8445101b3d3a3b8'),\n('thoughtful_weber', 'trk-18608d12c845f5d103e908ad'),\n('thrilled_gauss', 'trk-18608d12c84dccaa3ac843bd'),\n('trusting_knuth', 'trk-18608d12c84e67b817e2a8fd'),\n('upbeat_ritchie', 'trk-18608d12c84c9470140d32f6'),\n('vibrant_thompson', 'trk-18608d12c847b3e74258eb03'),\n('wonderful_wirth', 'trk-18608d12c8414acfcb9165b1'),\n('xenodochial_carmack', 'trk-18608d12c843cfc86452c8bc'),\n('youthful_stallman', 'trk-18608d12c844cb262515236b'),\n('zealous_berners', 'trk-18608d12c84d385e1d5c7bbc')\n) AS t (__text, __value)",
+        "name": "dev_id",
+        "options": [],
+        "query": "SELECT * FROM ( VALUES\n('admiring_bohr', 'trk-18608d12c8446943ffbf2df9'),\n('adoring_morse', 'trk-18608d12c84d9ce75be19956'),\n('agitated_planck', 'trk-18608d12c845c8050d2973c1'),\n('amazing_turing', 'trk-18608d12c84770f5153b97ef'),\n('boring_heisenberg', 'trk-18608d12c84b469627a640d9'),\n('boring_wozniak', 'trk-18608d12c84c5151bb792931'),\n('brave_schrodinger', 'trk-18608d12c844b01d0d668fce'),\n('charming_dirac', 'trk-18608d12c844fccd26144714'),\n('clever_fermi', 'trk-18608d12c8449838a8eb28eb'),\n('clever_newton', 'trk-18608d12c846ca7bab489e30'),\n('competent_rutherford', 'trk-18608d12c848eb34f8760e19'),\n('condescending_volta', 'trk-18608d12c84d62f4adb3c923'),\n('cool_ohm', 'trk-18608d12c84ba2911c4a675e'),\n('cranky_ampere', 'trk-18608d12c84742df27b88f6b'),\n('curious_feynman', 'trk-18608d12c84c678173241105'),\n('dazzling_maxwell', 'trk-18608d12c846e0a3e38974e5'),\n('determined_kelvin', 'trk-18608d12c845df659619c7e6'),\n('distracted_planck', 'trk-18608d12c8498d777941e066'),\n('dreamy_tesla', 'trk-18608d12c84cdbbc4c9327d2'),\n('eager_darwin', 'trk-18608d12c84aa049b09a2169'),\n('eager_gauss', 'trk-18608d12c84a892c3aad3955'),\n('ecstatic_riemann', 'trk-18608d12c8472b9f0905b3ad'),\n('elastic_fourier', 'trk-18608d12c84db5aa45ada38e'),\n('elegant_lagrange', 'trk-18608d12c847064ce1bdf7ee'),\n('eloquent_leibniz', 'trk-18608d12c84b8b83746dbc8b'),\n('enchanting_poincare', 'trk-18608d12c84acd0d1c7fc74a'),\n('energetic_hilbert', 'trk-18608d12c84759c8a9ef04f8'),\n('epic_cantor', 'trk-18608d12c84823aa3e06b7da'),\n('exciting_godel', 'trk-18608d12c84e12b161fb52f1'),\n('exotic_turing', 'trk-18608d12c84eaef489342f7e'),\n('fabulous_ramanujan', 'trk-18608d12c84e473a6d897698'),\n('faithful_hardy', 'trk-18608d12c84b74702fe3e85c'),\n('fascinated_noether', 'trk-18608d12c848b620cb14aa25'),\n('fearless_galois', 'trk-18608d12c84976fefd57d1ff'),\n('fervent_abel', 'trk-18608d12c84bde9e8b791f18'),\n('friendly_curie', 'trk-18608d12c844e58e640b9ea1'),\n('frosty_dedekind', 'trk-18608d12c8486259917b5535'),\n('funny_peano', 'trk-18608d12c8479d828433ff9a'),\n('gallant_whitehead', 'trk-18608d12c84685251cdaf35c'),\n('gentle_church', 'trk-18608d12c8456a397013ce6b'),\n('gifted_kleene', 'trk-18608d12c84ec5eea3a8dae1'),\n('goofy_markov', 'trk-18608d12c84de3a8df5efbcc'),\n('great_kolmogorov', 'trk-18608d12c84d0b5fc332f041'),\n('grieving_wiener', 'trk-18608d12c84c23101fa0a8b6'),\n('groovy_shannon', 'trk-18608d12c84bf63dcc1fb3e7'),\n('happy_einstein', 'trk-18608d12c84786f21e4edc5e'),\n('hardcore_bell', 'trk-18608d12c84ab6d05b8082ad'),\n('heartwarming_bose', 'trk-18608d12c8487a58b5c5651d'),\n('heuristic_fermi', 'trk-18608d12c84640a54b9bd528'),\n('hopeful_bardeen', 'trk-18608d12c8483aeb4dce2724'),\n('hyper_shockley', 'trk-18608d12c8460bf33167dbdc'),\n('inspiring_bardeen', 'trk-18608d12c84afa2c10aa6c55'),\n('interesting_watson', 'trk-18608d12c84d2247a477b6ff'),\n('iron_franklin', 'trk-18608d12c8451452004ec96d'),\n('jaunty_pauling', 'trk-18608d12c849d409351613c2'),\n('jovial_mendeleev', 'trk-18608d12c84cf3df4741680f'),\n('keen_bohr', 'trk-18608d12c84480bd0ad4656f'),\n('kind_torvalds', 'trk-18608d12c848919ae0a5ac8f'),\n('laughing_rutherford', 'trk-18608d12c8469c00840cc49b'),\n('lucid_heisenberg', 'trk-18608d12c84ee5a2e49c6f83'),\n('magical_dirac', 'trk-18608d12c8491a91b1f888a9'),\n('merry_schwinger', 'trk-18608d12c8443834a667d6c2'),\n('modest_dyson', 'trk-18608d12c84b2feca3792861'),\n('nervous_hawking', 'trk-18608d12c84e95effa9dc925'),\n('noble_weinberg', 'trk-18608d12c84c7e6385d059d6'),\n('objective_glashow', 'trk-18608d12c84b11c367999861'),\n('optimistic_babbage', 'trk-18608d12c849a50c845c25a9'),\n('optimized_higgs', 'trk-18608d12c84c3ae0fd8aad7e'),\n('patient_wu', 'trk-18608d12c8480b18fe88b4af'),\n('peaceful_pascal', 'trk-18608d12c8494897112ba78e'),\n('pedantic_pauli', 'trk-18608d12c8490334a6303366'),\n('phenomenal_born', 'trk-18608d12c845ad105b9a60db'),\n('pious_planck', 'trk-18608d12c8462309d5e746cc'),\n('practical_michelson', 'trk-18608d12c84581a0b80ca1c5'),\n('proud_morley', 'trk-18608d12c84ae3dffff2e52d'),\n('puzzled_fizeau', 'trk-18608d12c848d48480a5d5b6'),\n('quirky_shannon', 'trk-18608d12c84e7f725b9dd529'),\n('quizzical_doppler', 'trk-18608d12c84caba1375500b4'),\n('relaxed_turing', 'trk-18608d12c84dfa6590d8fbda'),\n('romantic_hertz', 'trk-18608d12c8466e529b599dc4'),\n('sad_marconi', 'trk-18608d12c846b3600123a417'),\n('serene_hopper', 'trk-18608d12c84a5f766256c9e2'),\n('serene_tesla', 'trk-18608d12c84931d6fa2d6232'),\n('sharp_edison', 'trk-18608d12c846577d4ec97cfb'),\n('silly_westinghouse', 'trk-18608d12c84cc3de436f7bde'),\n('stoic_ohm', 'trk-18608d12c8495fd71857ce3f'),\n('strange_ampere', 'trk-18608d12c84b5cae4cff3133'),\n('suspicious_volta', 'trk-18608d12c84a2e54a6ffdd76'),\n('sweet_galvani', 'trk-18608d12c84e2a4a52da79d9'),\n('tender_faraday', 'trk-18608d12c849bd6d485879c1'),\n('thirsty_henry', 'trk-18608d12c8445101b3d3a3b8'),\n('thoughtful_weber', 'trk-18608d12c845f5d103e908ad'),\n('thrilled_gauss', 'trk-18608d12c84dccaa3ac843bd'),\n('trusting_knuth', 'trk-18608d12c84e67b817e2a8fd'),\n('upbeat_ritchie', 'trk-18608d12c84c9470140d32f6'),\n('vibrant_thompson', 'trk-18608d12c847b3e74258eb03'),\n('wonderful_wirth', 'trk-18608d12c8414acfcb9165b1'),\n('xenodochial_carmack', 'trk-18608d12c843cfc86452c8bc'),\n('youthful_stallman', 'trk-18608d12c844cb262515236b'),\n('zealous_berners', 'trk-18608d12c84d385e1d5c7bbc')\n) AS t (__text, __value)",
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Test",
+  "uid": "17b3218b-4ebe-43cd-876b-476db6af2838",
+  "version": 12,
+  "weekStart": ""
+}
