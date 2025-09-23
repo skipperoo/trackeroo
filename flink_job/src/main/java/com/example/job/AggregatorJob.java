@@ -27,11 +27,6 @@ import java.security.MessageDigest;
 
 public class AggregatorJob {
 
-    public static class Coordinate {
-        public double lat;
-        public double lon;
-    }
-
     public static String hashCoordinates(Coordinate start, Coordinate end) {
         try {
             String input = start.lat + "," + start.lon + ";" + end.lat + "," + end.lon;
@@ -43,16 +38,104 @@ public class AggregatorJob {
                 hexString.append(String.format("%02x", b));
             }
 
-            return hexString.toString().substring(0, 16);
+                    return hexString.toString().substring(0, 16);
         } catch (Exception e) {
             throw new RuntimeException("Error computing route hash", e);
         }
     }
 
+    private static String buildFoodPayload(String key, double avg_speed, int count, double delta_sum,
+            double speed_limit,
+            double avg_humidity, double avg_pressure, double avg_temperature,
+            String status, double min_speed, double max_speed,
+            double avg_consumption, double min_consumption, double max_consumption) {
+
+        System.out.printf(
+                ">>> [AGGREGATED_FOOD] dev_id=%s avg_speed=%.2f count=%d delta_sum=%.2f speed_limit=%.2f " +
+                        "avg_humidity=%.2f avg_pressure=%.2f avg_temperature=%.2f min_speed=%.2f max_speed=%.2f " +
+                        "avg_consumption=%.2f min_consumption=%.2f max_consumption=%.2f status=%s%n",
+                key, avg_speed, count, delta_sum, speed_limit,
+                avg_humidity, avg_pressure, avg_temperature,
+                min_speed, max_speed,
+                avg_consumption, min_consumption, max_consumption,
+                status);
+
+        return String.format(
+                "{\"avg_speed\": %.2f, \"count\": %d, \"delta_sum\": %.2f, \"speed_limit\": %.2f, " +
+                        "\"avg_humidity\": %.2f, \"avg_pressure\": %.2f, \"avg_temperature\": %.2f, " +
+                        "\"min_speed\": %.2f, \"max_speed\": %.2f, " +
+                        "\"avg_consumption\": %.2f, \"min_consumption\": %.2f, \"max_consumption\": %.2f, " +
+                        "\"status\": \"%s\"}",
+                avg_speed, count, delta_sum, speed_limit,
+                avg_humidity, avg_pressure, avg_temperature,
+                min_speed, max_speed,
+                avg_consumption, min_consumption, max_consumption,
+                status);
+    }
+
+    private static String buildValuablePayload(String key, double avg_speed, int count, double delta_sum,
+            double speed_limit,
+            boolean collision, boolean alarm, double avg_vibration,
+            String status, double min_speed, double max_speed,
+            double avg_consumption, double min_consumption, double max_consumption) {
+
+        System.out.printf(
+                ">>> [AGGREGATED_VALUABLE] dev_id=%s avg_speed=%.2f count=%d delta_sum=%.2f speed_limit=%.2f " +
+                        "collision=%b alarm=%b avg_vibration=%.2f min_speed=%.2f max_speed=%.2f " +
+                        "avg_consumption=%.2f min_consumption=%.2f max_consumption=%.2f status=%s%n",
+                key, avg_speed, count, delta_sum, speed_limit,
+                collision, alarm, avg_vibration,
+                min_speed, max_speed,
+                avg_consumption, min_consumption, max_consumption,
+                status);
+
+        return String.format(
+                "{\"avg_speed\": %.2f, \"count\": %d, \"delta_sum\": %.2f, \"speed_limit\": %.2f, " +
+                        "\"collision\": %b, \"alarm\": %b, \"avg_vibration\": %.2f, " +
+                        "\"min_speed\": %.2f, \"max_speed\": %.2f, " +
+                        "\"avg_consumption\": %.2f, \"min_consumption\": %.2f, \"max_consumption\": %.2f, " +
+                        "\"status\": \"%s\"}",
+                avg_speed, count, delta_sum, speed_limit,
+                collision, alarm, avg_vibration,
+                min_speed, max_speed,
+                avg_consumption, min_consumption, max_consumption,
+                status);
+    }
+
+    private static String buildGenericPayload(String key, double avg_speed, int count, double delta_sum,
+            double speed_limit,
+            double max_speed, double min_speed,
+            double avg_consumption, double min_consumption, double max_consumption,
+            String status) {
+
+        System.out.printf(
+                ">>> [AGGREGATED] dev_id=%s avg_speed=%.2f count=%d delta_sum=%.2f speed_limit=%.2f " +
+                        "max_speed=%.2f min_speed=%.2f avg_consumption=%.2f min_consumption=%.2f max_consumption=%.2f status=%s%n",
+                key, avg_speed, count, delta_sum, speed_limit,
+                max_speed, min_speed,
+                avg_consumption, min_consumption, max_consumption,
+                status);
+
+        return String.format(
+                "{\"avg_speed\": %.2f, \"count\": %d, \"delta_sum\": %.2f, \"speed_limit\": %.2f, " +
+                        "\"max_speed\": %.2f, \"min_speed\": %.2f, " +
+                        "\"avg_consumption\": %.2f, \"min_consumption\": %.2f, \"max_consumption\": %.2f, " +
+                        "\"status\": \"%s\"}",
+                avg_speed, count, delta_sum, speed_limit,
+                max_speed, min_speed,
+                avg_consumption, min_consumption, max_consumption,
+                status);
+    }
+
+    public static class Coordinate {
+        public double lat;
+        public double lon;
+    }
+
     public static class Payload {
         public long ts;
-        public double speed;
-        public double speed_limit;
+        public Double speed;
+        public Double speed_limit;
         public Map<String, Object> speed_stats;
         public Coordinate position;
         public String device_name;
@@ -69,7 +152,7 @@ public class AggregatorJob {
 
     public static class ValuableSensors {
     	public boolean alarm;
-    	public double vibration;
+    	public Double vibration;
     	public boolean rear_hatch_open;
     	public boolean front_hatch_open;
     	public boolean collision;
@@ -123,7 +206,6 @@ public class AggregatorJob {
                 "Kafka Source with Regex"
         );
 
-        // --- Parsing con logging ---
         DataStream<Envelope> parsed = rawStream.map(value -> {
             System.out.printf(">>> [KAFKA_MSG] Received at %s: %s%n", Instant.now(), value);
             try {
@@ -149,6 +231,7 @@ public class AggregatorJob {
 
                     @Override
                     public void process(String key, Context context, Iterable<Envelope> elements, Collector<AggregatedRecord> out) {
+
                         Envelope last_element = null;
                         int count = 0;
                         String route_hash = " ";
@@ -170,33 +253,39 @@ public class AggregatorJob {
                         boolean is_food = false;
                         boolean is_valuable = false;
                         boolean alarm = false;
- 
+                        
+                        /* for each dev_id  */
                         for (Envelope env : elements) {
                             last_element = env;
                             if (env.payloadJson != null) {
+
                                 if (count == 0) {
                                     speed_limit = env.payloadJson.speed_limit;
                                     tag = env.tag;
                                     route_hash = hashCoordinates(env.payloadJson.start, env.payloadJson.end);
                                 }
+
                                 count++;
                                 delta_sum += env.payloadJson.delta_distance;
-                                if (env.payloadJson.device_type.equals("food") && env.payloadJson.sensors != null){
+
+                                if (env.payloadJson.device_type.equals("food") && env.payloadJson.sensors != null) {
                                     is_food = true;
                                     FoodSensors food_sensor = mapper.convertValue(env.payloadJson.sensors, FoodSensors.class);
-                                    sum_humidity += food_sensor.humidity;
-                                    sum_pressure += food_sensor.pressure;
-                                    sum_temperature += food_sensor.temperature;
+
+                                    if (food_sensor.humidity != null) sum_humidity += food_sensor.humidity;
+                                    if (food_sensor.pressure != null) sum_pressure += food_sensor.pressure;
+                                    if (food_sensor.temperature != null) sum_temperature += food_sensor.temperature;
 
                                     System.out.printf(">>> [PARSED_FOOD OK] dev_type=%s%n", env.payloadJson.device_type);
-                                } else if (env.payloadJson.device_type.equals("valuable") && env.payloadJson.sensors != null) {
+
+                                } else if (env.payloadJson.device_type.equals("valuable")
+                                        && env.payloadJson.sensors != null) {
                                     is_valuable = true;
                                     ValuableSensors valuable_sensor = mapper.convertValue(env.payloadJson.sensors, ValuableSensors.class);
-                                    if (valuable_sensor.collision)
-                                        collision = true;
-                                    if (valuable_sensor.alarm)
-                                        alarm = true;
-                                    sum_vibration += valuable_sensor.vibration;
+
+                                    if (valuable_sensor.collision) collision = true;
+                                    if (valuable_sensor.alarm) alarm = true;
+                                    if (valuable_sensor.vibration != null) sum_vibration += valuable_sensor.vibration;
 
                                     System.out.printf(">>> [PARSED_VALUABLE OK] dev_type=%s%n", env.payloadJson.device_type);
                                 }
@@ -206,6 +295,7 @@ public class AggregatorJob {
                         if (last_element != null) {
                             status = last_element.payloadJson.status;
                             Payload payload = last_element.payloadJson;
+
                             avg_consumption = payload.consumption_stats.get("avg") != null ? ((Number) payload.consumption_stats.get("avg")).doubleValue() : 0.0;
                             min_consumption = payload.consumption_stats.get("min") != null ? ((Number) payload.consumption_stats.get("min")).doubleValue() : 0.0;
                             max_consumption = payload.consumption_stats.get("max") != null ? ((Number) payload.consumption_stats.get("max")).doubleValue() : 0.0;
@@ -213,18 +303,19 @@ public class AggregatorJob {
                             avg_speed = payload.speed_stats.get("avg") != null ? ((Number) payload.speed_stats.get("avg")).doubleValue() : 0.0;
                             min_speed = payload.speed_stats.get("min") != null ? ((Number) payload.speed_stats.get("min")).doubleValue() : 0.0;
                             max_speed = payload.speed_stats.get("max") != null ? ((Number) payload.speed_stats.get("max")).doubleValue() : 0.0;
-
-
                         }
 
                         System.out.printf(">>> [WINDOW] dev_id=%s, count=%d%n", key, count);
 
                         if (count > 0) {
+
                             long now = System.currentTimeMillis();
+
                             double avg_vibration = sum_vibration / count;
                             double avg_pressure = sum_pressure / count;
                             double avg_humidity = sum_humidity / count;
                             double avg_temperature = sum_temperature / count;
+
                             AggregatedRecord record = new AggregatedRecord();
                             record.ts_unix = now / 1000L; /* in seconds */
                             record.ts = new Timestamp(now);
@@ -233,17 +324,14 @@ public class AggregatorJob {
                             record.tag = tag;
 
                             if (is_food) {
-                                record.payloadJson = String.format("{\"avg_speed\": %.2f, \"count\": %d, \"delta_sum\": %.2f, \"speed_limit\": %.2f, \"avg_humidity\": %.2f, \"avg_pressure\": %.2f, \"avg_temperature\": %.2f}", avg_speed, count, delta_sum, speed_limit, avg_humidity, avg_pressure, avg_temperature);
-                                System.out.printf(">>> [AGGREGATED_FOOD] dev_id=%s avg_speed=%.2f count=%d delta_sum=%.2f speed_limit=%.2f%n", key, avg_speed, count, delta_sum, speed_limit);
+                                record.payloadJson =  buildFoodPayload(key, avg_speed, count, delta_sum, speed_limit, avg_humidity, avg_pressure, avg_temperature, status, min_speed, max_speed, avg_consumption, min_consumption, max_consumption);
+
                             } else if (is_valuable) {
-                                record.payloadJson = String.format("{\"avg_speed\": %.2f, \"count\": %d, \"delta_sum\": %.2f, \"speed_limit\": %.2f, \"collision\": %b, \"alarm\": %b, \"avg_vibration\": %.2f}", avg_speed, count, delta_sum, speed_limit, collision, alarm, avg_vibration);
-                                System.out.printf(">>> [AGGREGATED_VALUABLE] dev_id=%s avg_speed=%.2f count=%d delta_sum=%.2f speed_limit=%.2f%n", key, avg_speed, count, delta_sum, speed_limit);
+                                record.payloadJson = buildValuablePayload(key, avg_speed, count, delta_sum, speed_limit, collision, alarm, avg_vibration, status, min_speed, max_speed, avg_consumption, min_consumption, max_consumption);
+                               
                             } else {
-                                record.payloadJson = String.format("{\"avg_speed\": %.2f, \"count\": %d, \"delta_sum\": %.2f, \"speed_limit\": %.2f, \"max_speed\": %.2f, \"min_speed\": %.2f, \"avg_consumption\": %.2f, \"min_consumption\": %.2f, \"max_consumption\": %.2f}", avg_speed, count, delta_sum, speed_limit, max_speed, min_speed, avg_consumption, min_consumption, max_consumption);
-
-                                System.out.printf(">>> [AGGREGATED] dev_id=%s avg_speed_speed=%.2f count=%d delta_sum=%.2f speed_limit=%.2f%n", key, avg_speed, count, delta_sum, speed_limit);
+                                record.payloadJson = buildGenericPayload(key, avg_speed, count, delta_sum, speed_limit,max_speed, min_speed, avg_consumption, min_consumption, max_consumption, status);
                             }
-
 
                             out.collect(record);
                         }
@@ -294,3 +382,18 @@ public class AggregatorJob {
     }
 }
 
+// TODO: a seconda del device type leggere il sensore giusto e aggregare. Solo
+// valueable e food hanno il sensore,
+// mettere la somma dei delta per la distanza totale.
+// TODO: grafana, dash board mappa generale con magari drop down dove si seglie
+// il device
+
+// TODO: dashboard di statistiche generale di tutto il sistema, quanti pirati.
+// Cibi marci, o scassinamento.
+
+// TODO: dashboard di soli eventi, quindi una temperatura sopra un certa soglia
+// o il sensore sopra.
+
+// TODO: piu tabelle per device anche aggregati e anche quelle normali su
+// brookeroo quando esiste. (controllare e fare solamente una volta if not exist
+// table).
