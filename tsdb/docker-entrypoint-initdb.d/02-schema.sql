@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS trackeroo.aggregated (
     PRIMARY KEY (ts, route_hash, dev_id)
 );
 
-SELECT create_hypertable('trackeroo.data', 'ts');
-SELECT create_hypertable('trackeroo.aggregated', 'ts');
+SELECT create_hypertable('trackeroo.data', 'ts', 'dev_id', 16);
+SELECT create_hypertable('trackeroo.aggregated', 'ts', 'dev_id', 16);
 
 CREATE INDEX IF NOT EXISTS idx_trackeroo_data_dev_id ON trackeroo.data(dev_id);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_data_tag ON trackeroo.data(tag);
