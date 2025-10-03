@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"trackeroo-backend/internal/logger"
 	"trackeroo-backend/internal/model"
 	"trackeroo-backend/internal/service"
 )
@@ -17,14 +18,15 @@ func PublishPayload(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(model.Error{Error: "Please use a valid username"})
 		return
 	}
-	topic := r.PathValue("topic")
+	topic := r.URL.Query().Get("topic")
+	tag := r.URL.Query().Get("tag")
+	logger.Debug("Received data via http from %s on topic %s and tag %s", username, topic, tag)
 	if topic != "data" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(model.Error{Error: "Topic not allowed"})
 		return
 	}
-	tag := r.PathValue("tag")
 	if tag == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")

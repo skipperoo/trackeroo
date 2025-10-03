@@ -42,6 +42,14 @@ type Service struct {
 	knownTopics map[string]bool /* for caching kafka topics  */
 }
 
+type Envelope struct {
+	TsUnix      int64           `json:"ts_unix"`
+	Ts          string          `json:"ts"`
+	DevID       string          `json:"dev_id"`
+	Tag         string          `json:"tag"`
+	PayloadJSON json.RawMessage `json:"payloadJson"`
+}
+
 func NewService(config *Config) *Service {
 	return &Service{
 		config:      config,
@@ -226,12 +234,27 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 		log.Printf("Errore creazione topic %s: %v", kafkaTopic, err)
 		return
 	} else {
+
+		envelope := Envelope{
+			TsUnix:      tsUnix,
+			Ts:          ts.Format(time.RFC3339), // is this right?
+			DevID:       devID,
+			Tag:         tag,
+			PayloadJSON: payload, // il payload originale come stringa JSON
+		}
+
+		envelopeBytes, err := json.Marshal(envelope)
+		if err != nil {
+			log.Printf("Failed to marshal envelope: %v", err)
+			return
+		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) /* 5 second timeout */
 		defer cancel()
 
-		err := s.kafkaWriter.WriteMessages(ctx, kafka.Message{
+		err = s.kafkaWriter.WriteMessages(ctx, kafka.Message{
 			Topic: kafkaTopic,
-			Value: payload,
+			Value: envelopeBytes,
 		})
 
 		if err != nil {
