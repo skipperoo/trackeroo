@@ -137,6 +137,7 @@ func (s *Service) connectMQTT() error {
 	opts.SetKeepAlive(60 * time.Second)
 	opts.SetPingTimeout(10 * time.Second)
 	opts.SetConnectTimeout(10 * time.Second)
+	opts.SetAutoAckDisabled(true)
 
 	// Set connection lost handler
 	opts.SetConnectionLostHandler(func(client mqtt.Client, err error) {
@@ -152,7 +153,6 @@ func (s *Service) connectMQTT() error {
 	s.mqttClient = mqtt.NewClient(opts)
 
 	c := 0
-
 	for {
 		if token := s.mqttClient.Connect(); token.Wait() && token.Error() != nil {
 			if c == 5 {
@@ -201,11 +201,6 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 		log.Printf("Invalid JSON payload for topic %s: %v", topic, err)
 		return
 	}
-	var jsonPayload json.RawMessage
-	if err := json.Unmarshal(payload, &jsonPayload); err != nil {
-		log.Printf("Invalid JSON payload for topic %s: %v", topic, err)
-		return
-	}
 
 	tsUnix, ok := data["ts"].(int64)
 	if !ok {
@@ -213,7 +208,7 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	}
 
 	ts := time.Unix(tsUnix, 0).UTC()
-
+	jsonPayload := json.RawMessage(payload)
 	if err := s.insertData(tsUnix, ts, devID, tag, jsonPayload); err != nil {
 		log.Printf("Failed to insert data: %v", err)
 		return
@@ -242,6 +237,7 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	}
 
 	log.Printf("Successfully inserted data for dev_id: %s, tag: %s", devID, tag)
+	msg.Ack()
 }
 
 func (s *Service) insertData(tsUnix int64, ts time.Time, devID, tag string, payload json.RawMessage) error {
