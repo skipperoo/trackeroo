@@ -57,12 +57,20 @@ public class AggregatorJob {
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         final AggregationHandler handler = new AggregationHandler();
+        
+        // Legge variabili d'ambiente (con default)
+        String kafkaUrl = System.getenv().getOrDefault("KAFKA_URL", "kafka:9092");
+        String postgresUrl = System.getenv().getOrDefault("POSTGRES_URL", "jdbc:postgresql://tsdb:5432/tracker_db?sslmode=disable");
+        String postgresUser = System.getenv().getOrDefault("POSTGRES_USER", "admin");
+        String postgresPassword = System.getenv().getOrDefault("POSTGRES_PASSWORD", "administrator");
+
+        System.out.printf(">>> [DEBUG] Kafka: %s | Postgres: %s%n", kafkaUrl, postgresUrl);
 
         Pattern topicPattern = Pattern.compile("j-data-.*");
 
         // Kafka Source configuration
         KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
-                .setBootstrapServers("kafka:9092")
+                .setBootstrapServers(kafkaUrl)
                 .setGroupId("flink-aggregator")
                 .setTopicPattern(topicPattern)
                 .setStartingOffsets(OffsetsInitializer.latest())
@@ -140,13 +148,19 @@ public class AggregatorJob {
                         .build(),
 
                 new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
-                        .withUrl("jdbc:postgresql://tsdb:5432/tracker_db?sslmode=disable")
+                        .withUrl(postgresUrl)
                         .withDriverName("org.postgresql.Driver")
-                        .withUsername("admin")
-                        .withPassword("administrator")
+                        .withUsername(postgresUser)
+                        .withPassword(postgresPassword)
                         .build()
         )).setParallelism(2);
 
         env.execute("Dynamic Kafka Aggregator Job (with minimal debug)");
     }
 }
+
+// TODO: grafana le dashboard su telegram, ricordarsi piu layer con ognuno la sua query.
+// TODO: flink parametrico con kafka postgress, e flink job manager (tutto environment da fuori).
+// TODO: brokeroooooo vedere cosa mqtt.
+// TODO: provare a continuare la relazione.
+
