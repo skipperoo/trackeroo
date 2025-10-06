@@ -7,7 +7,11 @@ import (
 	"trackeroo-backend/internal/logger"
 	"trackeroo-backend/internal/model"
 	"trackeroo-backend/internal/service"
+
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+var isUserCache = service.NewSimpleCache()
 
 func UserAuth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -61,6 +65,7 @@ func UserAuth(w http.ResponseWriter, r *http.Request) {
 
 func TopicAuth(w http.ResponseWriter, r *http.Request) {
 	/* Every response should be 200 */
+	ctx := r.Context()
 	w.WriteHeader(http.StatusOK)
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Cannot parse form", http.StatusBadRequest)
@@ -76,7 +81,24 @@ func TopicAuth(w http.ResponseWriter, r *http.Request) {
 		Permission: r.FormValue("permission"),
 	}
 
-	if form.Username == "apps" {
+	isUserVal := isUserCache.Get(form.Username)
+	if isUserVal == nil {
+		_, err := service.GetUserByName(ctx, form.Username)
+		switch err {
+		case mongo.ErrNoDocuments:
+			isUserCache.Set(form.Username, false)
+			isUserVal = any(false)
+		case nil:
+			isUserCache.Set(form.Username, true)
+			isUserVal = any(true)
+		default:
+			logger.Error("Cannot retrieve %s: %v", form.Username, err)
+			return
+		}
+	}
+	isUser := isUserVal.(bool)
+
+	if isUser {
 		logger.Debug("App %s authenticated for topic %s", form.Username, form.Topic)
 		fmt.Fprint(w, "allow")
 		return

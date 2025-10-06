@@ -23,8 +23,8 @@ type TdmClient struct {
 }
 
 func NewTdmClient() *TdmClient {
-	username := GetenvOrDefault("MQTT_USERNAME", "apps")
-	password := GetenvOrDefault("MQTT_PASSWORD", "apps")
+	username := GetenvOrDefault("MQTT_USERNAME", "admin")
+	password := GetenvOrDefault("MQTT_PASSWORD", "admin123")
 	mqttHost := GetenvOrDefault("MQTT_BROKER", "rabbitmq")
 	mqttPort := GetenvOrDefault("MQTT_PORT", "1883")
 	tdmClient := new(TdmClient)
@@ -87,10 +87,10 @@ func (t *TdmClient) initClient() {
 	opts.SetPingTimeout(time.Duration(t.heartbeat) * time.Second)
 	opts.SetAutoReconnect(true)
 	opts.SetConnectionLostHandler(func(c pahoMqtt.Client, err error) {
-		logger.Error("MQTT Connection lost:", err)
+		logger.Error("MQTT Connection lost: %v", err)
 	})
 	opts.SetOnConnectHandler(func(c pahoMqtt.Client) {
-		logger.Info("Connected to the mqtt broker!")
+		logger.Info("Connected to the MQTT broker!")
 	})
 	opts.SetPassword(t.password)
 	opts.SetClientID(t.clientID)
@@ -98,7 +98,8 @@ func (t *TdmClient) initClient() {
 }
 
 func (t *TdmClient) Publish(devID, tag, payload string) error {
-	token := t.client.Publish(t.topicData+devID+"/"+tag, byte(1), true, payload)
+	topic := t.topicData + devID + "/" + tag
+	token := t.client.Publish(topic, byte(1), true, payload)
 	token.Wait()
 	return token.Error()
 }
