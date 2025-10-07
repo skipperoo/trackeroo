@@ -20,3 +20,4 @@
     definition: "{{ lookup('template', item) | from_yaml }}"
   loop:
     - "01-statefulset.yml.j2"
+    - "02-service.yml.j2"
