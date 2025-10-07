@@ -21,8 +21,8 @@ spec:
     resizeInUseVolumes: true
   bootstrap:
     initdb:
-      database: {{ apps_user }}
-      owner: {{ apps_user | default('apps') }}
+      database: {{ databse_name | default('tracker_db') }}
+      owner: {{ admin_user | default('admin') }}
       postInitSQLRefs:
         configMapRefs:
           - name: "{{ cluster_name }}-init-scripts"
