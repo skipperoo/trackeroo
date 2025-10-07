@@ -35,8 +35,7 @@ spec:
             - name: mongo-data-volume
               mountPath: /data/db
             - name: init-script-volume
-              mountPath: /docker-entrypoint-initdb.d/init.js
-              subPath: init.js
+              mountPath: /docker-entrypoint-initdb.d
       volumes:
         - name: init-script-volume
           configMap:
