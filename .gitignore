@@ -1,5 +1,6 @@
 *.qcow2
 *.pem
+*.class
 secrets
 .pytest_cache
 __pycache__
