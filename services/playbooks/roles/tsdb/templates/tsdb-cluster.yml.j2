@@ -23,7 +23,7 @@ spec:
     initdb:
       database: {{ apps_user }}
       owner: {{ apps_user | default('apps') }}
-      postInitApplicationSQLRefs:
+      postInitSQLRefs:
         configMapRefs:
           - name: "{{ cluster_name }}-init-scripts"
             key: 01-init.sql
