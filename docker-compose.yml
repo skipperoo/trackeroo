@@ -85,7 +85,6 @@ services:
     volumes:
       - ./rabbitmq/etc:/etc/rabbitmq/
       - rabbitmq-data:/var/lib/rabbitmq
-      - ./rabbitmq/etc:/etc/rabbitmq/
     command: >
       bash -c "rabbitmq-plugins enable --offline rabbitmq_mqtt;
               rabbitmq-server"
@@ -137,11 +136,11 @@ services:
       MQTT_CLIENT_ID: apps
       MQTT_USERNAME: "apps"
       MQTT_PASSWORD: "apps"
-      POSTGRES_URL: postgres://admin:administrator@tsdb:5432/tracker_db?sslmode=disable
+      POSTGRES_URL: postgres://apps:apps@tsdb:5432/tracker_db?sslmode=disable
       TOPIC_PATTERN: j/data/+/+
       KAFKA_BROKER: kafka:9092
     depends_on:
-      kafka: 
+      kafka:
         condition: service_started
       tsdb:
         condition: service_healthy
@@ -185,16 +184,16 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT 
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
     depends_on:
       - zookeeper
 
   flink-jobmanager:
     image: flink:1.20.0-scala_2.12
-    platform: linux/amd64 
+    platform: linux/amd64
     ports:
       - "8081:8081" # dashboard web di Flink
-    command: jobmanager 
+    command: jobmanager
     environment:
       - |
         FLINK_PROPERTIES=
@@ -205,7 +204,7 @@ services:
 
   flink-taskmanager:
     image: flink:1.20.0-scala_2.12
-    platform: linux/amd64 
+    platform: linux/amd64
     command: taskmanager
     scale: 1
     environment:
@@ -239,7 +238,7 @@ volumes:
   tsdb-data:
   pgadmin-data:
   grafana-data:
-  redis-data: 
+  redis-data:
 
 secrets:
   users_key:

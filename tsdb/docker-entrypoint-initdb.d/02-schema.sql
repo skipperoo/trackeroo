@@ -34,3 +34,20 @@ CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_dev_id ON trackeroo.aggregat
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_route_hash ON trackeroo.aggregated(route_hash);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_tag ON trackeroo.aggregated(tag);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_ts ON trackeroo.aggregated(ts);
+
+
+-- Now I have to allow apps to read/write on all current tables
+GRANT USAGE ON SCHEMA trackeroo TO apps;
+--
+-- Grant read/write on all current tables
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA trackeroo TO apps;
+
+-- Grant read/write on all sequences (needed if you ever add SERIAL/IDENTITY columns)
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA trackeroo TO apps;
+
+-- Ensure future tables/sequences also inherit these permissions
+ALTER DEFAULT PRIVILEGES IN SCHEMA trackeroo
+   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO apps;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA trackeroo
+   GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO apps;
