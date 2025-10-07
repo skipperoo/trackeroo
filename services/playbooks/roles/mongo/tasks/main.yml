@@ -1,6 +1,7 @@
 ---
 - name: "Create MongoDB ConfigMap from init.js file"
   kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
     state: present
     namespace: "{{ mongo_namespace }}"
     definition:
@@ -13,6 +14,7 @@
 
 - name: "Create MongoDB StatefulSet and Service"
   kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
     state: present
     namespace: "{{ mongo_namespace }}"
     definition: "{{ lookup('template', item) | from_yaml }}"
