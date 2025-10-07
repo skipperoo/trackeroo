@@ -6,4 +6,5 @@
     namespace: "{{ mongo_express_namespace }}"
     definition: "{{ lookup('template', item) | from_yaml }}"
   loop:
-    - "01-fullstack.yml.j2"
+    - "01-deployment.yml.j2"
+    - "02-service.yml.j2"
