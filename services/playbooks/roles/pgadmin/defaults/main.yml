@@ -1,5 +1,5 @@
 pgadmin:
   email: admin@sdc.unipi.it
   password: admin
-  namespace: data
+  namespace: management
   service_ip: 10.20.30.149

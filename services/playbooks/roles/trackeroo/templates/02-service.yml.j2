@@ -5,10 +5,10 @@ metadata:
   name: "{{ trackeroo_app_name }}"
   namespace: "{{ trackeroo_namespace }}"
 spec:
-  type: ClusterIP
+  type: LoadBalancer
+  loadBalancerIP: {{ trackeroo_service_ip }}
   selector:
     app: "{{ trackeroo_app_name }}"
   ports:
-    - protocol: TCP
-      port: 8080
+    - port: 8080
       targetPort: 8080
