@@ -1,0 +1,66 @@
+---
+- name: "Create RabbitMQ Kubernetes namespace"
+  kubernetes.core.k8s:
+    name: "{{ rabbitmq_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: "Create RabbitMQ ConfigMap"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ rabbitmq_namespace }}"
+    definition: "{{ lookup('template', '01-configmap.yml.j2') | from_yaml }}"
+
+- name: "Create RabbitMQ Secrets (Erlang Cookie)"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ rabbitmq_namespace }}"
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ rabbitmq_app_name }}-secrets"
+      stringData:
+        rabbitmq_erlang_cookie: "{{ rabbitmq_erlang_cookie }}"
+
+- name: "Create RabbitMQ TLS certificates Secret"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ rabbitmq_namespace }}"
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "rabbitmq-certs"
+      # Using type Opaque with stringData is straightforward
+      type: Opaque
+      stringData:
+        # These key names must match the paths in rabbitmq.conf
+        ca_certificate.pem: "{{ lookup('file', 'certs/ca_certificate.pem') }}"
+        server_certificate.pem: "{{ lookup('file', 'certs/server_certificate.pem') }}"
+        server_key.pem: "{{ lookup('file', 'certs/server_key.pem') }}"
+
+- name: "Create RabbitMQ Headless Service for clustering"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ rabbitmq_namespace }}"
+    definition: "{{ lookup('template', '03-headless-service.yml.j2') | from_yaml }}"
+
+- name: "Create RabbitMQ StatefulSet"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ rabbitmq_namespace }}"
+    definition: "{{ lookup('template', '02-statefulset.yml.j2') | from_yaml }}"
+
+- name: "Create RabbitMQ client-facing Service"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ rabbitmq_namespace }}"
+    definition: "{{ lookup('template', '04-service.yml.j2') | from_yaml }}"
+
+- name: "Create Job to apply RabbitMQ HA Policy"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ rabbitmq_namespace }}"
+    definition: "{{ lookup('template', '05-policy-job.yml.j2') | from_yaml }}"

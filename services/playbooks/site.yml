@@ -9,3 +9,31 @@
   tags: pgadmin
   roles:
     - pgadmin
+
+- name: Deploy rabbitmq
+  hosts: servers
+  tags: rabbitmq
+  vars_files:
+    - secrets.yml
+  roles:
+    - rabbitmq
+
+- name: Deploy mongo
+  hosts: servers
+  tags: mongo
+  roles:
+    - mongo
+
+- name: Deploy redis
+  hosts: servers
+  tags: redis
+  roles:
+    - redis
+
+- name: Deploy trackeroo
+  hosts: servers
+  tags: trackeroo
+  vars_files:
+    - secrets.yml
+  roles:
+    - trackeroo

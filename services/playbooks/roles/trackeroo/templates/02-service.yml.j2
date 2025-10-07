@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ trackeroo_app_name }}"
+  namespace: "{{ trackeroo_namespace }}"
+spec:
+  type: ClusterIP
+  selector:
+    app: "{{ trackeroo_app_name }}"
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080

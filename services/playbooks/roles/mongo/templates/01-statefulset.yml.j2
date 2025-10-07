@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "{{ mongo_app_name }}"
+  namespace: "{{ mongo_namespace }}"
+spec:
+  serviceName: "{{ mongo_app_name }}"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ mongo_app_name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ mongo_app_name }}"
+    spec:
+      containers:
+        - name: "{{ mongo_app_name }}"
+          image: "{{ mongo_image }}"
+          command: ["mongod", "--bind_ip_all"]
+          ports:
+            - containerPort: 27017
+              name: mongo
+          readinessProbe:
+            exec:
+              command: ["mongosh", "--eval", "db.adminCommand('ping')"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 5
+            successThreshold: 1
+          volumeMounts:
+            - name: data-volume
+              mountPath: /data/db
+            - name: init-script-volume
+              mountPath: /docker-entrypoint-initdb.d/init.js
+              subPath: init.js
+      volumes:
+        - name: init-script-volume
+          configMap:
+            name: "{{ mongo_app_name }}-init-script"
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{ mongo_pvc_storage_class }}"
+        resources:
+          requests:
+            storage: "{{ mongo_pvc_storage_size }}"

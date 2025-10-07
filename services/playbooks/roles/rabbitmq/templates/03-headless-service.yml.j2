@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ rabbitmq_app_name }}-headless"
+  namespace: "{{ rabbitmq_namespace }}"
+spec:
+  clusterIP: None
+  selector:
+    app: "{{ rabbitmq_app_name }}"
+  ports:
+    - name: amqp
+      protocol: TCP
+      port: 5672
+    - name: management
+      protocol: TCP
+      port: 15672

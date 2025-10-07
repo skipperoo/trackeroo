@@ -1,0 +1,12 @@
+---
+# defaults file for ansible-role-trackeroo-backend
+trackeroo_namespace: "default"
+trackeroo_app_name: "trackeroo-backend"
+trackeroo_image: "ghcr.io/skiby7/trackeroo-backend:latest"
+trackeroo_replicas: 2
+trackeroo_users_key: "{{ trackeroo_users_key_secret }}"
+
+# Dependencies
+trackeroo_mongo_service_name: "mongo"
+trackeroo_redis_service_name: "redis"
+trackeroo_rabbitmq_service_name: "rabbitmq-service"

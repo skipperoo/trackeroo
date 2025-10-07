@@ -23,6 +23,8 @@ spec:
     initdb:
       database: {{ databse_name | default('tracker_db') }}
       owner: {{ admin_user | default('admin') }}
+      # https://cloudnative-pg.io/documentation/preview/bootstrap/#executing-queries-after-initialization
+      # The ApplicationSQL indicates that the SQL scripts will be executed against the newly created database defined above.
       postInitApplicationSQLRefs:
         configMapRefs:
           - name: "{{ cluster_name }}-init-scripts"

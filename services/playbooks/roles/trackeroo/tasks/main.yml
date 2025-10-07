@@ -1,0 +1,21 @@
+---
+- name: "Create Trackeroo Backend Secret"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ trackeroo_namespace }}"
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ trackeroo_app_name }}-secret"
+      stringData:
+        users_key: "{{ trackeroo_users_key }}"
+
+- name: "Create Trackeroo Backend Deployment and Service"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ trackeroo_namespace }}"
+    definition: "{{ lookup('template', item) | from_yaml }}"
+  loop:
+    - "01-deployment.yml.j2"
+    - "02-service.yml.j2"

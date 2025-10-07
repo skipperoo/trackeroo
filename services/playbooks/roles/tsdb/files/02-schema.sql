@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS trackeroo.data (
     PRIMARY KEY (ts, dev_id)
 );
 
-
 CREATE TABLE IF NOT EXISTS trackeroo.aggregated (
     ts_unix BIGINT NOT NULL,
     ts TIMESTAMPTZ NOT NULL,
