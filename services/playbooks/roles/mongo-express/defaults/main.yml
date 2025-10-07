@@ -1,5 +1,4 @@
 ---
-# defaults file for ansible-role-mongo
 mongo_express_namespace: "management"
 mongo_express_app_name: "mongo-express"
 mongo_express_image: "mongo-express:latest"

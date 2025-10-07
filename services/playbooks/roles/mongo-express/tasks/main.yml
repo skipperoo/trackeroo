@@ -1,5 +1,5 @@
 ---
-- name: "Create MongoDB Deployment and Service"
+- name: "Create Mongo Express Deployment and Service"
   kubernetes.core.k8s:
     kubeconfig: /etc/rancher/k3s/k3s.yaml
     state: present
