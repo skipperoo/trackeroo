@@ -1,8 +1,8 @@
 ---
 # defaults file for ansible-role-redis
-redis_k8s_namespace: "data"
-redis_k8s_app_name: "redis"
-redis_k8s_image: "redis:latest"
+redis_namespace: "data"
+redis_app_name: "redis"
+redis_image: "redis:latest"
 
-redis_k8s_pvc_storage_class: "longhorn"
-redis_k8s_pvc_storage_size: "5Gi"
+redis_pvc_storage_class: "longhorn"
+redis_pvc_storage_size: "2Gi"
