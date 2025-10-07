@@ -1,6 +1,6 @@
 ---
 # defaults file for ansible-role-trackeroo-backend
-trackeroo_namespace: "default"
+trackeroo_namespace: "trackeroo"
 trackeroo_app_name: "trackeroo-backend"
 trackeroo_image: "ghcr.io/skiby7/trackeroo-backend:latest"
 trackeroo_replicas: 2
