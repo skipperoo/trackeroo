@@ -13,7 +13,7 @@ rabbitmq_auth_backend_url_base: "http://trackeroo-backend:8080"
 
 # Kubernetes PersistentVolumeClaim settings
 rabbitmq_pvc_storage_class: "longhorn"
-rabbitmq_pvc_storage_size: "10Gi"
+rabbitmq_pvc_storage_size: "5Gi"
 
 # Kubernetes Service settings
 # Use LoadBalancer to expose with an external IP, or NodePort.
