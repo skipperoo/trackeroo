@@ -41,9 +41,9 @@
       type: Opaque
       stringData:
         # These key names must match the paths in rabbitmq.conf
-        ca_certificate.pem: "{{ lookup('file', 'certs/ca_certificate.pem') }}"
-        server_certificate.pem: "{{ lookup('file', 'certs/server_certificate.pem') }}"
-        server_key.pem: "{{ lookup('file', 'certs/server_key.pem') }}"
+        ca_certificate.pem: "{{ ca_certificate }}"
+        server_certificate.pem: "{{ server_certificate.pem }}"
+        server_key.pem: "{{ server_key.pem }}"
 
 - name: "Create RabbitMQ Headless Service for clustering"
   kubernetes.core.k8s:
