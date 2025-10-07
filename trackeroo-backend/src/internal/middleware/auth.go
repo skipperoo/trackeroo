@@ -39,6 +39,7 @@ func MqttAuth(next http.Handler) http.Handler {
 		key, err := service.GetDeviceKey(ctx, username)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
+			logger.Error("Error getting the device key (id %s): %v", username, err)
 			json.NewEncoder(w).Encode(model.Error{Error: "Unauthorized!"})
 			return
 		}

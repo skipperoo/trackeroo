@@ -35,6 +35,15 @@ db.users.insertMany([
     session_token: "",
     issued_at: new Date(),
     expires_at: new Date(Date.now() + 24*60*60*1000)
+  },
+  {
+    username: "trackeroo",
+    role: "admin",
+    password_hash: "$2b$12$NAfj6rvgE20aWfxfK9Y0j.aVUaA1k3eJak2a0.u11nO0/9ijsFX4W", // trackeroo
+    last_login: new Date(),
+    session_token: "",
+    issued_at: new Date(),
+    expires_at: new Date(Date.now() + 24*60*60*1000)
   }
 ]);
 db.devices.insertMany([

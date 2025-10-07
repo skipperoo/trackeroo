@@ -191,7 +191,6 @@ services:
 
   flink-jobmanager:
     image: flink:1.20-scala_2.12
-    container_name: flink-jobmanager
     ports:
       - "8081:8081" # dashboard web di Flink
     command: jobmanager
@@ -205,14 +204,13 @@ services:
 
   flink-taskmanager:
     image: flink:1.20-scala_2.12
-    container_name: flink-taskmanager
     command: taskmanager
     scale: 1
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: flink-jobmanager
-        taskmanager.numberOfTaskSlots: 2
+        taskmanager.numberOfTaskSlots: 16
     depends_on:
       - flink-jobmanager
 
@@ -227,7 +225,7 @@ services:
       - kafka
       - tsdb
     environment:
-      - FLINK_PARALLELISM=2
+      - FLINK_PARALLELISM=16
 
 volumes:
   trackeroo-backend-data:
