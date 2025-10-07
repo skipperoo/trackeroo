@@ -83,8 +83,10 @@ func main() {
 	logger.Debug("Initializing main route")
 	mainRouter := router.NewRouter().
 		AddHandler("GET /health", handler.HealthCheck).
+		AddHandler("OPTIONS /tdm/publish", handler.Options).
 		AddMiddleware(middleware.Logging).
 		AddMiddleware(middleware.Recover).
+		AddMiddleware(middleware.CORSMiddleware).
 		AddSubroute("/login/", loginRouter).
 		AddSubroute("/devices/", devicesRouter).
 		AddSubroute("/users/", usersRouter).
