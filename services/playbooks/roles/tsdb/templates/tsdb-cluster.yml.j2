@@ -23,12 +23,10 @@ spec:
     initdb:
       database: {{ database_name }}
       owner: {{ admin_user | default('admin') }}
-      postInitSQLRefs:
+      postInitApplicationSQLRefs:
         configMapRefs:
           - name: "{{ cluster_name }}-init-scripts"
             key: 01-init.sql
-      postInitApplicationSQLRefs:
-        configMapRefs:
           - name: "{{ cluster_name }}-init-scripts"
             key: 02-schema.sql
   managed:
