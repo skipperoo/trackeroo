@@ -1,4 +1,12 @@
 ---
+- name: "Create Trackeroo Kubernetes namespace"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    name: "{{ trackeroo_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
 - name: "Create Trackeroo Backend Secret"
   kubernetes.core.k8s:
     kubeconfig: /etc/rancher/k3s/k3s.yaml
