@@ -21,7 +21,7 @@ spec:
     resizeInUseVolumes: true
   bootstrap:
     initdb:
-      database: {{ apps_name }}
+      database: {{ apps_user }}
       owner: {{ apps_user | default('apps') }}
       postInitApplicationSQLRefs:
         configMapRefs:
