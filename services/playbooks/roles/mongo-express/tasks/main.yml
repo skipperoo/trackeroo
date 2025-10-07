@@ -1,0 +1,9 @@
+---
+- name: "Create MongoDB Deployment and Service"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    namespace: "{{ mongo_express_namespace }}"
+    definition: "{{ lookup('template', item) | from_yaml }}"
+  loop:
+    - "01-fullstack.yml.j2"

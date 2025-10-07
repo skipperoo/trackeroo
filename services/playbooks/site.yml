@@ -10,6 +10,12 @@
   roles:
     - pgadmin
 
+- name: Deploy Mongo Express
+  hosts: servers
+  tags: mongo-express
+  roles:
+    - mongo-express
+
 - name: Deploy rabbitmq
   hosts: servers
   tags: rabbitmq
