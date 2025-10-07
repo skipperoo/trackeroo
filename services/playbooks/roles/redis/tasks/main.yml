@@ -3,7 +3,7 @@
   kubernetes.core.k8s:
     kubeconfig: /etc/rancher/k3s/k3s.yaml
     state: present
-    namespace: "{{ redis_k8s_namespace }}"
+    namespace: "{{ redis_namespace }}"
     definition: "{{ lookup('template', item) | from_yaml }}"
   loop:
     - "01-statefulset.yml.j2"
