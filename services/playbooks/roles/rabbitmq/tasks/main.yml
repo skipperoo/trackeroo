@@ -42,8 +42,8 @@
       stringData:
         # These key names must match the paths in rabbitmq.conf
         ca_certificate.pem: "{{ ca_certificate }}"
-        server_certificate.pem: "{{ server_certificate.pem }}"
-        server_key.pem: "{{ server_key.pem }}"
+        server_certificate.pem: "{{ server_certificate }}"
+        server_key.pem: "{{ server_key }}"
 
 - name: "Create RabbitMQ Headless Service for clustering"
   kubernetes.core.k8s:
