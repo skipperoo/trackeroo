@@ -12,8 +12,8 @@ database_user: postgres
 admin_user: admin
 apps_user: apps
 # This should be a secret but rn the cluster is not exposed
-admin_password: "administrator"
-apps_password: "apps"
+admin_password: administrator
+apps_password: apps
 synchronous_method: any
 synchronous_number: 1
 data_durability: required
