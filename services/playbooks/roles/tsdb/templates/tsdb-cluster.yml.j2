@@ -23,7 +23,7 @@ spec:
     initdb:
       database: {{ databse_name | default('tracker_db') }}
       owner: {{ admin_user | default('admin') }}
-    postInitSQLRefs:
+    postInitApplicationSQLRefs:
       configMapRefs:
         - name: "{{ cluster_name }}-init-scripts"
           key: 01-init.sql
