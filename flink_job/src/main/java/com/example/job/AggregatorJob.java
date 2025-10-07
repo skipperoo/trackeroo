@@ -158,9 +158,3 @@ public class AggregatorJob {
         env.execute("Dynamic Kafka Aggregator Job (with minimal debug)");
     }
 }
-
-// TODO: grafana le dashboard su telegram, ricordarsi piu layer con ognuno la sua query.
-// TODO: flink parametrico con kafka postgress, e flink job manager (tutto environment da fuori).
-// TODO: brokeroooooo vedere cosa mqtt.
-// TODO: provare a continuare la relazione.
-
