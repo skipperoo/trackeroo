@@ -21,8 +21,8 @@ spec:
     resizeInUseVolumes: true
   bootstrap:
     initdb:
-      database: {{ database_name }}
-      owner: {{ admin_user | default('admin') }}
+      database: {{ apps_name }}
+      owner: {{ apps_user | default('apps') }}
       postInitApplicationSQLRefs:
         configMapRefs:
           - name: "{{ cluster_name }}-init-scripts"
@@ -42,6 +42,7 @@ spec:
       createrole: true
       replication: true
       bypassrls: true
+
     # Application user with limited privileges
     - name: {{ apps_user | default('apps') }}
       ensure: present
