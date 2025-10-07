@@ -66,6 +66,15 @@
     namespace: "{{ rabbitmq_namespace }}"
     definition: "{{ lookup('template', '04-service.yml.j2') | from_yaml }}"
 
+- name: "Ensure previous HA Policy Job is removed"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: absent
+    namespace: "{{ rabbitmq_namespace }}"
+    kind: Job
+    # The name must match the metadata.name in your J2 template
+    name: "{{ rabbitmq_app_name }}-set-ha-policy"
+
 - name: "Create Job to apply RabbitMQ HA Policy"
   kubernetes.core.k8s:
     kubeconfig: /etc/rancher/k3s/k3s.yaml
