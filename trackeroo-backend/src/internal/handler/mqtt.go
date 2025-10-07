@@ -17,14 +17,16 @@ func PublishPayload(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(model.Error{Error: "Please use a valid username"})
 		return
 	}
-	topic := r.PathValue("topic")
+	query := r.URL.Query()
+
+	topic := query.Get("topic")
 	if topic != "data" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(model.Error{Error: "Topic not allowed"})
 		return
 	}
-	tag := r.PathValue("tag")
+	tag := query.Get("tag")
 	if tag == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
