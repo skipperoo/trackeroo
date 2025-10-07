@@ -1,5 +1,9 @@
 *.qcow2
 *.pem
+*.class
+*.bin
+*.lock
+flink_job/.gradle
 secrets
 .pytest_cache
 __pycache__

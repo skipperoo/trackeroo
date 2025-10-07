@@ -5,24 +5,26 @@ COPY . .
 RUN gradle shadowJar --no-daemon
 
 # Stage 2: runtime
-FROM flink:1.20-scala_2.12  
+FROM flink:1.20.0-scala_2.12  
 WORKDIR /job
 COPY --from=builder /app/build/libs/job-all.jar /job/job.jar
 
 # Script per attendere il JobManager e sottomettere con parallelismo
-RUN echo '#!/bin/bash\n\
-echo "Waiting for Flink JobManager..."\n\
-until curl -s http://flink-jobmanager:8081/overview; do\n\
-  echo "JobManager not ready, retrying in 5s..."\n\
-  sleep 5\n\
-done\n\
-\n\
-echo "JobManager ready! Submitting job with parallelism ${FLINK_PARALLELISM:-16}"\n\
-exec flink run \\\n\
-  -m flink-jobmanager:8081 \\\n\
-  --parallelism ${FLINK_PARALLELISM:-16} \\\n\
-  -c com.example.job.AggregatorJob \\\n\
-  /job/job.jar' > /job/start.sh \
-    && chmod +x /job/start.sh
+COPY <<'EOF' /job/start.sh
+#!/bin/bash
+set -e
+echo "Waiting for Flink JobManager at ${FLINK_JM_HOST}:${FLINK_JM_PORT}..."
+until curl -s http://${FLINK_JM_HOST}:${FLINK_JM_PORT}/overview; do
+  echo "JobManager not ready, retrying in 5s..."
+  sleep 5
+done
+echo "JobManager ready! Submitting job with parallelism ${FLINK_PARALLELISM}"
+exec /opt/flink/bin/flink run \
+  -m ${FLINK_JM_HOST}:${FLINK_JM_PORT} \
+  --parallelism ${FLINK_PARALLELISM} \
+  -c com.example.job.AggregatorJob \
+  /job/job.jar
+EOF
 
+RUN chmod +x /job/start.sh
 ENTRYPOINT ["/job/start.sh"]

@@ -190,10 +190,11 @@ services:
       - zookeeper
 
   flink-jobmanager:
-    image: flink:1.20-scala_2.12
+    image: flink:1.20.0-scala_2.12
+    platform: linux/amd64 
     ports:
       - "8081:8081" # dashboard web di Flink
-    command: jobmanager
+    command: jobmanager 
     environment:
       - |
         FLINK_PROPERTIES=
@@ -203,7 +204,8 @@ services:
       - tsdb
 
   flink-taskmanager:
-    image: flink:1.20-scala_2.12
+    image: flink:1.20.0-scala_2.12
+    platform: linux/amd64 
     command: taskmanager
     scale: 1
     environment:
@@ -225,7 +227,10 @@ services:
       - kafka
       - tsdb
     environment:
+      - FLINK_JM_HOST=flink-jobmanager
+      - FLINK_JM_PORT=8081
       - FLINK_PARALLELISM=16
+      - POSTGRES_URL=jdbc:postgresql://tsdb:5432/tracker_db?sslmode=disable
 
 volumes:
   trackeroo-backend-data:
