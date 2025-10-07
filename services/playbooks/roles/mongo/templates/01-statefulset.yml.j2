@@ -18,8 +18,6 @@ spec:
       containers:
         - name: "{{ mongo_app_name }}"
           image: "{{ mongo_image }}"
-          command: ["mongod"]
-          args: ["--bind_ip_all"]
           ports:
             - containerPort: 27017
               name: mongo
