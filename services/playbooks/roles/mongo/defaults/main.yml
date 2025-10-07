@@ -6,4 +6,4 @@ mongo_image: "mongo:latest"
 
 # Storage settings
 mongo_pvc_storage_class: "longhorn"
-mongo_pvc_storage_size: "8Gi"
+mongo_pvc_storage_size: "3Gi"
