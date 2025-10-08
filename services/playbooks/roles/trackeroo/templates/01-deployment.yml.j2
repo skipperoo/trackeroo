@@ -42,12 +42,6 @@ spec:
               value: "1883"
             - name: MQTTS_PORT
               value: "8883"
-            # Get the secret from the K8s Secret
-            - name: USERS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: "{{ trackeroo_app_name }}-secret"
-                  key: users_key
             - name: MQTT_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -64,11 +58,16 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
           volumeMounts:
-            # Mount the same certs used by RabbitMQ
+            - name: users-key-volume
+              mountPath: /run/secrets
+              readOnly: true
             - name: certs-volume
               mountPath: /certs
               readOnly: true
       volumes:
+        - name: users-key-volume
+          secret:
+            secretName: "{{ trackeroo_app_name }}-secret"
         - name: certs-volume
           secret:
             secretName: rabbitmq-certs
