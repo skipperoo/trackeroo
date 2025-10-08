@@ -13,7 +13,7 @@ grafana_db_user: apps
 grafana_db_password: apps
 
 grafana_port: 3000
-gragana_service_ip: 10.20.30.56
+grafana_service_ip: 10.20.30.56
 
 grafana_storage_class: "longhorn"
 grafana_storage_size: 1Gi

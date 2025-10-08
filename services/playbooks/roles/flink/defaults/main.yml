@@ -1,4 +1,4 @@
-flink_namespace: flink
+flink_namespace: data
 
 flink_image: flink:1.20.0-scala_2.12
 

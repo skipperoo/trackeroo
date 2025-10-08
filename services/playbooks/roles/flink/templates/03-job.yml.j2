@@ -5,14 +5,15 @@ metadata:
   labels:
     app: flink-job
 spec:
-#  nodeSelector:
-#    workload-type: apps
   template:
     spec:
+      nodeSelector:
+        workload-type: apps
       restartPolicy: Never
       containers:
       - name: flink-job
         image: {{ flink_job_image }}
+        imagePullPolicy: Always
         env:
           - name: FLINK_JM_HOST
             value: flink-jobmanager

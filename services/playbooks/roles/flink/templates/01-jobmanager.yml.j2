@@ -19,7 +19,7 @@ spec:
       containers:
       - name: jobmanager
         image: {{ flink_image }}
-        imagPullPolicy: Always
+        imagePullPolicy: Always
         args: ["jobmanager"]
         ports:
           - containerPort: {{ flink_jobmanager_port }}
