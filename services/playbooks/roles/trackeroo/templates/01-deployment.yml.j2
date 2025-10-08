@@ -28,6 +28,10 @@ spec:
             - containerPort: 8080
               name: http
           env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: MONGO_URI
               value: "mongodb://{{ trackeroo_mongo_service_name }}:27017/trackeroo"
             - name: REDIS_URI
