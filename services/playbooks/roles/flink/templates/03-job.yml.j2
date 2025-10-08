@@ -16,7 +16,7 @@ spec:
         imagePullPolicy: Always
         env:
           - name: FLINK_JM_HOST
-            value: flink-jobmanager
+            value: "{{ flink_rpc }}"
           - name: FLINK_JM_PORT
             value: "{{ flink_jobmanager_port }}"
           - name: FLINK_PARALLELISM
@@ -25,4 +25,3 @@ spec:
             value: "{{ postgres_url }}"
           - name: KAFKA_URL
             value: "{{ kafka_url }}"
-
