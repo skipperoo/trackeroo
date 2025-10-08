@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ brokeroo_app_name }}
+  labels:
+    app: {{ brokeroo_app_name }}
+spec:
+  replicas: {{ brokeroo_replicas }}
+  selector:
+    matchLabels:
+      app: {{ brokeroo_app_name }}
+  template:
+    metadata:
+      labels:
+        app: {{ brokeroo_app_name }}
+    spec:
+      containers:
+        - name: {{ brokeroo_app_name }}
+          image: {{ brokeroo_image }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ brokeroo_port }}
+          env:
+{% for e in brokeroo_env %}
+            - name: {{ e.name }}
+              value: "{{ e.value }}"
+{% endfor %}
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"

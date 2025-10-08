@@ -1,0 +1,12 @@
+flink_namespace: flink
+
+flink_image: flink:1.20.0-scala_2.12
+
+flink_job_image: ghcr.io/skiby7/flink_job:latest
+
+flink_job_parallelism: 16
+flink_jobmanager_port: 8081
+flink_task_slots: 16
+
+postgres_url: jdbc:postgresql://tsdb:5432/tracker_db?sslmode=disable
+# TODOOOOOO

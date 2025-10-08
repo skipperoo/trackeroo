@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ brokeroo_app_name }}
+spec:
+  selector:
+    app: {{ brokeroo_app_name }}
+  ports:
+    - name: http
+      port: {{ brokeroo_port }}
+      targetPort: {{ brokeroo_port }}
+  type: ClusterIP

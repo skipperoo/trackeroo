@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flink-job
+  labels:
+    app: flink-job
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: flink-job
+        image: {{ flink_job_image }}
+        env:
+          - name: FLINK_JM_HOST
+            value: flink-jobmanager
+          - name: FLINK_JM_PORT
+            value: "{{ flink_jobmanager_port }}"
+          - name: FLINK_PARALLELISM
+            value: "{{ flink_job_parallelism | string }}"
+          - name: POSTGRES_URL
+            value: "{{ postgres_url }}"

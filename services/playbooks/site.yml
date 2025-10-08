@@ -43,3 +43,23 @@
     - secrets.yml
   roles:
     - trackeroo
+
+- name: Deploy Flink
+  hosts: servers
+  tags: flink
+  roles:
+    - flink
+
+- name: Deploy Brokeroo
+  hosts: servers
+  tags: brokeroo
+  roles:
+    - brokeroo
+
+- name: Deploy Grafana
+  hosts: servers
+  tags: grafana
+  roles:
+    - grafana
+
+#TODO: become: yes  

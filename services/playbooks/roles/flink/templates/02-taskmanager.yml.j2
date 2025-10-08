@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flink-taskmanager
+  labels:
+    app: flink-taskmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flink-taskmanager
+  template:
+    metadata:
+      labels:
+        app: flink-taskmanager
+    spec:
+      containers:
+      - name: taskmanager
+        image: {{ flink_image }}
+        args: ["taskmanager"]
+        env:
+          - name: FLINK_PROPERTIES
+            value: |
+              jobmanager.rpc.address: flink-jobmanager
+              taskmanager.numberOfTaskSlots: {{ flink_task_slots }}
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
