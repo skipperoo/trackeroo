@@ -1,0 +1,17 @@
+- name: "Create Brokeroo Kubernetes namespace"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    name: "{{ brokeroo_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: "Deploy Brokeroo Deployment and Service"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    namespace: "{{ brokeroo_namespace }}"
+    definition: "{{ lookup('template', item) | from_yaml }}"
+  loop:
+    - "01-deployment.yml.j2"
+    - "02-service.yml.j2"

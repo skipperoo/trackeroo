@@ -15,7 +15,7 @@ tdevice.json
 claim.py
 status
 brockeroo
-grafana
+trackeroo-backend/grafana
 trackeroo-backend/mongo/data
 nominatim-data
 osrm-data

@@ -56,3 +56,33 @@
     - secrets.yml
   roles:
     - trackeroo
+
+- name: Deploy Flink
+  hosts: servers
+  tags:
+    - flink
+    - data
+  roles:
+    - flink
+
+- name: Deploy Brokeroo
+  hosts: servers
+  tags:
+    - brokeroo
+    - trackeroo
+  roles:
+    - brokeroo
+
+- name: Deploy Grafana
+  hosts: servers
+  tags: grafana
+  roles:
+    - grafana
+
+- name: Deploy Kafka and Zookeeper
+  hosts: servers
+  tags:
+    - kafka
+    - data
+  roles:
+    - kafka

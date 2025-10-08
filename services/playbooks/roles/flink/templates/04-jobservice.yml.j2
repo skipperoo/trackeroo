@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-jobmanager
+spec:
+  selector:
+    app: flink-jobmanager
+  ports:
+    - name: rpc
+      port: {{ flink_jobmanager_port }}
+      targetPort: {{ flink_jobmanager_port }}
+    - name: rpcport1
+      port: {{ flink_rpc_port_1 }}
+      targetPort: {{ flink_rpc_port_1 }}
+    - name: rpcport2
+      port: {{ flink_rpc_port_2 }}
+      targetPort: {{ flink_rpc_port_2 }}
+  type: ClusterIP
