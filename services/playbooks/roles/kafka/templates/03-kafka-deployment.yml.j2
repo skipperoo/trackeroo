@@ -14,6 +14,7 @@ spec:
       labels:
         app: kafka
     spec:
+      enableServiceLinks: false
       nodeSelector:
          workload-type: apps
       containers:
@@ -36,11 +37,7 @@ spec:
             - name: KAFKA_INTER_BROKER_LISTENER_NAME
               value: "PLAINTEXT"
             - name: KAFKA_LOG4J_ROOT_LOGLEVEL
-              value: "TRACE"
-            - name: KAFKA_LOG4J_LOGGERS
-              value: "kafka.controller=DEBUG,kafka.server=DEBUG,state.change.logger=DEBUG"
-            - name: KAFKA_OPTS
-              value: "-Djava.security.auth.login.config=/etc/kafka/kafka_jaas.conf"
+              value: "INFO"
           readinessProbe:
             tcpSocket:
               port: {{ kafka_port }}

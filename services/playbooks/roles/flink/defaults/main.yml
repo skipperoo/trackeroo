@@ -9,3 +9,4 @@ flink_jobmanager_port: 8081
 flink_task_slots: 16
 
 postgres_url: jdbc:postgresql://apps:apps@tsdb-rw.data.svc.cluster.local:5432/tracker_db?sslmode=disable
+kafka_url: kafka.data.svc.cluster.local:9092
