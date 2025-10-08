@@ -86,9 +86,9 @@ func fileExists(path string) bool {
 	}
 	return false
 }
+
 func getKey(key string) []byte {
 	run_path := fmt.Sprintf("/run/secrets/%s", key)
-	app_path := fmt.Sprintf("/app/secrets/%s", key)
 	var jwtKey []byte
 	var err error
 	if fileExists(run_path) {
@@ -96,13 +96,11 @@ func getKey(key string) []byte {
 		if err != nil {
 			return nil
 		}
-	} else if fileExists(app_path) {
-		jwtKey, err = os.ReadFile(app_path)
-		if err != nil {
+	} else {
+		jwtKey = []byte(GetenvOrDefault("USERS_KEY", ""))
+		if len(jwtKey) == 0 {
 			return nil
 		}
-	} else {
-		return nil
 	}
 	return jwtKey
 }
