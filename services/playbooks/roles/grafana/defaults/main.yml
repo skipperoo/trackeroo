@@ -9,8 +9,8 @@ grafana_admin_password: admin123
 grafana_db_type: postgres
 grafana_db_host: tsdb-rw.data.svc.cluster.local:5432
 grafana_db_name: tracker_db
-grafana_db_user: apps
-grafana_db_password: apps
+grafana_db_user: admin
+grafana_db_password: administrator
 
 grafana_port: 3000
 grafana_service_ip: 10.20.30.56
