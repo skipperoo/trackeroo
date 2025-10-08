@@ -32,8 +32,10 @@ spec:
               value: "mongodb://{{ trackeroo_mongo_service_name }}:27017/trackeroo"
             - name: REDIS_URI
               value: "{{ trackeroo_redis_service_name }}:6379"
-            - name: RABBITMQ_URL
-              value: "amqp://apps:apps@{{ trackeroo_rabbitmq_service_name }}:5672/"
+            - name: RABBITMQ_HOST
+              value: "{{ trackeroo_rabbitmq_service_name }}"
+            - name: RABBITMQ_PORT
+              value: "{{ trackeroo_rabbitmq_service_port }}"
             - name: LOG_LEVEL
               value: "info"
             # Point MQTT to the RabbitMQ service name
@@ -55,12 +57,22 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: "{{ trackeroo_app_name }}-secret"
-                  key: mqtt_admin_username
+                  key: mqtt_username
             - name: MQTT_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: "{{ trackeroo_app_name }}-secret"
-                  key: mqtt_admin_password
+                  key: mqtt_password
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ trackeroo_app_name }}-secret"
+                  key: rabbitmq_username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ trackeroo_app_name }}-secret"
+                  key: rabbitmq_password
           readinessProbe:
             tcpSocket:
               port: 8080
