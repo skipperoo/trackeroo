@@ -76,11 +76,31 @@ func ValidateDeviceJWT(encodedKey string, tokenString string) (bool, jwt.MapClai
 
 	return false, nil, fmt.Errorf("invalid token")
 }
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
+	if os.IsNotExist(err) {
+		return false
+	}
+	return false
+}
 
 func getKey(key string) []byte {
-	jwtKey, err := os.ReadFile(fmt.Sprintf("/run/secrets/%s", key))
-	if err != nil {
-		return nil
+	run_path := fmt.Sprintf("/run/secrets/%s", key)
+	var jwtKey []byte
+	var err error
+	if fileExists(run_path) {
+		jwtKey, err = os.ReadFile(run_path)
+		if err != nil {
+			return nil
+		}
+	} else {
+		jwtKey = []byte(GetenvOrDefault("USERS_KEY", ""))
+		if len(jwtKey) == 0 {
+			return nil
+		}
 	}
 	return jwtKey
 }

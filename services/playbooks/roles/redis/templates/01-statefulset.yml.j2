@@ -15,6 +15,12 @@ spec:
       labels:
         app: "{{ redis_app_name }}"
     spec:
+      nodeSelector:
+        workload-type: apps
+      securityContext:
+        fsGroup: 999
+        runAsUser: 999
+        runAsGroup: 999
       containers:
         - name: "{{ redis_app_name }}"
           image: "{{ redis_image }}"

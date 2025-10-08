@@ -19,8 +19,10 @@
         name: "{{ trackeroo_app_name }}-secret"
       stringData:
         users_key: "{{ trackeroo_users_key }}"
-        mqtt_admin_username: "{{ trackeroo_mqtt_admin_username }}"
-        mqtt_admin_password: "{{ trackeroo_mqtt_admin_password }}"
+        mqtt_username: "{{ trackeroo_mqtt_username }}"
+        mqtt_password: "{{ trackeroo_mqtt_password }}"
+        rabbitmq_username: "{{ trackeroo_rabbitmq_username }}"
+        rabbitmq_password: "{{ trackeroo_rabbitmq_password }}"
 
 - name: "Create Trackeroo Backend Deployment and Service"
   kubernetes.core.k8s:

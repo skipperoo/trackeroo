@@ -11,3 +11,4 @@ trackeroo_service_ip: "10.20.30.55"
 trackeroo_mongo_service_name: "mongo.data.svc.cluster.local"
 trackeroo_redis_service_name: "redis.data.svc.cluster.local"
 trackeroo_rabbitmq_service_name: "rabbitmq.trackeroo.svc.cluster.local"
+trackeroo_rabbitmq_service_port: 5672

@@ -18,6 +18,8 @@ spec:
       labels:
         app: pgadmin
     spec:
+      nodeSelector:
+        workload-type: apps
       containers:
         - name: pgadmin
           image: dpage/pgadmin4

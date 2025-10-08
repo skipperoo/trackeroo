@@ -3,6 +3,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 	"trackeroo-backend/internal/logger"
@@ -31,7 +32,11 @@ func StartRabbitWatcher(ctx context.Context) {
 }
 
 func runRabbitWatcher(ctx context.Context) {
-	rabbitEndpoint := GetenvOrDefault("RABBITMQ_URL", "amqp://apps:apps@rabbitmq:5672/")
+	username := GetenvOrDefault("RABBITMQ_USERNAME", "apps")
+	password := GetenvOrDefault("RABBITMQ_PASSWORD", "apps")
+	host := GetenvOrDefault("RABBITMQ_HOST", "rabbitmq")
+	port := GetenvOrDefault("RABBITMQ_PORT", "5672")
+	rabbitEndpoint := fmt.Sprintf("amqp://%s:%s@%s:%s/", username, password, host, port)
 
 	for {
 		select {
