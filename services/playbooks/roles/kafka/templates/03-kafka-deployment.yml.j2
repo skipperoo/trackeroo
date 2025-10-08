@@ -40,8 +40,6 @@ spec:
               value: "TRACE"
             - name: KAFKA_LOG4J_LOGGERS
               value: "kafka.controller=DEBUG,kafka.server=DEBUG,state.change.logger=DEBUG"
-            - name: KAFKA_OPTS
-              value: "-Djava.security.auth.login.config=/etc/kafka/kafka_jaas.conf"
           readinessProbe:
             tcpSocket:
               port: {{ kafka_port }}
