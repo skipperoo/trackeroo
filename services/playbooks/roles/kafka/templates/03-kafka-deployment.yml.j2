@@ -14,6 +14,8 @@ spec:
       labels:
         app: kafka
     spec:
+      securityContext:
+        fsGroup: 472
       nodeSelector:
          workload-type: apps
       containers:

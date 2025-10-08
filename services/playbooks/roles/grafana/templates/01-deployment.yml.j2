@@ -16,6 +16,8 @@ spec:
       labels:
         app: {{ grafana_app_name }}
     spec:
+      securityContext:
+        fsGroup: 472
       nodeSelector:
         workload-type: apps
       containers:
