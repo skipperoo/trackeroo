@@ -16,6 +16,7 @@ type TdmClient struct {
 	heartbeat    int
 	port         string
 	clientID     string
+	username     string
 	password     string
 	cleanSession bool
 	topicData    string
@@ -30,7 +31,8 @@ func NewTdmClient() *TdmClient {
 	tdmClient := new(TdmClient)
 	tdmClient.broker = mqttHost
 	tdmClient.port = mqttPort
-	tdmClient.clientID = username
+	tdmClient.clientID = GetenvOrDefault("POD_NAME", fmt.Sprintf("trackeroo-%d", time.Now().UnixNano()))
+	tdmClient.username = username
 	tdmClient.password = password
 	tdmClient.cleanSession = true
 	tdmClient.heartbeat = 10
@@ -82,7 +84,9 @@ func (t *TdmClient) initClient() {
 	opts := pahoMqtt.NewClientOptions()
 	logger.Debug("Connecting to MQTT broker %s", fmt.Sprintf("mqtt://%s:%s", t.broker, t.port))
 	opts.AddBroker(fmt.Sprintf("mqtt://%s:%s", t.broker, t.port))
-	opts.SetUsername(t.clientID)
+	opts.SetUsername(t.username)
+	opts.SetPassword(t.password)
+	opts.SetClientID(t.clientID)
 	opts.SetKeepAlive(time.Duration(t.heartbeat) * time.Second)
 	opts.SetPingTimeout(time.Duration(t.heartbeat) * time.Second)
 	opts.SetAutoReconnect(true)
@@ -92,8 +96,6 @@ func (t *TdmClient) initClient() {
 	opts.SetOnConnectHandler(func(c pahoMqtt.Client) {
 		logger.Info("Connected to the MQTT broker!")
 	})
-	opts.SetPassword(t.password)
-	opts.SetClientID(t.clientID)
 	t.client = pahoMqtt.NewClient(opts)
 }
 
