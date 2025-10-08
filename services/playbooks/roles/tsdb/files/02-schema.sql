@@ -34,6 +34,8 @@ CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_route_hash ON trackeroo.aggr
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_tag ON trackeroo.aggregated(tag);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_ts ON trackeroo.aggregated(ts);
 
+SELECT add_retention_policy('trackeroo.data', INTERVAL '3 days');
+SELECT add_retention_policy('trackeroo.aggregated', INTERVAL '3 days');
 
 -- Now I have to allow apps to read/write on all current tables
 GRANT USAGE ON SCHEMA trackeroo TO apps;
