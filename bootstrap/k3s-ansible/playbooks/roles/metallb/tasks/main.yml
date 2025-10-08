@@ -33,6 +33,27 @@
     label: "{{ item.change }} => {{ item.to }}"
   when: is_first_server
 
+- name: Add tolerations to MetalLB manifest to run on servers
+  ansible.builtin.replace:
+    path: /var/lib/rancher/k3s/server/manifests/metallb-crds.yaml
+    # This regex finds the line with 'containers:' and inserts the tolerations block before it.
+    # The '(\s+)' capture group preserves the correct indentation.
+    regexp: '^(\s+)containers:'
+    replace: |
+      \1tolerations:
+      \1# This toleration allows scheduling on nodes with the taint K3s adds.
+      \1- key: "CriticalAddonsOnly"
+      \1  operator: "Exists"
+      \1# These tolerations are for standard Kubernetes control-plane taints.
+      \1- key: "node-role.kubernetes.io/master"
+      \1  operator: "Exists"
+      \1  effect: "NoSchedule"
+      \1- key: "node-role.kubernetes.io/control-plane"
+      \1  operator: "Exists"
+      \1  effect: "NoSchedule"
+      \1containers:
+  when: is_first_server
+
 - name: Create MetalLB IPAddressPool configuration
   ansible.builtin.copy:
     dest: /var/lib/rancher/k3s/server/manifests/metallb-ippool.yaml
