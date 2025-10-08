@@ -15,10 +15,5 @@
   loop:
     - "01-jobmanager.yml.j2"
     - "02-taskmanager.yml.j2"
-
-- name: "Deploy Flink Job"
-  kubernetes.core.k8s:
-    kubeconfig: /etc/rancher/k3s/k3s.yaml
-    state: present
-    namespace: "{{ flink_namespace }}"
-    definition: "{{ lookup('template', '03-job.yml.j2') | from_yaml }}"
+    - "03-job.yml.j2"
+    - "04-jobservice.yml.j2"
