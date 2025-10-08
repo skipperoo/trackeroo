@@ -59,13 +59,17 @@
 
 - name: Deploy Flink
   hosts: servers
-  tags: flink
+  tags:
+    - flink
+    - data
   roles:
     - flink
 
 - name: Deploy Brokeroo
   hosts: servers
-  tags: brokeroo
+  tags:
+    - brokeroo
+    - trackeroo
   roles:
     - brokeroo
 
@@ -77,6 +81,8 @@
 
 - name: Deploy Kafka and Zookeeper
   hosts: servers
-  tags: kafka
+  tags:
+    - kafka
+    - data
   roles:
     - kafka
