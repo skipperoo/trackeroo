@@ -25,3 +25,10 @@ spec:
             value: |
               jobmanager.rpc.address: {{ flink_rpc }}
               taskmanager.numberOfTaskSlots: {{ flink_task_slots }}
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1
