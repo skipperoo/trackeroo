@@ -20,10 +20,10 @@ spec:
         - name: kafka
           image: {{ kafka_image }}
           ports:
-            - containerPort: {{ kafka_port }}
             - name: plaintext
-            - containerPort: {{ kafka_host_port }}
+              containerPort: {{ kafka_port }}
             - name: plaintext-host
+              containerPort: {{ kafka_host_port }}
           env:
             - name: KAFKA_BROKER_ID
               value: "{{ kafka_broker_id }}"
