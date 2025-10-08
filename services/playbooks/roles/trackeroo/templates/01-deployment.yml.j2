@@ -21,6 +21,7 @@ spec:
       containers:
         - name: "{{ trackeroo_app_name }}"
           image: "{{ trackeroo_image }}"
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               name: http
