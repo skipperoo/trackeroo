@@ -27,7 +27,7 @@ spec:
         env:
           - name: FLINK_PROPERTIES
             value: |
-              jobmanager.rpc.address: flink-jobmanager
+              jobmanager.rpc.address: {{ flink_rpc }}
         resources:
           requests:
             cpu: 250m
