@@ -140,7 +140,7 @@ func (s *Service) connectMQTT() error {
 	opts.SetClientID(s.config.MQTTClientID)
 	opts.SetUsername(s.config.MQTTUsername)
 	opts.SetPassword(s.config.MQTTPassword)
-	opts.SetCleanSession(true)
+	opts.SetCleanSession(false) // Keep unacked messages
 	opts.SetAutoReconnect(true)
 	opts.SetKeepAlive(60 * time.Second)
 	opts.SetPingTimeout(10 * time.Second)
