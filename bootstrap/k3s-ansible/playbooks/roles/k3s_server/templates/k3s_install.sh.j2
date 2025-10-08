@@ -25,6 +25,7 @@ K3S_TOKEN="${K3S_TOKEN}" \
 {% endif %}
 sh -s - ${K3S_ROLE} ${K3S_CLUSTER_INIT} ${K3S_SERVER} \
   --node-ip ${K3S_NODE_IP} \
+  --node-taint CriticalAddonsOnly=true:NoSchedule \
   --advertise-address ${K3S_NODE_IP} \
   --disable-agent \
   --tls-san {{ kube_api_vip }} \
