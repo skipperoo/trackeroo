@@ -315,7 +315,7 @@ func (s *Service) Stop() {
 func loadConfig() *Config {
 	return &Config{
 		MQTTBroker:   getEnvOrDefault("MQTT_BROKER", "tcp://localhost:1883"),
-		MQTTClientID: getEnvOrDefault("MQTT_CLIENT_ID", "go-mqtt-postgres-service"),
+		MQTTClientID: getEnvOrDefault("MQTT_CLIENT_ID", "brokeroo"),
 		MQTTUsername: getEnvOrDefault("MQTT_USERNAME", ""),
 		MQTTPassword: getEnvOrDefault("MQTT_PASSWORD", ""),
 		PostgresURL:  getEnvOrDefault("POSTGRES_URL", "postgres://user:password@localhost/dbname?sslmode=disable"),

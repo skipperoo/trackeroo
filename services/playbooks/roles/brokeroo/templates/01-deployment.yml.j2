@@ -28,7 +28,9 @@ spec:
             - name: MQTT_BROKER
               value: "mqtt://rabbitmq:1883"
             - name: MQTT_CLIENT_ID
-              value: "apps"
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: MQTT_USERNAME
               value: "apps"
             - name: MQTT_PASSWORD
