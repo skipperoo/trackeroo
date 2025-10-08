@@ -37,10 +37,10 @@ spec:
           readinessProbe:
             tcpSocket:
               port: {{ kafka_port }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
+            initialDelaySeconds: 30
+            periodSeconds: 10
           livenessProbe:
             tcpSocket:
               port: {{ kafka_port }}
-            initialDelaySeconds: 15
-            periodSeconds: 10
+            initialDelaySeconds: 60
+            periodSeconds: 20
