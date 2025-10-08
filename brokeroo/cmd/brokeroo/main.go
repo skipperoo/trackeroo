@@ -147,7 +147,6 @@ func (s *Service) connectMQTT() error {
 	opts.SetKeepAlive(60 * time.Second)
 	opts.SetPingTimeout(10 * time.Second)
 	opts.SetConnectTimeout(10 * time.Second)
-	opts.SetAutoAckDisabled(true)
 
 	// Set connection lost handler
 	opts.SetConnectionLostHandler(func(client mqtt.Client, err error) {
@@ -265,7 +264,6 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	}
 
 	log.Printf("Successfully inserted data for dev_id: %s, tag: %s", devID, tag)
-	msg.Ack()
 }
 
 func (s *Service) insertData(tsUnix int64, ts time.Time, devID, tag string, payload json.RawMessage) error {
