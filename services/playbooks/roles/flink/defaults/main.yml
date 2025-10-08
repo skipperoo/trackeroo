@@ -6,7 +6,9 @@ flink_job_image: ghcr.io/skiby7/flink_job:latest
 
 flink_job_parallelism: 16
 flink_jobmanager_port: 8081
+flink_rpc_port: 6123
 flink_task_slots: 16
+flink_rpc: flink-jobmanager.data.svc.cluster.local
 
 postgres_url: jdbc:postgresql://apps:apps@tsdb-rw.data.svc.cluster.local:5432/tracker_db?sslmode=disable
 kafka_url: kafka.data.svc.cluster.local:9092

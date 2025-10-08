@@ -9,5 +9,7 @@ spec:
     - name: rpc
       port: {{ flink_jobmanager_port }}
       targetPort: {{ flink_jobmanager_port }}
-      protocol: TCP
+    - name: rpcport
+      port: {{ flink_rpc_port }}
+      targetPort: {{ flink_rpc_port }}
   type: ClusterIP

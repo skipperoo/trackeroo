@@ -14,6 +14,8 @@ spec:
       labels:
         app: flink-taskmanager
     spec:
+      securityContext:
+        fsGroup: 471
       nodeSelector:
         workload-type: apps
       containers:
@@ -23,5 +25,12 @@ spec:
         env:
           - name: FLINK_PROPERTIES
             value: |
-              jobmanager.rpc.address: flink-jobmanager
+              jobmanager.rpc.address: {{ flink_rpc }}
               taskmanager.numberOfTaskSlots: {{ flink_task_slots }}
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi

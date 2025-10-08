@@ -23,10 +23,18 @@ spec:
         args: ["jobmanager"]
         ports:
           - containerPort: {{ flink_jobmanager_port }}
+          - containerPort: {{ flink_rpc_port }}
         env:
           - name: FLINK_PROPERTIES
             value: |
-              jobmanager.rpc.address: flink-jobmanager
+              jobmanager.rpc.address: {{ flink_rpc }}
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
         readinessProbe:
           httpGet:
             path: /overview
