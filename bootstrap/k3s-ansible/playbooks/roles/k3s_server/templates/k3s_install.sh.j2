@@ -25,12 +25,14 @@ K3S_TOKEN="${K3S_TOKEN}" \
 {% endif %}
 sh -s - ${K3S_ROLE} ${K3S_CLUSTER_INIT} ${K3S_SERVER} \
   --node-ip ${K3S_NODE_IP} \
-  --node-taint CriticalAddonsOnly=true:NoSchedule \
   --advertise-address ${K3S_NODE_IP} \
   --disable-agent \
   --tls-san {{ kube_api_vip }} \
   --flannel-iface {{ internal_interface }} \
   --disable-cloud-controller \
-  --disable servicelb
+  --disable servicelb \
+  --node-taint "workload-type=apps"
 
+# This is to prevent any workload from being scheduled on the servers.
+# --node-taint CriticalAddonsOnly=true:NoSchedule \
 echo "K3s server installation completed"

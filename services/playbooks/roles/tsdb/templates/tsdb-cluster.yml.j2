@@ -4,6 +4,9 @@ metadata:
   name: {{ cluster_name }}
   namespace: {{ tsdb_namespace }}
 spec:
+  affinity:
+    nodeSelector:
+      workload-type: apps
   postgresUID: 999
   postgresGID: 999
   instances: {{ instances }}
