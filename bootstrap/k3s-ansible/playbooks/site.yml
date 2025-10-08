@@ -21,6 +21,7 @@
 
 - name: Deploy MetalLB and configure IP pool
   hosts: servers[0]
+  tags: metallb
   run_once: true
   roles:
     - metallb
