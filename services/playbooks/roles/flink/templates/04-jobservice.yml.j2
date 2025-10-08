@@ -9,10 +9,10 @@ spec:
     - name: rpc
       port: {{ flink_jobmanager_port }}
       targetPort: {{ flink_jobmanager_port }}
-    - name: rpcport_1
+    - name: rpcport1
       port: {{ flink_rpc_port_1 }}
       targetPort: {{ flink_rpc_port_1 }}
-    - name: rpcport_2
+    - name: rpcport2
       port: {{ flink_rpc_port_2 }}
       targetPort: {{ flink_rpc_port_2 }}
   type: ClusterIP
