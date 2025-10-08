@@ -62,4 +62,8 @@
   roles:
     - grafana
 
-#TODO: become: yes  
+- name: Deploy Kafka and Zookeeper
+  hosts: servers
+  tags: kafka
+  roles:
+    - kafka

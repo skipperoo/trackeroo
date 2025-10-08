@@ -8,5 +8,4 @@ flink_job_parallelism: 16
 flink_jobmanager_port: 8081
 flink_task_slots: 16
 
-postgres_url: jdbc:postgresql://tsdb:5432/tracker_db?sslmode=disable
-# TODOOOOOO
+postgres_url: jdbc:postgresql://apps:apps@tsdb-rw.data.svc.cluster.local:5432/tracker_db?sslmode=disable

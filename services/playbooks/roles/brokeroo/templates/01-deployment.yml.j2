@@ -5,6 +5,8 @@ metadata:
   labels:
     app: {{ brokeroo_app_name }}
 spec:
+  nodeSelector:
+    workload-type: apps
   replicas: {{ brokeroo_replicas }}
   selector:
     matchLabels:
@@ -14,6 +16,8 @@ spec:
       labels:
         app: {{ brokeroo_app_name }}
     spec:
+      nodeSelector:
+        workload-type: apps
       containers:
         - name: {{ brokeroo_app_name }}
           image: {{ brokeroo_image }}
@@ -21,14 +25,17 @@ spec:
           ports:
             - containerPort: {{ brokeroo_port }}
           env:
-{% for e in brokeroo_env %}
-            - name: {{ e.name }}
-              value: "{{ e.value }}"
-{% endfor %}
-          resources:
-            requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
-              memory: "256Mi"
-              cpu: "250m"
+            - name: MQTT_BROKER
+              value: "mqtt://rabbitmq:1883"
+            - name: MQTT_CLIENT_ID
+              value: "apps"
+            - name: MQTT_USERNAME
+              value: "apps"
+            - name: MQTT_PASSWORD
+              value: "apps"
+            - name: POSTGRES_URL
+              value: "postgres://apps:apps@tsdb-rw.data.svc.cluster.local:5432/tracker_db?sslmode=disable"
+            - name: TOPIC_PATTERN
+              value: "j/data/+/+"
+            - name: KAFKA_BROKER
+              value: "kafka.data.svc.cluster.local:9092"

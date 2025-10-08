@@ -9,4 +9,5 @@ spec:
     - name: http
       port: {{ grafana_port }}
       targetPort: {{ grafana_port }}
-  type: ClusterIP
+  type: LoadBalancer
+  loadBalancerIP: {{ grafana_service_ip }}

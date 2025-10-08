@@ -60,9 +60,7 @@ public class AggregatorJob {
         
         // Legge variabili d'ambiente (con default)
         String kafkaUrl = System.getenv().getOrDefault("KAFKA_URL", "kafka:9092");
-        String postgresUrl = System.getenv().getOrDefault("POSTGRES_URL", "jdbc:postgresql://tsdb:5432/tracker_db?sslmode=disable");
-        String postgresUser = System.getenv().getOrDefault("POSTGRES_USER", "admin");
-        String postgresPassword = System.getenv().getOrDefault("POSTGRES_PASSWORD", "administrator");
+        String postgresUrl = System.getenv().getOrDefault("POSTGRES_URL", "jdbc:postgresql://apps:apps@tsdb:5432/tracker_db?sslmode=disable");
 
         System.out.printf(">>> [DEBUG] Kafka: %s | Postgres: %s%n", kafkaUrl, postgresUrl);
 
@@ -150,8 +148,6 @@ public class AggregatorJob {
                 new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
                         .withUrl(postgresUrl)
                         .withDriverName("org.postgresql.Driver")
-                        .withUsername(postgresUser)
-                        .withPassword(postgresPassword)
                         .build()
         )).setParallelism(2);
 

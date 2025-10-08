@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zookeeper
+  labels:
+    app: zookeeper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      nodeSelector:
+        workload-type: apps
+      containers:
+        - name: zookeeper
+          image: {{ zookeeper_image }}
+          ports:
+            - containerPort: {{ zookeeper_client_port }}
+          env:
+            - name: ZOOKEEPER_CLIENT_PORT
+              value: "{{ zookeeper_client_port }}"
+            - name: ZOOKEEPER_TICK_TIME
+              value: "{{ zookeeper_tick_time }}"

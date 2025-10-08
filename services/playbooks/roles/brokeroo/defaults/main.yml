@@ -1,24 +1,7 @@
-brokeroo_namespace: brokeroo
+brokeroo_namespace: trackeroo
 brokeroo_app_name: brokeroo
 
 brokeroo_image: ghcr.io/skiby7/brokeroo:latest
 
 brokeroo_replicas: 1
 brokeroo_port: 8080
-
-# TODOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOoo
-brokeroo_env:
-  - name: MQTT_BROKER
-    value: "mqtt://rabbitmq:1883"
-  - name: MQTT_CLIENT_ID
-    value: "apps"
-  - name: MQTT_USERNAME
-    value: "apps"
-  - name: MQTT_PASSWORD
-    value: "apps"
-  - name: POSTGRES_URL
-    value: "postgres://admin:administrator@tsdb:5432/tracker_db?sslmode=disable"
-  - name: TOPIC_PATTERN
-    value: "j/data/+/+"
-  - name: KAFKA_BROKER
-    value: "kafka:9092"

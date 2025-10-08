@@ -5,6 +5,8 @@ metadata:
   labels:
     app: {{ grafana_app_name }}
 spec:
+  nodeSelector:
+    workload-type: apps
   replicas: 1
   selector:
     matchLabels:
@@ -14,6 +16,8 @@ spec:
       labels:
         app: {{ grafana_app_name }}
     spec:
+      nodeSelector:
+        workload-type: apps
       containers:
         - name: {{ grafana_app_name }}
           image: {{ grafana_image }}

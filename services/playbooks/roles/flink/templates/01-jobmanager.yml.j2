@@ -14,9 +14,12 @@ spec:
       labels:
         app: flink-jobmanager
     spec:
+      nodeSelector:
+        workload-type: apps
       containers:
       - name: jobmanager
         image: {{ flink_image }}
+        imagPullPolicy: Always
         args: ["jobmanager"]
         ports:
           - containerPort: {{ flink_jobmanager_port }}
