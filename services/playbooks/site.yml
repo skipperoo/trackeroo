@@ -1,24 +1,32 @@
 - name: Deploy tsdb
   hosts: servers
-  tags: tsdb
+  tags:
+    - tsdb
+    - data
   roles:
     - tsdb
 
 - name: Deploy pgAdmin
   hosts: servers
-  tags: pgadmin
+  tags:
+    - pgadmin
+    - management
   roles:
     - pgadmin
 
 - name: Deploy Mongo Express
   hosts: servers
-  tags: mongo-express
+  tags:
+    - mongo-express
+    - management
   roles:
     - mongo-express
 
 - name: Deploy rabbitmq
   hosts: servers
-  tags: rabbitmq
+  tags:
+    - rabbitmq
+    - trackeroo
   vars_files:
     - secrets.yml
   roles:
@@ -26,19 +34,24 @@
 
 - name: Deploy mongo
   hosts: servers
-  tags: mongo
+  tags:
+    - mongo
+    - data
   roles:
     - mongo
 
 - name: Deploy redis
   hosts: servers
-  tags: redis
+  tags:
+    - redis
+    - data
   roles:
     - redis
 
 - name: Deploy trackeroo
   hosts: servers
-  tags: trackeroo
+  tags:
+    - trackeroo
   vars_files:
     - secrets.yml
   roles:

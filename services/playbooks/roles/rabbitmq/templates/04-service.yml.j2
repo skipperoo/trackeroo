@@ -5,7 +5,8 @@ metadata:
   name: "{{ rabbitmq_app_name }}"
   namespace: "{{ rabbitmq_namespace }}"
 spec:
-  type: "{{ rabbitmq_service_type }}"
+  type: LoadBalancer
+  loadBalancerIP: "{{ rabbitmq_service_ip }}"
   selector:
     app: "{{ rabbitmq_app_name }}"
   ports:

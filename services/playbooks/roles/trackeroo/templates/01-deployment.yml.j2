@@ -35,7 +35,7 @@ spec:
               value: "info"
             # Point MQTT to the RabbitMQ service name
             - name: MQTT_HOST
-              value: "{{ trackeroo_rabbitmq_service_name }}"
+              value: "{{ rabbitmq_service_ip }}"
             - name: MQTT_BROKER
               value: "{{ trackeroo_rabbitmq_service_name }}"
             - name: MQTT_PORT
