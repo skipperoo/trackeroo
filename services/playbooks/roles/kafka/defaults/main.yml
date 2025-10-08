@@ -3,6 +3,7 @@ zookeeper_image: confluentinc/cp-zookeeper:7.5.0
 kafka_image: confluentinc/cp-kafka:7.5.0
 
 zookeeper_connect: zookeeper.data.svc.cluster.local:2181
+zookeeper_client_port: 2181
 zookeeper_tick_time: 2000
 
 kafka_broker_id: 1
