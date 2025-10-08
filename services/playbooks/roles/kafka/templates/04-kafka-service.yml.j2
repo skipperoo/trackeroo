@@ -6,7 +6,10 @@ spec:
   selector:
     app: kafka
   ports:
-    - name: broker
+    - name: plaintext
       port: {{ kafka_port }}
       targetPort: {{ kafka_port }}
+    - name: plaintext-host
+      port: {{ kafka_host_port }}
+      targetPort: {{ kafka_host_port }}
   type: ClusterIP
