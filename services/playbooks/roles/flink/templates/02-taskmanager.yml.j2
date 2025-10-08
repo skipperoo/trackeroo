@@ -23,5 +23,5 @@ spec:
         env:
           - name: FLINK_PROPERTIES
             value: |
-              jobmanager.rpc.address: flink-jobmanager
+              jobmanager.rpc.address: {{ flink_rpc }}
               taskmanager.numberOfTaskSlots: {{ flink_task_slots }}
