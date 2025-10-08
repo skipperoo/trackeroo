@@ -59,7 +59,7 @@ spec:
             periodSeconds: 5
           volumeMounts:
             - name: users-key-volume
-              mountPath: /run/secrets
+              mountPath: /app/secrets
               readOnly: true
             - name: certs-volume
               mountPath: /certs
