@@ -216,20 +216,22 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	}
 
 	ts := time.Unix(tsUnix, 0).UTC()
+	start := time.Now()
 	jsonPayload := json.RawMessage(payload)
 	if err := s.insertData(tsUnix, ts, devID, tag, jsonPayload); err != nil {
 		log.Printf("Failed to insert data: %v", err)
 		return
 	}
-
+	log.Printf("Time to write to DB %v", time.Since(start))
+	start = time.Now()
 	/* kafka */
 	kafkaTopic := sanitizeTopic(topic)
-
 	if err := s.ensureTopicExists(kafkaTopic); err != nil {
 		log.Printf("Errore creazione topic %s: %v", kafkaTopic, err)
 		return
 	} else {
-
+		log.Printf("Time to create topic %v", time.Since(start))
+		start = time.Now()
 		envelope := Envelope{
 			TsUnix:      tsUnix,
 			Ts:          ts.Format(time.RFC3339), // is this right?
@@ -257,6 +259,7 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 		} else {
 			log.Printf("Message forwarded to Kafka topic: %s", kafkaTopic)
 		}
+		log.Printf("Time to write to Kafka %v", time.Since(start))
 	}
 
 	log.Printf("Successfully inserted data for dev_id: %s, tag: %s", devID, tag)
