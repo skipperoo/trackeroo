@@ -27,6 +27,13 @@ spec:
           - name: FLINK_PROPERTIES
             value: |
               jobmanager.rpc.address: flink-jobmanager
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
         readinessProbe:
           httpGet:
             path: /overview
