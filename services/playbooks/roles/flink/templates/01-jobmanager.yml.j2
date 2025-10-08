@@ -23,6 +23,7 @@ spec:
         args: ["jobmanager"]
         ports:
           - containerPort: {{ flink_jobmanager_port }}
+          - containerPort: {{ flink_rpc_port }}
         env:
           - name: FLINK_PROPERTIES
             value: |

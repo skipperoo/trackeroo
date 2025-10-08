@@ -6,6 +6,7 @@ flink_job_image: ghcr.io/skiby7/flink_job:latest
 
 flink_job_parallelism: 16
 flink_jobmanager_port: 8081
+flink_rpc_port: 6123
 flink_task_slots: 16
 flink_rpc: flink-jobmanager.data.svc.cluster.local
 
