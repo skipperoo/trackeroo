@@ -104,9 +104,8 @@ func Loop() {
 	rand.Seed(time.Now().UnixNano())
 	creds, _ := trackeroo.GetCredentials()
 	deviceType := creds.DeviceType
-	cities := []string{"Pisa", "Lucca", "Firenze", "Livorno", "Pontedera", "Viareggio", "Siena"}
 	// streetProvider := trackeroo.NewCachedStreetProvider("http://localhost:12345/api/interpreter")
-	streetProvider := trackeroo.NewCachedStreetProvider("https://overpass-api.de/api/interpreter")
+	streetProvider := trackeroo.NewCachedStreetProvider(os.Getenv("OVERPASS_URL"))
 	routingService := trackeroo.NewRoutingService(
 		os.Getenv("GEOCODING_SERVICE_URL"),
 		os.Getenv("ROUTING_SERVICE_URL"),
@@ -120,6 +119,12 @@ func Loop() {
 	}
 	lastPublish := time.Now()
 	isPirate := os.Getenv("PIRATE") == "true" || os.Getenv("PIRATE") == "1"
+	var cities []string
+	if os.Getenv("REGIONAL") == "true" {
+		cities = trackeroo.GetRandomRegion()
+	} else {
+		cities = trackeroo.GetAllCities()
+	}
 	trackeroo.Info("Is pirate: %t", isPirate)
 	lastStatus := ""
 	lastEnd := ""
