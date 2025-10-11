@@ -5,15 +5,15 @@ tsdb_namespace: "data"
 cluster_name: tsdb
 instances: 3
 image: ghcr.io/skiby7/tsdb:17
-storage_size: 5Gi
+storage_size: 20Gi
 storage_class: longhorn
 database_name: tracker_db
 database_user: postgres
 admin_user: admin
 apps_user: apps
 # This should be a secret but rn the cluster is not exposed
-admin_password: "administrator"
-apps_password: "apps"
+admin_password: administrator
+apps_password: apps
 synchronous_method: any
 synchronous_number: 1
 data_durability: required

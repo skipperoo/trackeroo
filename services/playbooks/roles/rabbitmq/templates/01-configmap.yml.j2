@@ -1,0 +1,49 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ rabbitmq_app_name }}-config"
+  namespace: "{{ rabbitmq_namespace }}"
+data:
+  enabled_plugins: |
+    [rabbitmq_peer_discovery_k8s,rabbitmq_auth_backend_http,rabbitmq_event_exchange,rabbitmq_management,rabbitmq_mqtt].
+
+  rabbitmq.conf: |
+    # --- Clustering Configuration ---
+    cluster_formation.peer_discovery_backend = k8s
+    cluster_formation.k8s.host = kubernetes.default.svc.cluster.local
+    cluster_formation.k8s.service_name = {{ rabbitmq_app_name }}-headless
+    cluster_formation.node_cleanup.interval = 60
+    cluster_formation.node_cleanup.only_log_warning = true
+    cluster_partition_handling = autoheal
+    queue_master_locator = min-masters
+
+    # TCP Listeners
+    listeners.tcp.default = 5672
+    management.tcp.port = 15672
+
+    # SSL Configuration
+    ssl_options.cacertfile = /etc/rabbitmq/certs/ca_certificate.pem
+    ssl_options.certfile   = /etc/rabbitmq/certs/server_certificate.pem
+    ssl_options.keyfile    = /etc/rabbitmq/certs/server_key.pem
+    ssl_options.verify     = verify_none
+    ssl_options.fail_if_no_peer_cert = false
+
+    # MQTT Configuration
+    mqtt.listeners.tcp.default = 1883
+    mqtt.listeners.ssl.default = 8883
+    mqtt.allow_anonymous = false
+    mqtt.vhost = /
+    mqtt.exchange = amq.topic
+
+    # Enable custom auth backend
+    auth_backends.1 = http
+    auth_http.http_method = post
+    auth_http.user_path = {{ rabbitmq_auth_backend_url_base }}/auth/user
+    auth_http.vhost_path = {{ rabbitmq_auth_backend_url_base }}/auth/vhost
+    auth_http.resource_path = {{ rabbitmq_auth_backend_url_base }}/auth/resource
+    auth_http.topic_path = {{ rabbitmq_auth_backend_url_base }}/auth/topic
+
+    # Logging
+    log.console = true
+    log.console.level = info

@@ -26,6 +26,8 @@ func Logging(next http.Handler) http.Handler {
 		next.ServeHTTP(wrapped, r)
 		if wrapped.statusCode < 400 {
 			logger.Info("%v %v %v %v", wrapped.statusCode, r.Method, r.URL.Path, time.Since(start))
+		} else if wrapped.statusCode < 500 {
+			logger.Warning("%v %v %v %v", wrapped.statusCode, r.Method, r.URL.Path, time.Since(start))
 		} else {
 			logger.Error("%v %v %v %v", wrapped.statusCode, r.Method, r.URL.Path, time.Since(start))
 		}

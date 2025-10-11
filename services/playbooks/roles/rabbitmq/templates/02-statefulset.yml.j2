@@ -1,0 +1,61 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "{{ rabbitmq_app_name }}"
+  namespace: "{{ rabbitmq_namespace }}"
+spec:
+  serviceName: "{{ rabbitmq_app_name }}-headless"
+  replicas: {{ rabbitmq_replicas }}
+  selector:
+    matchLabels:
+      app: "{{ rabbitmq_app_name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ rabbitmq_app_name }}"
+    spec:
+      nodeSelector:
+        workload-type: apps
+      containers:
+        - name: "{{ rabbitmq_app_name }}"
+          image: "{{ rabbitmq_image }}"
+          ports:
+            - name: amqp
+              containerPort: 5672
+            - name: management
+              containerPort: 15672
+            - name: mqtt
+              containerPort: 1883
+            - name: mqtts
+              containerPort: 8883
+          env:
+            - name: RABBITMQ_ERLANG_COOKIE
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ rabbitmq_app_name }}-secrets"
+                  key: rabbitmq_erlang_cookie
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/rabbitmq/
+            - name: certs-volume
+              mountPath: /etc/rabbitmq/certs
+              readOnly: true
+            - name: data-volume
+              mountPath: /var/lib/rabbitmq
+      volumes:
+        - name: config-volume
+          configMap:
+            name: "{{ rabbitmq_app_name }}-config"
+        - name: certs-volume
+          secret:
+            secretName: rabbitmq-certs
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: "{{ rabbitmq_pvc_storage_class }}"
+        resources:
+          requests:
+            storage: "{{ rabbitmq_pvc_storage_size }}"

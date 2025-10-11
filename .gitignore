@@ -1,5 +1,9 @@
 *.qcow2
 *.pem
+*.class
+*.bin
+*.lock
+flink_job/.gradle
 secrets
 .pytest_cache
 __pycache__
@@ -11,7 +15,12 @@ tdevice.json
 claim.py
 status
 brockeroo
-grafana
+trackeroo-backend/grafana
 trackeroo-backend/mongo/data
 nominatim-data
 osrm-data
+trackeroo-backend/redis
+mqtt_client
+tracky/docker-compose.yml
+grafana.json
+.project

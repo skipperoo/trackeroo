@@ -1,0 +1,46 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "{{ redis_app_name }}"
+  namespace: "{{ redis_namespace }}"
+spec:
+  serviceName: "{{ redis_app_name }}"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ redis_app_name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ redis_app_name }}"
+    spec:
+      nodeSelector:
+        workload-type: apps
+      securityContext:
+        fsGroup: 999
+        runAsUser: 999
+        runAsGroup: 999
+      containers:
+        - name: "{{ redis_app_name }}"
+          image: "{{ redis_image }}"
+          ports:
+            - containerPort: 6379
+              name: redis
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          volumeMounts:
+            - name: data-volume
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{ redis_pvc_storage_class }}"
+        resources:
+          requests:
+            storage: "{{ redis_pvc_storage_size }}"

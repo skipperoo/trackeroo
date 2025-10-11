@@ -5,7 +5,7 @@ locale: en_US.UTF-8
 # User configuration
 users:
   - name: k3s-admin
-    passwd: $6$rounds=4096$v0k4/WEZZLQnikFD$1b5obdvCiCz.BffcjSUPS4MTPV7Ro6cr8J87HWpyonOQX7rX823rap/1mk/.plRFnMlhOvGLkuoWrgfCArZOb.
+    passwd: $6$rounds=4096$B9SFui0p6YaAGZAF$PVHzzOun0HNCAOY4G6aJs.2EqXNwJiD3CE4/IFlaUs6e6HNGDl0CzpTmzkwTsBCUD4DLt5bFvn2q4fW5nFKBS0
     lock_passwd: false
     groups: sudo
     shell: /bin/bash

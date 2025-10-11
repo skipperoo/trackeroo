@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flink-taskmanager
+  labels:
+    app: flink-taskmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flink-taskmanager
+  template:
+    metadata:
+      labels:
+        app: flink-taskmanager
+    spec:
+      securityContext:
+        fsGroup: 471
+      nodeSelector:
+        workload-type: apps
+      containers:
+      - name: taskmanager
+        image: {{ flink_image }}
+        args: ["taskmanager"]
+        env:
+          - name: FLINK_PROPERTIES
+            value: |
+              jobmanager.rpc.address: {{ flink_rpc }}
+              taskmanager.numberOfTaskSlots: {{ flink_task_slots }}
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi

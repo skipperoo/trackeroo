@@ -90,6 +90,22 @@
   delegate_to: "{{ groups['servers'][0] }}"
   run_once: true
 
+- name: Create init scripts ConfigMap
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: "{{ cluster_name }}-init-scripts"
+        namespace: "{{ tsdb_namespace }}"
+      data:
+        01-init.sql: "{{ lookup('file', '01-init.sql') }}"
+        02-schema.sql: "{{ lookup('file', '02-schema.sql') }}"
+  delegate_to: "{{ groups['servers'][0] }}"
+  run_once: true
+
 - name: Apply PostgreSQL cluster manifest
   kubernetes.core.k8s:
     kubeconfig: /etc/rancher/k3s/k3s.yaml
@@ -115,40 +131,4 @@
     and
     postgres_cluster.resources[0].status.phase == "Creating a new replica"
   delegate_to: "{{ groups['servers'][0] }}"
-  run_once: true
-
-- name: Grant database access to managed users
-  kubernetes.core.k8s_exec:
-    kubeconfig: /etc/rancher/k3s/k3s.yaml
-    namespace: "{{ tsdb_namespace }}"
-    pod: "{{ cluster_name }}-1"
-    command: >
-      psql -U postgres -d {{ database_name }} -c "
-      -- Admin user gets full privileges
-      GRANT ALL PRIVILEGES ON DATABASE {{ database_name }} TO {{ admin_user }};
-
-      -- Apps user gets full read/write access
-      GRANT ALL PRIVILEGES ON DATABASE {{ database_name }} TO {{ apps_user }};
-      GRANT ALL ON SCHEMA public TO {{ apps_user }};
-      GRANT ALL ON ALL TABLES IN SCHEMA public TO {{ apps_user }};
-      GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO {{ apps_user }};
-      GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO {{ apps_user }};
-
-      -- Ensure apps user gets permissions on future objects
-      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO {{ apps_user }};
-      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO {{ apps_user }};
-      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO {{ apps_user }};
-
-      -- TimescaleDB specific permissions
-      GRANT USAGE ON SCHEMA _timescaledb_catalog TO {{ apps_user }};
-      GRANT USAGE ON SCHEMA _timescaledb_config TO {{ apps_user }};
-      GRANT USAGE ON SCHEMA _timescaledb_internal TO {{ apps_user }};
-      GRANT SELECT ON ALL TABLES IN SCHEMA _timescaledb_catalog TO {{ apps_user }};
-      GRANT SELECT ON ALL TABLES IN SCHEMA _timescaledb_config TO {{ apps_user }};
-      "
-  delegate_to: "{{ groups['servers'][0] }}"
-  retries: 5
-  delay: 10
-  register: grant_result
-  until: grant_result is not failed
   run_once: true

@@ -29,9 +29,10 @@ WORKDIR /app
 
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/trackeroo-backend .
-COPY certs /certs
+
 # Expose the port your app listens on (adjust as needed)
-EXPOSE 8081
+EXPOSE 8080
 
 # Command to run the application
 ENTRYPOINT ["./trackeroo-backend"]
+

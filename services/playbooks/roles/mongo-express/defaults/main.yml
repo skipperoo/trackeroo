@@ -1,0 +1,6 @@
+---
+mongo_express_namespace: "management"
+mongo_express_app_name: "mongo-express"
+mongo_express_image: "mongo-express:latest"
+mongo_express_server: mongo.data.svc.cluster.local
+mongo_express_ip: 10.20.30.148

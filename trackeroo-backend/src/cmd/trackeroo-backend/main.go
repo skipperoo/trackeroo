@@ -17,17 +17,27 @@ import (
 )
 
 func main() {
-
 	logger.InitLogger()
+	defer logger.CloseLogger()
 	fmt.Println(service.Art)
 	config.LoadConfig()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := service.InitDb(ctx); err != nil {
+	if err := service.InitDB(ctx); err != nil {
 		logger.Fatal(err.Error())
 	}
+
+	service.InitConnectivityCache()
+	defer service.DeinitConnectivityCache()
+
+	service.StartRabbitWatcher(ctx)
+	service.InitQueue("data")
+	go service.QueuesCleanUp()
+	tdmClient := service.NewTdmClient()
+	tdmClient.Start()
+	defer tdmClient.Stop()
 
 	logger.Debug("Initializing login route")
 	loginRouter := router.NewRouter().
@@ -64,15 +74,24 @@ func main() {
 		AddHandler("POST /topic", handler.TopicAuth).
 		Finalize()
 
+	logger.Debug("Initializing publish router")
+	publishRouter := router.NewRouter().
+		AddHandler("POST /publish", handler.PublishPayload).
+		AddMiddleware(middleware.MqttAuth).
+		Finalize()
+
 	logger.Debug("Initializing main route")
 	mainRouter := router.NewRouter().
 		AddHandler("GET /health", handler.HealthCheck).
+		AddHandler("OPTIONS /tdm/publish", handler.Options).
 		AddMiddleware(middleware.Logging).
 		AddMiddleware(middleware.Recover).
+		AddMiddleware(middleware.CORSMiddleware).
 		AddSubroute("/login/", loginRouter).
 		AddSubroute("/devices/", devicesRouter).
 		AddSubroute("/users/", usersRouter).
 		AddSubroute("/auth/", authRouter).
+		AddSubroute("/tdm/", publishRouter).
 		Finalize()
 
 	server := http.Server{
@@ -101,7 +120,7 @@ func main() {
 	}
 
 	// Disconnect MongoDB
-	if err := service.CloseDb(shutdownCtx); err != nil {
+	if err := service.CloseDB(shutdownCtx); err != nil {
 		logger.Fatal("MongoDB disconnect failed: %s", err.Error())
 	}
 }

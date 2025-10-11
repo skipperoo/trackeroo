@@ -1,0 +1,23 @@
+---
+- name: "Create MongoDB ConfigMap from init.js file"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    namespace: "{{ mongo_namespace }}"
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: "{{ mongo_app_name }}-init-script"
+      data:
+        init.js: "{{ lookup('file', 'init.js') }}"
+
+- name: "Create MongoDB StatefulSet and Service"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    namespace: "{{ mongo_namespace }}"
+    definition: "{{ lookup('template', item) | from_yaml }}"
+  loop:
+    - "01-statefulset.yml.j2"
+    - "02-service.yml.j2"

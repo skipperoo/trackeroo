@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flink-jobmanager
+  labels:
+    app: flink-jobmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flink-jobmanager
+  template:
+    metadata:
+      labels:
+        app: flink-jobmanager
+    spec:
+      nodeSelector:
+        workload-type: apps
+      containers:
+      - name: jobmanager
+        image: {{ flink_image }}
+        imagePullPolicy: Always
+        args: ["jobmanager"]
+        ports:
+          - containerPort: {{ flink_jobmanager_port }}
+          - containerPort: {{ flink_rpc_port_1 }}
+          - containerPort: {{ flink_rpc_port_2 }}
+        env:
+          - name: FLINK_PROPERTIES
+            value: |
+              jobmanager.rpc.address: {{ flink_rpc }}
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        readinessProbe:
+          httpGet:
+            path: /overview
+            port: {{ flink_jobmanager_port }}
+          initialDelaySeconds: 10
+          periodSeconds: 5

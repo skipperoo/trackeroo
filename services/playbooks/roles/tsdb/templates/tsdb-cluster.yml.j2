@@ -4,6 +4,9 @@ metadata:
   name: {{ cluster_name }}
   namespace: {{ tsdb_namespace }}
 spec:
+  affinity:
+    nodeSelector:
+      workload-type: apps
   postgresUID: 999
   postgresGID: 999
   instances: {{ instances }}
@@ -19,17 +22,18 @@ spec:
     size: {{ storage_size }}
     storageClass: {{ storage_class }}
     resizeInUseVolumes: true
-  monitoring:
-    enabled: {{ monitoring_enabled | default(true) }}
   bootstrap:
     initdb:
-      database: {{ database_name }}
-      owner: {{ database_user }}
-      postInitSQL:
-        - "CREATE EXTENSION IF NOT EXISTS timescaledb;"
-        - "CREATE EXTENSION IF NOT EXISTS postgis;"
-        - "CREATE EXTENSION IF NOT EXISTS postgis_topology;"
-        - "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
+      database: {{ databse_name | default('tracker_db') }}
+      owner: {{ admin_user | default('admin') }}
+      # https://cloudnative-pg.io/documentation/preview/bootstrap/#executing-queries-after-initialization
+      # The ApplicationSQL indicates that the SQL scripts will be executed against the newly created database defined above.
+      postInitApplicationSQLRefs:
+        configMapRefs:
+          - name: "{{ cluster_name }}-init-scripts"
+            key: 01-init.sql
+          - name: "{{ cluster_name }}-init-scripts"
+            key: 02-schema.sql
   managed:
     roles:
     # Admin user with full privileges

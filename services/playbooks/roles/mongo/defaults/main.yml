@@ -1,0 +1,9 @@
+---
+# defaults file for ansible-role-mongo
+mongo_namespace: "data"
+mongo_app_name: "mongo"
+mongo_image: "mongo:latest"
+
+# Storage settings
+mongo_pvc_storage_class: "longhorn"
+mongo_pvc_storage_size: "3Gi"

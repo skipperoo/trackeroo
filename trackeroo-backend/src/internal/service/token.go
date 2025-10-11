@@ -21,7 +21,7 @@ func GenerateJWT(user model.User) (string, jwt.MapClaims, error) {
 	}
 	jwtKey := getKey("users_key")
 	if jwtKey == nil {
-		return "", nil, fmt.Errorf("Failed to get jwt key")
+		return "", nil, fmt.Errorf("failed to get jwt key")
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
@@ -35,15 +35,14 @@ func GenerateJWT(user model.User) (string, jwt.MapClaims, error) {
 func ValidateUserJWT(authHeader string, role string) (bool, error) {
 	parts := strings.SplitN(authHeader, " ", 2)
 	if len(parts) != 2 {
-		return false, fmt.Errorf("Invalid Authorization header format")
+		return false, fmt.Errorf("invalid Authorization header format")
 	}
-	token, err := jwt.Parse(parts[1], func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(parts[1], func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return getKey("users_key"), nil
 	})
-
 	if err != nil {
 		return false, err
 	}
@@ -67,23 +66,41 @@ func ValidateDeviceJWT(encodedKey string, tokenString string) (bool, jwt.MapClai
 		}
 		return secret, nil
 	})
-
 	if err != nil {
 		return false, nil, err
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return true, claims, nil
-
 	}
 
 	return false, nil, fmt.Errorf("invalid token")
 }
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
+	if os.IsNotExist(err) {
+		return false
+	}
+	return false
+}
 
 func getKey(key string) []byte {
-	jwtKey, err := os.ReadFile(fmt.Sprintf("/run/secrets/%s", key))
-	if err != nil {
-		return nil
+	run_path := fmt.Sprintf("/run/secrets/%s", key)
+	var jwtKey []byte
+	var err error
+	if fileExists(run_path) {
+		jwtKey, err = os.ReadFile(run_path)
+		if err != nil {
+			return nil
+		}
+	} else {
+		jwtKey = []byte(GetenvOrDefault("USERS_KEY", ""))
+		if len(jwtKey) == 0 {
+			return nil
+		}
 	}
 	return jwtKey
 }

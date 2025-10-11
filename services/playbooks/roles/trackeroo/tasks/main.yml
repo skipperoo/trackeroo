@@ -1,0 +1,35 @@
+---
+- name: "Create Trackeroo Kubernetes namespace"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    name: "{{ trackeroo_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: "Create Trackeroo Backend Secret"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    namespace: "{{ trackeroo_namespace }}"
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ trackeroo_app_name }}-secret"
+      stringData:
+        users_key: "{{ trackeroo_users_key }}"
+        mqtt_username: "{{ trackeroo_mqtt_username }}"
+        mqtt_password: "{{ trackeroo_mqtt_password }}"
+        rabbitmq_username: "{{ trackeroo_rabbitmq_username }}"
+        rabbitmq_password: "{{ trackeroo_rabbitmq_password }}"
+
+- name: "Create Trackeroo Backend Deployment and Service"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    namespace: "{{ trackeroo_namespace }}"
+    definition: "{{ lookup('template', item) | from_yaml }}"
+  loop:
+    - "01-deployment.yml.j2"
+    - "02-service.yml.j2"

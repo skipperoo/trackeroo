@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ mongo_express_app_name }}"
+  namespace: {{ mongo_express_namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ mongo_express_app_name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ mongo_express_app_name }}"
+    spec:
+      nodeSelector:
+        workload-type: apps
+      containers:
+        - name: "{{ mongo_express_app_name }}"
+          image: "{{ mongo_express_image }}"
+          env:
+            - name: ME_CONFIG_MONGODB_SERVER
+              value: "{{ mongo_express_server }}"
+          ports:
+            - containerPort: 8081

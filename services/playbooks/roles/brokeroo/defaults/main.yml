@@ -1,0 +1,7 @@
+brokeroo_namespace: trackeroo
+brokeroo_app_name: brokeroo
+
+brokeroo_image: ghcr.io/skiby7/brokeroo:latest
+
+brokeroo_replicas: 3
+brokeroo_port: 8080

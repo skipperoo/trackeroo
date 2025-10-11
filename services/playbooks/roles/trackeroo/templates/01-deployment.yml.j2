@@ -1,0 +1,93 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ trackeroo_app_name }}"
+  namespace: "{{ trackeroo_namespace }}"
+spec:
+  replicas: {{ trackeroo_replicas }}
+  selector:
+    matchLabels:
+      app: "{{ trackeroo_app_name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ trackeroo_app_name }}"
+    spec:
+      nodeSelector:
+        workload-type: apps
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox:1.35
+          command: ['sh', '-c', 'until nc -vz {{ trackeroo_mongo_service_name }} 27017 && nc -vz {{ trackeroo_redis_service_name }} 6379; do echo "Waiting for dependencies..."; sleep 2; done;']
+      containers:
+        - name: "{{ trackeroo_app_name }}"
+          image: "{{ trackeroo_image }}"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MONGO_URI
+              value: "mongodb://{{ trackeroo_mongo_service_name }}:27017/trackeroo"
+            - name: REDIS_URI
+              value: "{{ trackeroo_redis_service_name }}:6379"
+            - name: RABBITMQ_HOST
+              value: "{{ trackeroo_rabbitmq_service_name }}"
+            - name: RABBITMQ_PORT
+              value: "{{ trackeroo_rabbitmq_service_port }}"
+            - name: LOG_LEVEL
+              value: "info"
+            # Point MQTT to the RabbitMQ service name
+            - name: MQTT_HOST
+              value: "{{ rabbitmq_service_ip }}"
+            - name: MQTT_BROKER
+              value: "{{ trackeroo_rabbitmq_service_name }}"
+            - name: MQTT_PORT
+              value: "1883"
+            - name: MQTTS_PORT
+              value: "8883"
+            # Get the secret from the K8s Secret
+            - name: USERS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ trackeroo_app_name }}-secret"
+                  key: users_key
+            - name: MQTT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ trackeroo_app_name }}-secret"
+                  key: mqtt_username
+            - name: MQTT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ trackeroo_app_name }}-secret"
+                  key: mqtt_password
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ trackeroo_app_name }}-secret"
+                  key: rabbitmq_username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ trackeroo_app_name }}-secret"
+                  key: rabbitmq_password
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          volumeMounts:
+            # Mount the same certs used by RabbitMQ
+            - name: certs-volume
+              mountPath: /certs
+              readOnly: true
+      volumes:
+        - name: certs-volume
+          secret:
+            secretName: rabbitmq-certs

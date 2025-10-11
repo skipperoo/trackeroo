@@ -7,7 +7,11 @@ import (
 	"trackeroo-backend/internal/logger"
 	"trackeroo-backend/internal/model"
 	"trackeroo-backend/internal/service"
+
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+var isUserCache = service.NewSimpleCache()
 
 func UserAuth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -26,16 +30,12 @@ func UserAuth(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "deny")
 		return
 	}
-	logger.Info("Authenticating device: %s ***", form.Username)
+	logger.Debug("Authenticating device: %s ***", form.Username)
 	_, err := service.GetUserByName(ctx, form.Username)
 	if err == nil {
 		logger.Info("Found admin user %s, validating...", form.Username)
-		login := model.Login{
-			Username: form.Username,
-			Password: form.Password,
-		}
-		valid := service.ValidateLogin(ctx, login)
-		logger.Info("Valid: %v", valid)
+		valid := service.ValidateLogin(ctx, form)
+		logger.Debug("Valid: %v", valid)
 		if !valid {
 			fmt.Fprint(w, "deny")
 			return
@@ -59,12 +59,13 @@ func UserAuth(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	logger.Info("Device %s authenticated", form.Username)
+	logger.Debug("Device %s authenticated", form.Username)
 	fmt.Fprint(w, "allow")
 }
 
 func TopicAuth(w http.ResponseWriter, r *http.Request) {
 	/* Every response should be 200 */
+	ctx := r.Context()
 	w.WriteHeader(http.StatusOK)
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Cannot parse form", http.StatusBadRequest)
@@ -80,18 +81,35 @@ func TopicAuth(w http.ResponseWriter, r *http.Request) {
 		Permission: r.FormValue("permission"),
 	}
 
-	if form.Username == "apps" {
-		logger.Info("App %s authenticated for topic %s", form.Username, form.Topic)
+	isUserVal := isUserCache.Get(form.Username)
+	if isUserVal == nil {
+		_, err := service.GetUserByName(ctx, form.Username)
+		switch err {
+		case mongo.ErrNoDocuments:
+			isUserCache.Set(form.Username, false)
+			isUserVal = any(false)
+		case nil:
+			isUserCache.Set(form.Username, true)
+			isUserVal = any(true)
+		default:
+			logger.Error("Cannot retrieve %s: %v", form.Username, err)
+			return
+		}
+	}
+	isUser := isUserVal.(bool)
+
+	if isUser {
+		logger.Debug("App %s authenticated for topic %s", form.Username, form.Topic)
 		fmt.Fprint(w, "allow")
 		return
 	}
-	logger.Info("Authenticating device %s for topic %s vhost %s resource %s permission %s", form.Username, form.Topic, form.Vhost, form.Resource, form.Permission)
+	logger.Debug("Authenticating device %s for topic %s vhost %s resource %s permission %s", form.Username, form.Topic, form.Vhost, form.Resource, form.Permission)
 	if strings.Contains(form.Topic, form.Username) {
-		logger.Info("Device %s authenticated for topic %s", form.Username, form.Topic)
+		logger.Debug("Device %s authenticated for topic %s", form.Username, form.Topic)
 		fmt.Fprint(w, "allow")
 		return
 	}
-	logger.Info("Device %s not authenticated for topic %s", form.Username, form.Topic)
+	logger.Debug("Device %s not authenticated for topic %s", form.Username, form.Topic)
 	fmt.Fprint(w, "deny")
 }
 

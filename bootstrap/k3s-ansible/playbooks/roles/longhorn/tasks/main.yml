@@ -122,6 +122,7 @@
         name: "{{ item }}"
         namespace: longhorn-system
       spec:
+        name: "{{ item }}"
         allowScheduling: false
 
   loop: "{{ groups['servers'] }}"

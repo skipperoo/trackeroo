@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ grafana_app_name }}
+  labels:
+    app: {{ grafana_app_name }}
+spec:
+  nodeSelector:
+    workload-type: apps
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ grafana_app_name }}
+  template:
+    metadata:
+      labels:
+        app: {{ grafana_app_name }}
+    spec:
+      securityContext:
+        fsGroup: 472
+      nodeSelector:
+        workload-type: apps
+      containers:
+        - name: {{ grafana_app_name }}
+          image: {{ grafana_image }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ grafana_port }}
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: "{{ grafana_admin_user }}"
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: "{{ grafana_admin_password }}"
+            - name: GF_DATABASE_TYPE
+              value: "{{ grafana_db_type }}"
+            - name: GF_DATABASE_HOST
+              value: "{{ grafana_db_host }}"
+            - name: GF_DATABASE_NAME
+              value: "{{ grafana_db_name }}"
+            - name: GF_DATABASE_USER
+              value: "{{ grafana_db_user }}"
+            - name: GF_DATABASE_PASSWORD
+              value: "{{ grafana_db_password }}"
+          volumeMounts:
+            - name: grafana-storage
+              mountPath: /var/lib/grafana
+      volumes:
+        - name: grafana-storage
+          persistentVolumeClaim:
+            claimName: grafana-pvc

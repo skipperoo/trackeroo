@@ -119,7 +119,7 @@ func (t *TdmClient) handleDnMsg(client pahoMqtt.Client, msg pahoMqtt.Message) {
 				Error("Missing value")
 				t.replyJob(key[1:], map[string]any{"error": "Missing args"})
 			}
-			args, ok := value["args"].(map[string]any)
+			args, _ := value["args"].(map[string]any)
 			t.handleJobRequest(key[1:], args)
 		}
 	}
@@ -166,7 +166,6 @@ func (t *TdmClient) initClient() {
 		opts.SetTLSConfig(&tlsConfig)
 	} else {
 		opts.AddBroker(fmt.Sprintf("mqtt://%s:%s", t.broker, strconv.Itoa(t.port)))
-
 	}
 	opts.SetUsername(t.clientId)
 	opts.SetKeepAlive(time.Duration(t.heartbeat) * time.Second)
@@ -177,11 +176,11 @@ func (t *TdmClient) initClient() {
 	})
 	opts.SetOnConnectHandler(func(c pahoMqtt.Client) {
 		Info("Connected!")
-		t.client.Subscribe(t.topicDn, byte(1), t.handleDnMsg)
-		t.requestStatus()
-		t.requestTime()
-		t.sendOsInfo()
-		t.sendManifest()
+		// t.client.Subscribe(t.topicDn, byte(1), t.handleDnMsg)
+		// t.requestStatus()
+		// t.requestTime()
+		// t.sendOsInfo()
+		// t.sendManifest()
 	})
 	token, err := GetToken(t.creds.PrivateKey, 200, 200, t.creds.ID)
 	// fmt.Println(token)
@@ -244,7 +243,7 @@ func (t *TdmClient) sendManifest() {
 		"reset",
 		"restart",
 	}
-	for k, _ := range Jobs {
+	for k := range Jobs {
 		jobs = append(jobs, k)
 	}
 	value := map[string]any{

@@ -11,18 +11,6 @@ import (
 	"trackeroo-backend/internal/service"
 )
 
-func GetDevices(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	devices, err := service.GetDevices(ctx)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(model.Error{Error: err.Error()})
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(devices)
-}
-
 func CreateDevice(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -61,8 +49,38 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
+	status, err := service.GetDeviceStatus(ctx, device.ID)
+	if err == nil {
+		device.Status = status
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(device)
+}
+
+func GetDevices(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	devices, err := service.GetDevices(ctx)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(model.Error{Error: err.Error()})
+		return
+	}
+	ids := make([]string, len(devices))
+	for i, d := range devices {
+		ids[i] = d.ID
+	}
+	s, err := service.GetDevicesStatus(ctx, ids)
+	if err == nil {
+		for i := range devices {
+			status, ok := s[devices[i].ID]
+			if ok {
+				devices[i].Status = status
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(devices)
 }
 
 func GetCredentials(w http.ResponseWriter, r *http.Request) {
@@ -110,10 +128,7 @@ func GetDeviceCredentials(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := r.URL.Query()
 	secureParameter := params.Get("secure")
-	secure := false
-	if strings.ToLower(secureParameter) == "true" {
-		secure = true
-	}
+	secure := strings.ToLower(secureParameter) == "true"
 	id := r.PathValue("id")
 	creds, err := service.GetDeviceCredentials(ctx, id)
 	if err != nil {

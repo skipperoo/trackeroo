@@ -1,0 +1,21 @@
+---
+# Kubernetes settings
+rabbitmq_namespace: "trackeroo"
+rabbitmq_app_name: "rabbitmq"
+rabbitmq_replicas: 3
+rabbitmq_erlang_cookie: "{{ rabbitmq_erlang_cookie_secret }}"
+
+# Docker image settings
+rabbitmq_image: "rabbitmq:3-management"
+
+# RabbitMQ Auth Backend URL
+rabbitmq_auth_backend_url_base: "http://trackeroo-backend:8080"
+
+# Kubernetes PersistentVolumeClaim settings
+rabbitmq_pvc_storage_class: "longhorn"
+rabbitmq_pvc_storage_size: "5Gi"
+
+# HA settings
+rabbitmq_ha_policy_name: "ha-all"
+rabbitmq_ha_policy_pattern: ".*"
+rabbitmq_ha_policy_definition: '{"ha-mode":"all", "ha-sync-mode":"automatic"}'

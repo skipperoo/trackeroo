@@ -19,6 +19,13 @@ const (
 	ACCELERATING = "accelerating"
 )
 
+var consumptionMultipliers = map[string]float32{
+	"valuable":          1.3, // heavier, armored vans/trucks
+	"food":              1.1, // refrigerated transport adds load
+	"private_transport": 1.0, // baseline
+	"public_transport":  1.8, // buses have much higher consumption
+}
+
 type Coordinate struct {
 	Lat float64 `json:"lat"`
 	Lng float64 `json:"lon"`
@@ -64,11 +71,14 @@ type OSRMResponse struct {
 
 type DrivePosition struct {
 	Coordinate
-	Timestamp time.Time
-	Speed     float64 // km/h
-	Status    string  // "driving", "stopped", "slowing", "accelerating"
-	Start     Coordinate
-	End       Coordinate
+	Timestamp   time.Time
+	Speed       float64 // km/h
+	SpeedLimit  float64
+	Status      string // "driving", "stopped", "slowing", "accelerating"
+	Start       Coordinate
+	End         Coordinate
+	Consumption float64
+	Distance    float64
 }
 
 type RoutingService struct {
@@ -182,21 +192,36 @@ func (rs *RoutingService) GetRoute(from, to *Coordinate) ([]RouteSegment, error)
 	return segments, nil
 }
 
+func getConsumption(speed float64, devType string) float64 {
+	if speed == 0 {
+		return 0.0
+	}
+	threshold := 80.0
+	consumption := 5 + 60.7/speed
+	if speed >= threshold {
+		consumption += 5 * math.Log(speed/threshold)
+	}
+	return consumption * float64(consumptionMultipliers[devType])
+}
+
 // DrivingSimulator simulates realistic car driving
 type DrivingSimulator struct {
 	Route               []RouteSegment
 	DefaultAverageSpeed float64 // km/h
 	SpeedVariation      float64 // percentage (0.0-1.0)
 	StopProbability     float64 // probability of stopping per segment (0.0-1.0)
+	DevType             string
 	StopDuration        struct {
 		Min time.Duration
 		Max time.Duration
 	}
 	UpdateInterval time.Duration
+	IsPirate       bool
 	rand           *rand.Rand
+	Distance       float64
 }
 
-func NewDrivingSimulator(routingService *RoutingService, waypoints []string, avgSpeed float64, updateIntervalMs int) (*DrivingSimulator, error) {
+func NewDrivingSimulator(routingService *RoutingService, waypoints []string, avgSpeed float64, updateIntervalMs int, isPirate bool, devType string) (*DrivingSimulator, error) {
 	route := make([]RouteSegment, 0)
 	for i := 0; i < len(waypoints)-1; i++ {
 		start, err := routingService.Geocode(waypoints[i])
@@ -217,7 +242,7 @@ func NewDrivingSimulator(routingService *RoutingService, waypoints []string, avg
 	return &DrivingSimulator{
 		Route:               route,
 		DefaultAverageSpeed: avgSpeed,
-		SpeedVariation:      0.2,  // 20% speed variation
+		SpeedVariation:      0.03, // 3% speed variation
 		StopProbability:     0.05, // 5% chance of stopping per segment
 		StopDuration: struct {
 			Min time.Duration
@@ -228,13 +253,14 @@ func NewDrivingSimulator(routingService *RoutingService, waypoints []string, avg
 		},
 		UpdateInterval: time.Duration(updateIntervalMs) * time.Millisecond,
 		rand:           rand.New(rand.NewSource(time.Now().UnixNano())),
+		IsPirate:       isPirate,
+		DevType:        devType,
 	}, nil
 }
 
 // SimulateDrive simulates driving along a route and sends positions through a channel
 func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 	positionChan := make(chan DrivePosition, 100)
-
 	lastCoord := ds.Route[len(ds.Route)-1].Coordinates[len(ds.Route[len(ds.Route)-1].Coordinates)-1]
 	lastSpeed := 0.0
 	go func() {
@@ -246,6 +272,8 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 
 		currentTime := time.Now()
 		stopCompensation := 1
+		consumptionCompensation := 1.0
+		speedLimit := 0.0
 		for _, segment := range ds.Route {
 			for i := 0; i < len(segment.Coordinates)-1; i++ {
 				currentPos := segment.Coordinates[i]
@@ -258,12 +286,15 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 				if i == 0 && segment.ShouldStop {
 					// Send stopped position
 					positionChan <- DrivePosition{
-						Coordinate: currentPos,
-						Timestamp:  currentTime,
-						Speed:      0,
-						Status:     STOPPED,
-						Start:      ds.Route[0].Coordinates[0],
-						End:        lastCoord,
+						Coordinate:  currentPos,
+						Timestamp:   currentTime,
+						Speed:       0,
+						SpeedLimit:  speedLimit,
+						Status:      STOPPED,
+						Start:       ds.Route[0].Coordinates[0],
+						End:         lastCoord,
+						Consumption: 0,
+						Distance:    0,
 					}
 
 					// Random stop duration
@@ -272,6 +303,7 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 					time.Sleep(stopTime)
 					currentTime = time.Now()
 					stopCompensation = 3
+					lastSpeed = 0
 				}
 
 				// Calculate current speed with variation
@@ -283,24 +315,33 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 					baseSpeed /= float64(stopCompensation)
 					stopCompensation -= 1
 				}
+				speedLimit = baseSpeed
 				speedVariation := 1.0 + (ds.rand.Float64()-0.5)*2*ds.SpeedVariation
 				currentSpeed := baseSpeed * speedVariation
+				if ds.IsPirate {
+					currentSpeed *= 1.40
+				}
 
 				// Calculate time to travel this segment
 				travelTimeHours := distance / currentSpeed
 				segmentDuration := time.Duration(travelTimeHours * float64(time.Hour))
 
 				// Interpolate positions along the segment
-				steps := int(segmentDuration / ds.UpdateInterval)
-				if steps < 1 {
-					steps = 1
-				}
-				status := DRIVING
+				steps := max(int(segmentDuration/ds.UpdateInterval), 1)
 
-				if lastSpeed < currentSpeed {
-					status = ACCELERATING
-				} else {
-					status = SLOWING
+				status := DRIVING
+				consumptionCompensation = 1
+				speedDifference := math.Abs(currentSpeed - lastSpeed)
+				tolerance := currentSpeed * 0.05 // 5% tolerance
+
+				if speedDifference > tolerance {
+					if lastSpeed < currentSpeed {
+						status = ACCELERATING
+						consumptionCompensation = 1.3
+					} else {
+						status = SLOWING
+						consumptionCompensation = 0.5
+					}
 				}
 				lastSpeed = currentSpeed
 
@@ -310,12 +351,15 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 					interpolatedPos := ds.interpolatePosition(currentPos, nextPos, progress)
 
 					positionChan <- DrivePosition{
-						Coordinate: interpolatedPos,
-						Timestamp:  currentTime,
-						Speed:      currentSpeed,
-						Status:     status,
-						Start:      ds.Route[0].Coordinates[0],
-						End:        lastCoord,
+						Coordinate:  interpolatedPos,
+						Timestamp:   currentTime,
+						Speed:       currentSpeed,
+						SpeedLimit:  speedLimit,
+						Status:      status,
+						Start:       ds.Route[0].Coordinates[0],
+						End:         lastCoord,
+						Consumption: getConsumption(currentSpeed, ds.DevType) * consumptionCompensation,
+						Distance:    distance,
 					}
 					time.Sleep(ds.UpdateInterval)
 					currentTime = time.Now()
@@ -325,12 +369,15 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 
 		// Send final position
 		positionChan <- DrivePosition{
-			Coordinate: lastCoord,
-			Timestamp:  currentTime,
-			Speed:      0,
-			Status:     ARRIVED,
-			Start:      ds.Route[0].Coordinates[0],
-			End:        lastCoord,
+			Coordinate:  lastCoord,
+			Timestamp:   currentTime,
+			Speed:       0,
+			SpeedLimit:  speedLimit,
+			Status:      ARRIVED,
+			Start:       ds.Route[0].Coordinates[0],
+			End:         lastCoord,
+			Consumption: 0,
+			Distance:    0,
 		}
 	}()
 
