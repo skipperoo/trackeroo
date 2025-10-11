@@ -23,3 +23,4 @@ trackeroo-backend/redis
 mqtt_client
 tracky/docker-compose.yml
 grafana.json
+.project

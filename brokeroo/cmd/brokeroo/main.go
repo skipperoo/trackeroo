@@ -73,7 +73,9 @@ func (s *Service) connectPostgres() error {
 
 func (s *Service) connectKafka() error {
 	s.kafkaWriter = kafka.NewWriter(kafka.WriterConfig{
-		Brokers: []string{s.config.KafkaBroker},
+		Brokers:      []string{s.config.KafkaBroker},
+		BatchSize:    1,
+		BatchTimeout: 5 * time.Millisecond,
 	})
 
 	if err := s.ensureTopicExists("health-check"); err != nil {
@@ -140,12 +142,11 @@ func (s *Service) connectMQTT() error {
 	opts.SetClientID(s.config.MQTTClientID)
 	opts.SetUsername(s.config.MQTTUsername)
 	opts.SetPassword(s.config.MQTTPassword)
-	opts.SetCleanSession(true)
+	opts.SetCleanSession(false) // Keep unacked messages
 	opts.SetAutoReconnect(true)
 	opts.SetKeepAlive(60 * time.Second)
 	opts.SetPingTimeout(10 * time.Second)
 	opts.SetConnectTimeout(10 * time.Second)
-	opts.SetAutoAckDisabled(true)
 
 	// Set connection lost handler
 	opts.SetConnectionLostHandler(func(client mqtt.Client, err error) {
@@ -216,20 +217,22 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	}
 
 	ts := time.Unix(tsUnix, 0).UTC()
+	start := time.Now()
 	jsonPayload := json.RawMessage(payload)
 	if err := s.insertData(tsUnix, ts, devID, tag, jsonPayload); err != nil {
 		log.Printf("Failed to insert data: %v", err)
 		return
 	}
-
+	log.Printf("Time to write to DB %v", time.Since(start))
+	start = time.Now()
 	/* kafka */
 	kafkaTopic := sanitizeTopic(topic)
-
 	if err := s.ensureTopicExists(kafkaTopic); err != nil {
 		log.Printf("Errore creazione topic %s: %v", kafkaTopic, err)
 		return
 	} else {
-
+		log.Printf("Time to create topic %v", time.Since(start))
+		start = time.Now()
 		envelope := Envelope{
 			TsUnix:      tsUnix,
 			Ts:          ts.Format(time.RFC3339), // is this right?
@@ -257,10 +260,10 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 		} else {
 			log.Printf("Message forwarded to Kafka topic: %s", kafkaTopic)
 		}
+		log.Printf("Time to write to Kafka %v", time.Since(start))
 	}
 
 	log.Printf("Successfully inserted data for dev_id: %s, tag: %s", devID, tag)
-	msg.Ack()
 }
 
 func (s *Service) insertData(tsUnix int64, ts time.Time, devID, tag string, payload json.RawMessage) error {
@@ -315,7 +318,7 @@ func (s *Service) Stop() {
 func loadConfig() *Config {
 	return &Config{
 		MQTTBroker:   getEnvOrDefault("MQTT_BROKER", "tcp://localhost:1883"),
-		MQTTClientID: getEnvOrDefault("MQTT_CLIENT_ID", "go-mqtt-postgres-service"),
+		MQTTClientID: getEnvOrDefault("MQTT_CLIENT_ID", "brokeroo"),
 		MQTTUsername: getEnvOrDefault("MQTT_USERNAME", ""),
 		MQTTPassword: getEnvOrDefault("MQTT_PASSWORD", ""),
 		PostgresURL:  getEnvOrDefault("POSTGRES_URL", "postgres://user:password@localhost/dbname?sslmode=disable"),
