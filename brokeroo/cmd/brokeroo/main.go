@@ -73,9 +73,8 @@ func (s *Service) connectPostgres() error {
 
 func (s *Service) connectKafka() error {
 	s.kafkaWriter = kafka.NewWriter(kafka.WriterConfig{
-		Brokers:      []string{s.config.KafkaBroker},
-		BatchSize:    1,
-		BatchTimeout: 5 * time.Millisecond,
+		Brokers: []string{s.config.KafkaBroker},
+		Async:   true,
 	})
 
 	if err := s.ensureTopicExists("health-check"); err != nil {
