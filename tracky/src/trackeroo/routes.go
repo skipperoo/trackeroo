@@ -45,7 +45,7 @@ func (c *OverpassClient) GetStreets(city string, limit int) ([]string, error) {
 area["ISO3166-1"="IT"][admin_level=2]->.italy;
 node["name"="%s"]["place"~"city|town"](area.italy)->.citynode;
 (
-  way(around.citynode:%d)["highway"]["name"]["wikipedia"]["highway"!~"motorway|trunk|motorway_link|trunk_link|pedestrian|footway|cycleway|path|steps|bridleway"](area.italy);
+  way(around.citynode:%d)["highway"~"primary|secondary|tertiary|residential|unclassified"]["name"]["highway"!~"motorway|trunk|motorway_link|trunk_link"](area.italy);
 );
 out tags %d;
 `, city, radiusMeters, limit)
