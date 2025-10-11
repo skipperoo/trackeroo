@@ -78,7 +78,7 @@ def create_compose(credentials: List[Dict]):
                 "GEOCODING_SERVICE_URL": "http://localhost:8082",
                 "ROUTING_SERVICE_URL": "http://localhost:5000",
                 "OVERPASS_URL": "http://localhost:12345/api/interpreter",
-                "REGIONAL": "true" if random.randint(1, 100) < 10 else "false",
+                "REGIONAL": "true" if random.randint(1, 100) > 10 else "false",
                 "PUBLISH_PERIOD": "500",
                 "PIRATE": "true" if random.randint(1, 100) < 10 else "false"
             },
