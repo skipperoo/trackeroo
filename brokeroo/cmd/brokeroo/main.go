@@ -163,10 +163,10 @@ func (s *Service) connectMQTT() error {
 	c := 0
 	for {
 		if token := s.mqttClient.Connect(); token.Wait() && token.Error() != nil {
-			if c == 5 {
+			if c == 10 {
 				return fmt.Errorf("failed to connect to MQTT broker: %w", token.Error())
 			}
-			c++
+			c += 1
 			log.Println("Connessione fallita, retry tra 2s:", token.Error())
 			time.Sleep(2 * time.Second)
 			continue
