@@ -19,6 +19,7 @@ trackeroo-backend/grafana
 trackeroo-backend/mongo/data
 nominatim-data
 osrm-data
+overpass-data
 trackeroo-backend/redis
 mqtt_client
 tracky/docker-compose.yml

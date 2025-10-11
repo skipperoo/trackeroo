@@ -1,126 +1,148 @@
 package trackeroo
 
-import "math/rand"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"math/rand"
+	"net/http"
+	"time"
+)
 
-var streets = []string{
-	// Pisa (56127)
-	"Piazza dei Cavalieri, Pisa, Italy, 56126",
-	"Borgo Stretto, Pisa, Italy, 56127",
-	"Via San Frediano, Pisa, Italy, 56126",
-	"Lungarno Mediceo, Pisa, Italy, 56127",
-	"Via San Martino, Pisa, Italy, 56125",
-	"Via di Gargalone, Pisa, Italy, 56127",
-	"Via Asmara, Pisa, Italy, 56127",
-	"Via Putignano, Pisa, Italy, 56127",
-	"Via Fagiana, Pisa, Italy, 56127",
-	"Via Santa Bona, Pisa, Italy, 56127",
-
-	// Lucca (55100)
-	"Via Fillungo, Lucca, Italy, 55100",
-	"Piazza Napoleone, Lucca, Italy, 55100",
-	"Via Santa Croce, Lucca, Italy, 55100",
-	"Via San Paolino, Lucca, Italy, 55100",
-	"Via Guinigi, Lucca, Italy, 55100",
-	"Via del Cimitero, Lucca, Italy, 55100",
-	"Via di Vicopelago, Lucca, Italy, 55100",
-	"Via dei Bollori, Lucca, Italy, 55100",
-	"Via delle Fornacette, Lucca, Italy, 55100",
-	"Via Stefano Tofanelli, Lucca, Italy, 55100",
-
-	// Firenze (50123)
-	"Via dei Calzaiuoli, Firenze, Italy, 50123",
-	"Via Tornabuoni, Firenze, Italy, 50123",
-	"Borgo San Lorenzo, Firenze, Italy, 50123",
-	"Via della Vigna Nuova, Firenze, Italy, 50123",
-	"Via Ghibellina, Firenze, Italy, 50122",
-	"Via del Gelsomino, Firenze, Italy, 50125",
-	"Via Livorno, Firenze, Italy, 50142",
-	"Via Gherardo Starnina, Firenze, Italy, 50142",
-	"Via della Casella, Firenze, Italy, 50142",
-	"Via Antonio del Pollaiolo, Firenze, Italy, 50142",
-
-	// Livorno (57123)
-	"Via Grande, Livorno, Italy, 57123",
-	"Piazza della Repubblica, Livorno, Italy, 57123",
-	"Via Magenta, Livorno, Italy, 57123",
-	"Scali delle Cantine, Livorno, Italy, 57123",
-	"Via Ricasoli, Livorno, Italy, 57123",
-	"Via di Quercianella, Livorno, Italy, 57128",
-	"Via del Littorale, Livorno, Italy, 57128",
-	"Viale di Antignano, Livorno, Italy, 57128",
-	"Via del Pastore, Livorno, Italy, 57128",
-	"Via Uberto Mondolfi, Livorno, Italy, 57128",
-
-	// Pontedera (56025)
-	"Corso Matteotti, Pontedera, Italy, 56025",
-	"Piazza Curtatone, Pontedera, Italy, 56025",
-	"Via Roma, Pontedera, Italy, 56025",
-	"Via Dante Alighieri, Pontedera, Italy, 56025",
-	"Via Verdi, Pontedera, Italy, 56025",
-	"Via di Gello, Pontedera, Italy, 56025",
-	"Via di Lavaiano, Pontedera, Italy, 56025",
-	"Via dell’Industria, Pontedera, Italy, 56025",
-	"Via delle Colombaie, Pontedera, Italy, 56025",
-	"Via della Fornace, Pontedera, Italy, 56025",
-
-	// Poggibonsi (53036)
-	"Via della Repubblica, Poggibonsi, Italy, 53036",
-	"Via Trento, Poggibonsi, Italy, 53036",
-	"Via San Gimignano, Poggibonsi, Italy, 53036",
-	"Via Borgaccio, Poggibonsi, Italy, 53036",
-	"Via Sardegna, Poggibonsi, Italy, 53036",
-	"Via dell’Ospedale, Poggibonsi, Italy, 53036",
-	"Via Abruzzo, Poggibonsi, Italy, 53036",
-	"Via Lazio, Poggibonsi, Italy, 53036",
-	"Via Sicilia, Poggibonsi, Italy, 53036",
-	"Via Calabria, Poggibonsi, Italy, 53036",
-
-	// Viareggio (55049)
-	"Viale Giosuè Carducci, Viareggio, Italy, 55049",
-	"Piazza Mazzini, Viareggio, Italy, 55049",
-	"Via Cesare Battisti, Viareggio, Italy, 55049",
-	"Via Santa Maria Goretti, Viareggio, Italy, 55049",
-	"Via Coppino, Viareggio, Italy, 55049",
-	"Via delle Cavalle, Viareggio, Italy, 55049",
-	"Via Marina di Levante, Viareggio, Italy, 55049",
-	"Via dei Partigiani, Viareggio, Italy, 55049",
-	"Via Santa Gemma Galgani, Viareggio, Italy, 55049",
-	"Via della Ferrovia, Viareggio, Italy, 55049",
-
-	// Camaiore (55041)
-	"Via Vittorio Emanuele, Camaiore, Italy, 55041",
-	"Via XX Settembre, Camaiore, Italy, 55041",
-	"Via Roma, Camaiore, Italy, 55041",
-	"Via del Secco, Camaiore, Italy, 55041",
-	"Via dei Ghivizzani, Camaiore, Italy, 55041",
-	"Via Mentana, Camaiore, Italy, 55041",
-	"Via Montecassino, Camaiore, Italy, 55041",
-	"Via Alessandro Volta, Camaiore, Italy, 55041",
-	"Via dei Papaveri, Camaiore, Italy, 55041",
-	"Via Montemagno, Camaiore, Italy, 55041",
-
-	// Siena (53100)
-	"Via di Città, Siena, Italy, 53100",
-	"Banchi di Sopra, Siena, Italy, 53100",
-	"Via dei Rossi, Siena, Italy, 53100",
-	"Via Pantaneto, Siena, Italy, 53100",
-	"Via della Sapienza, Siena, Italy, 53100",
-	"Strada Grossetana, Siena, Italy, 53100",
-	"Strada Massetana Romana, Siena, Italy, 53100",
-	"Via Paolo Mascagni, Siena, Italy, 53100",
-	"Strada del Ruffolo, Siena, Italy, 53100",
-	"Via di Fiera Vecchia, Siena, Italy, 53100",
+type OverpassElement struct {
+	Type string            `json:"type"`
+	ID   int64             `json:"id"`
+	Tags map[string]string `json:"tags"`
 }
 
-func GetRoute(lastEnd string) []string {
+type OverpassResponse struct {
+	Elements []OverpassElement `json:"elements"`
+}
+
+type OverpassClient struct {
+	BaseURL string
+	Client  *http.Client
+}
+
+func NewOverpassClient(baseURL string) *OverpassClient {
+	return &OverpassClient{
+		BaseURL: baseURL,
+		Client: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+	}
+}
+
+func (c *OverpassClient) GetStreets(city string, limit int) ([]string, error) {
+	if limit == 0 {
+		limit = 100
+	}
+	radiusMeters := 2000 // 2km default
+
+	query := fmt.Sprintf(`
+[out:json][timeout:25];
+area["ISO3166-1"="IT"][admin_level=2]->.italy;
+node["name"="%s"]["place"~"city|town"](area.italy)->.citynode;
+(
+  way(around.citynode:%d)["highway"]["name"]["highway"!~"motorway|trunk|motorway_link|trunk_link"](area.italy);
+);
+out tags %d;
+`, city, radiusMeters, limit)
+
+	resp, err := c.Client.Post(c.BaseURL, "application/x-www-form-urlencoded", bytes.NewBufferString(query))
+	if err != nil {
+		return nil, fmt.Errorf("failed to query Overpass API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("Overpass API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var overpassResp OverpassResponse
+	if err := json.NewDecoder(resp.Body).Decode(&overpassResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	var streets []string
+	for _, element := range overpassResp.Elements {
+		if name, ok := element.Tags["name"]; ok && name != "" {
+			postcode := element.Tags["addr:postcode"]
+
+			if postcode != "" {
+				streets = append(streets, fmt.Sprintf("%s, %s, Italy, %s", name, city, postcode))
+			} else {
+				streets = append(streets, fmt.Sprintf("%s, %s, Italy", name, city))
+			}
+		}
+	}
+
+	if len(streets) == 0 {
+		return nil, fmt.Errorf("no streets found for city: %s", city)
+	}
+
+	return streets, nil
+}
+
+func (c *OverpassClient) GetRandomStreet(city string) (string, error) {
+	streets, err := c.GetStreets(city, 100)
+	if err != nil {
+		return "", err
+	}
+	return streets[rand.Intn(len(streets))], nil
+}
+
+type CachedStreetProvider struct {
+	client *OverpassClient
+	cache  map[string][]string
+}
+
+func NewCachedStreetProvider(baseURL string) *CachedStreetProvider {
+	return &CachedStreetProvider{
+		client: NewOverpassClient(baseURL),
+		cache:  make(map[string][]string),
+	}
+}
+
+func (p *CachedStreetProvider) GetRandomStreet(city string) (string, error) {
+	if streets, ok := p.cache[city]; ok && len(streets) > 0 {
+		return streets[rand.Intn(len(streets))], nil
+	}
+
+	streets, err := p.client.GetStreets(city, 100)
+	if err != nil {
+		return "", err
+	}
+
+	p.cache[city] = streets
+
+	return streets[rand.Intn(len(streets))], nil
+}
+
+// GetRoute generates a route with random streets
+// If using cached provider, pass cities to select from
+func GetRoute(provider *CachedStreetProvider, cities []string, lastEnd string) ([]string, error) {
 	var route []string
+
 	if lastEnd != "" {
 		route = append(route, lastEnd)
 	} else {
-		randStreet := streets[rand.Intn(len(streets))]
+		city := cities[rand.Intn(len(cities))]
+		randStreet, err := provider.GetRandomStreet(city)
+		if err != nil {
+			return nil, err
+		}
 		route = append(route, randStreet)
 	}
-	randStreet := streets[rand.Intn(len(streets))]
+
+	city := cities[rand.Intn(len(cities))]
+	randStreet, err := provider.GetRandomStreet(city)
+	if err != nil {
+		return nil, err
+	}
 	route = append(route, randStreet)
-	return route
+
+	return route, nil
 }

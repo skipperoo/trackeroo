@@ -100,10 +100,13 @@ func Init() {
 func Terminate() {
 	taskManager.Shutdown(0)
 }
-
 func Loop() {
+	rand.Seed(time.Now().UnixNano())
 	creds, _ := trackeroo.GetCredentials()
 	deviceType := creds.DeviceType
+	cities := []string{"Pisa", "Lucca", "Firenze", "Livorno", "Pontedera", "Viareggio", "Siena"}
+	// streetProvider := trackeroo.NewCachedStreetProvider("http://localhost:12345/api/interpreter")
+	streetProvider := trackeroo.NewCachedStreetProvider("https://overpass-api.de/api/interpreter")
 	routingService := trackeroo.NewRoutingService(
 		os.Getenv("GEOCODING_SERVICE_URL"),
 		os.Getenv("ROUTING_SERVICE_URL"),
@@ -126,8 +129,12 @@ func Loop() {
 	consumptionVar := trackeroo.NewStatVar[float64]()
 	for {
 		trackeroo.Info("Getting route from %s", lastEnd)
-		route := trackeroo.GetRoute(lastEnd)
-		trackeroo.Info("Route: %+v", route)
+		route, err := trackeroo.GetRoute(streetProvider, cities, lastEnd)
+		if err != nil {
+			trackeroo.Error("Error getting route %v", err)
+			continue
+		}
+		trackeroo.Info("Route: %+v -> %+v", route[0], route[1])
 		drivingSimulator, err := trackeroo.NewDrivingSimulator(routingService, route, 60, 100, isPirate, creds.DeviceType)
 		if err != nil {
 			trackeroo.Error("Error initializing driving simulator %v", err)
