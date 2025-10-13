@@ -194,7 +194,7 @@ func generateJSObjectList(count int) error {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	count := 200
+	count := 100
 	fmt.Printf("// Generated %d JS objects with no duplicates:\n", count)
 	err := generateJSObjectList(count)
 	if err != nil {
