@@ -172,6 +172,7 @@ func Loop() {
 				continue
 			}
 			lastEnd = route[1]
+			trackeroo.Info("Route loaded successfully")
 		} else {
 			trackeroo.Info("Getting route from %+v - REGIONAL: %t - URBAN: %t", lastEnd, isRegional, isUrban)
 			var cityErr string
