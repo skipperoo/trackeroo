@@ -32,13 +32,13 @@ func NewOverpassClient(baseURL string) *OverpassClient {
 	return &OverpassClient{
 		BaseURL: baseURL,
 		Client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 60 * time.Second,
 		},
 	}
 }
 
 func (c *OverpassClient) runQuery(query string) (OverpassResponse, error) {
-	const maxRetries = 5
+	const maxRetries = 10
 
 	form := url.Values{}
 	form.Set("data", query)
