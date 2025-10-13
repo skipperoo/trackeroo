@@ -6,6 +6,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -38,6 +39,9 @@ func NewOverpassClient(baseURL string) *OverpassClient {
 func (c *OverpassClient) runQuery(query string) (OverpassResponse, error) {
 	const maxRetries = 5
 
+	form := url.Values{}
+	form.Set("data", query)
+
 	var lastErr error
 	var overpassResp OverpassResponse
 
@@ -45,7 +49,7 @@ func (c *OverpassClient) runQuery(query string) (OverpassResponse, error) {
 		resp, err := c.Client.Post(
 			c.BaseURL,
 			"application/x-www-form-urlencoded",
-			strings.NewReader(query),
+			strings.NewReader(form.Encode()),
 		)
 		if err != nil {
 			lastErr = fmt.Errorf("failed to query Overpass API: %w", err)
