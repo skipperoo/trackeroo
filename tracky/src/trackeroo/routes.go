@@ -110,6 +110,7 @@ func NewCachedStreetProvider(baseURL string) *CachedStreetProvider {
 }
 
 func (p *CachedStreetProvider) GetRandomStreet(city string) (Location, error) {
+	Info("Getting random street from %s", city)
 	if streets, ok := p.cache[city]; ok && len(streets) > 0 {
 		return streetToLocation(city, streets[rand.Intn(len(streets))]), nil
 	}
