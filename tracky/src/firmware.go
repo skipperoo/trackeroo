@@ -132,9 +132,10 @@ func Loop() {
 			trackeroo.Error("Error getting regions, falling back to Toscana: %v", err)
 			regions = []string{"Toscana"}
 		}
-		cities, err = overpassClient.GetCities(regions[rand.Intn(len(regions))])
+		region := regions[rand.Intn(len(regions))]
+		cities, err = overpassClient.GetCities(region)
 		if err != nil || len(cities) == 0 {
-			trackeroo.Error("Error getting cities, falling back to default cities: %v", err)
+			trackeroo.Error("Error getting cities for %s, falling back to default cities: %v", region, err)
 			cities = []string{"Firenze", "Pisa", "Siena", "Lucca", "Vinci", "Prato", "Montecatini", "Arezzo", "Grosseto", "Massa"}
 		}
 
