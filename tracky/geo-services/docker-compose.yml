@@ -1,20 +1,26 @@
 services:
   overpass:
     image: wiktorn/overpass-api
-    ports:
-      - "12345:80"
     deploy:
       mode: replicated
       replicas: 3
     environment:
       - OVERPASS_META=yes
-      - OVERPASS_MODE=init
+      - OVERPASS_MODE=clone
       - OVERPASS_PLANET_URL=http://download.geofabrik.de/europe/italy-latest.osm.bz2-disabled
       - OVERPASS_RATE_LIMIT=0
       - OVERPASS_RATE_SPACE=1073741824
       - OVERPASS_ALLOW_DUPLICATE_QUERIES=yes
     volumes:
       - ./overpass-data:/db
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "12345:80"
+    volumes:
+      - ./nginx:/etc/nginx:ro
+    depends_on:
+      - overpass
 
   osrm:
     image: osrm/osrm-backend
