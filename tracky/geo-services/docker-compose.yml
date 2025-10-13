@@ -4,6 +4,9 @@ services:
     container_name: overpass-italy
     ports:
       - "12345:80"
+    deploy:
+      mode: replicated
+      replicas: 3
     environment:
       - OVERPASS_META=yes
       - OVERPASS_MODE=init
