@@ -1,6 +1,7 @@
 package trackeroo
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -69,6 +70,13 @@ func (c *OverpassClient) runQuery(query string) (OverpassResponse, error) {
 				continue
 			}
 			break
+		}
+
+		contentType := resp.Header.Get("Content-Type")
+		if strings.Contains(contentType, "text/html") || bytes.HasPrefix(bodyBytes, []byte("<?xml")) || bytes.HasPrefix(bodyBytes, []byte("<!DOCTYPE")) {
+			lastErr = fmt.Errorf("Overpass API returned HTML error instead of JSON: %s", string(bodyBytes))
+			time.Sleep(time.Duration(attempt) * time.Second)
+			continue
 		}
 
 		if err := json.Unmarshal(bodyBytes, &overpassResp); err != nil {
