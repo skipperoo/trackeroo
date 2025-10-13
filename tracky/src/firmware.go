@@ -107,7 +107,6 @@ func Loop() {
 	// streetProvider := trackeroo.NewCachedStreetProvider("http://localhost:12345/api/interpreter")
 	streetProvider := trackeroo.NewCachedStreetProvider(os.Getenv("OVERPASS_URL"))
 	routingService := trackeroo.NewRoutingService(
-		os.Getenv("GEOCODING_SERVICE_URL"),
 		os.Getenv("ROUTING_SERVICE_URL"),
 	)
 	pubPeriod := time.Millisecond * 2000
@@ -133,7 +132,7 @@ func Loop() {
 	speedVar := trackeroo.NewStatVar[float64]()
 	consumptionVar := trackeroo.NewStatVar[float64]()
 	for {
-		trackeroo.Info("Getting route from %s", lastEnd)
+		trackeroo.Info("Getting route from %v", lastEnd)
 		route, err := trackeroo.GetRoute(streetProvider, cities, lastEnd)
 		if err != nil {
 			trackeroo.Error("Error getting route %v", err)

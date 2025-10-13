@@ -29,12 +29,14 @@ type OverpassClient struct {
 type Location struct {
 	Coordinate Coordinate
 	StreetName string
+	City       string
 }
 
-func streetToLocation(street OverpassElement) Location {
+func streetToLocation(city string, street OverpassElement) Location {
 	return Location{
 		Coordinate: street.Geometry[rand.Intn(len(street.Geometry))],
 		StreetName: street.Tags["name"],
+		City:       city,
 	}
 }
 
@@ -92,7 +94,7 @@ func (c *OverpassClient) GetRandomStreet(city string) (Location, error) {
 		return Location{}, err
 	}
 	randStreet := streets[rand.Intn(len(streets))]
-	return streetToLocation(randStreet), nil
+	return streetToLocation(city, randStreet), nil
 }
 
 type CachedStreetProvider struct {
@@ -109,7 +111,7 @@ func NewCachedStreetProvider(baseURL string) *CachedStreetProvider {
 
 func (p *CachedStreetProvider) GetRandomStreet(city string) (Location, error) {
 	if streets, ok := p.cache[city]; ok && len(streets) > 0 {
-		return streetToLocation(streets[rand.Intn(len(streets))]), nil
+		return streetToLocation(city, streets[rand.Intn(len(streets))]), nil
 	}
 
 	streets, err := p.client.GetStreets(city, 100)
@@ -119,7 +121,7 @@ func (p *CachedStreetProvider) GetRandomStreet(city string) (Location, error) {
 
 	p.cache[city] = streets
 
-	return streetToLocation(streets[rand.Intn(len(streets))]), nil
+	return streetToLocation(city, streets[rand.Intn(len(streets))]), nil
 }
 
 // GetRoute generates a route with random streets

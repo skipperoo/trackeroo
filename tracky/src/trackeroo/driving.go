@@ -7,7 +7,6 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -35,12 +34,6 @@ type RouteSegment struct {
 	Coordinates []Coordinate
 	SpeedKmh    float64
 	ShouldStop  bool
-}
-
-type NominatimResponse []struct {
-	Lat         string `json:"lat"`
-	Lon         string `json:"lon"`
-	DisplayName string `json:"display_name"`
 }
 
 type OSRMResponse struct {
@@ -87,54 +80,11 @@ type RoutingService struct {
 	httpClient   *http.Client
 }
 
-func NewRoutingService(nominatimURL, osrmURL string) *RoutingService {
+func NewRoutingService(osrmURL string) *RoutingService {
 	return &RoutingService{
-		NominatimURL: nominatimURL,
-		OSRMURL:      osrmURL,
-		httpClient:   &http.Client{Timeout: 30 * time.Second},
+		OSRMURL:    osrmURL,
+		httpClient: &http.Client{Timeout: 30 * time.Second},
 	}
-}
-
-func (rs *RoutingService) Geocode(address string) (*Coordinate, error) {
-	encodedAddress := url.QueryEscape(address)
-	requestURL := fmt.Sprintf("%s/search?q=%s&format=json&limit=1", rs.NominatimURL, encodedAddress)
-
-	resp, err := rs.httpClient.Get(requestURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to geocode address: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("nominatim API returned status %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	var nominatimResp NominatimResponse
-	if err := json.Unmarshal(body, &nominatimResp); err != nil {
-		return nil, fmt.Errorf("failed to parse nominatim response: %w", err)
-	}
-
-	if len(nominatimResp) == 0 {
-		return nil, fmt.Errorf("no results found for address: %s", address)
-	}
-
-	// Parse coordinates
-	lat, err := parseFloat(nominatimResp[0].Lat)
-	if err != nil {
-		return nil, fmt.Errorf("invalid latitude: %w", err)
-	}
-
-	lng, err := parseFloat(nominatimResp[0].Lon)
-	if err != nil {
-		return nil, fmt.Errorf("invalid longitude: %w", err)
-	}
-
-	return &Coordinate{Lat: lat, Lng: lng}, nil
 }
 
 // GetRoute gets routing directions from point A to B using OSRM
