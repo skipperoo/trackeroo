@@ -72,10 +72,7 @@ def create_compose(credentials: List[Dict]):
         regional = "true" if random.randint(1, 100) > 10 else "false"
         urban = "true" if random.randint(1, 100) > 50 and regional == "true" else "false"
         compose.services[cred["id"]] = ServiceConfig(
-            build={
-                "context": "src",
-                "dockerfile": "Dockerfile"
-            },
+            image="tracky:latest",
             environment={
                 "ROUTING_SERVICE_URL": "http://localhost:5000",
                 "OVERPASS_URL": "http://localhost:12345/api/interpreter",
