@@ -36,6 +36,52 @@ func NewOverpassClient(baseURL string) *OverpassClient {
 	}
 }
 
+func (c *OverpassClient) runQuery(query string) (OverpassResponse, error) {
+	const maxRetries = 5
+
+	form := url.Values{}
+	form.Set("data", query)
+
+	var lastErr error
+	var overpassResp OverpassResponse
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		resp, err := c.Client.Post(
+			c.BaseURL,
+			"application/x-www-form-urlencoded",
+			strings.NewReader(form.Encode()),
+		)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to query Overpass API: %w", err)
+			time.Sleep(time.Duration(attempt) * time.Second)
+			continue
+		}
+
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			lastErr = fmt.Errorf("Overpass API returned status %d: %s", resp.StatusCode, string(bodyBytes))
+
+			if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
+				time.Sleep(time.Duration(attempt) * time.Second)
+				continue
+			}
+			break
+		}
+
+		if err := json.Unmarshal(bodyBytes, &overpassResp); err != nil {
+			lastErr = fmt.Errorf("failed to decode response: %w", err)
+			time.Sleep(time.Duration(attempt) * time.Second)
+			continue
+		}
+
+		return overpassResp, nil
+	}
+
+	return OverpassResponse{}, lastErr
+}
+
 func (c *OverpassClient) GetStreets(city string, limit int, radiusMeters int) ([]OverpassElement, error) {
 	if limit == 0 {
 		limit = 100
@@ -50,23 +96,10 @@ node["name"="%s"]["place"~"city|town"](area.italy)->.citynode;
 );
 out tags geom %d;
 `, city, radiusMeters, limit)
-	form := url.Values{}
-	form.Set("data", query)
 
-	resp, err := c.Client.Post(c.BaseURL, "application/x-www-form-urlencoded", strings.NewReader(form.Encode()))
+	overpassResp, err := c.runQuery(query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query Overpass API: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("Overpass API returned status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var overpassResp OverpassResponse
-	if err := json.NewDecoder(resp.Body).Decode(&overpassResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+		return nil, err
 	}
 
 	if len(overpassResp.Elements) == 0 {
@@ -92,23 +125,9 @@ area["ISO3166-1"="IT"][admin_level=2]->.italy;
 relation["boundary"="administrative"]["admin_level"=4](area.italy);
 out tags;`
 
-	form := url.Values{}
-	form.Set("data", query)
-
-	resp, err := c.Client.Post(c.BaseURL, "application/x-www-form-urlencoded", strings.NewReader(form.Encode()))
+	overpassResp, err := c.runQuery(query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query Overpass API: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("Overpass API returned status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var overpassResp OverpassResponse
-	if err := json.NewDecoder(resp.Body).Decode(&overpassResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+		return nil, err
 	}
 
 	if len(overpassResp.Elements) == 0 {
@@ -130,23 +149,9 @@ relation["boundary"="administrative"]["name"="%s"]["admin_level"=4]->.reg;
 node["place"~"city|town"](area.region);
 out tags;'`, region)
 
-	form := url.Values{}
-	form.Set("data", query)
-
-	resp, err := c.Client.Post(c.BaseURL, "application/x-www-form-urlencoded", strings.NewReader(form.Encode()))
+	overpassResp, err := c.runQuery(query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query Overpass API: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("Overpass API returned status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var overpassResp OverpassResponse
-	if err := json.NewDecoder(resp.Body).Decode(&overpassResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+		return nil, err
 	}
 
 	if len(overpassResp.Elements) == 0 {
