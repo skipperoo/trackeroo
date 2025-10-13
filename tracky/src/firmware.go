@@ -131,12 +131,14 @@ func Loop() {
 		if err != nil || len(regions) == 0 {
 			trackeroo.Error("Error getting regions, falling back to Toscana: %v", err)
 			regions = []string{"Toscana"}
+			trackeroo.DeleteRoute(lastRouteFile)
 		}
 		region := regions[rand.Intn(len(regions))]
 		cities, err = overpassClient.GetCities(region)
 		if err != nil || len(cities) == 0 {
 			trackeroo.Error("Error getting cities for %s, falling back to default cities: %v", region, err)
 			cities = []string{"Firenze", "Pisa", "Siena", "Lucca", "Vinci", "Prato", "Montecatini", "Arezzo", "Grosseto", "Massa"}
+			trackeroo.DeleteRoute(lastRouteFile)
 		}
 
 		if isUrban {
@@ -148,6 +150,7 @@ func Loop() {
 		if err != nil || len(regions) == 0 {
 			trackeroo.Error("Error getting regions, falling back to Toscana: %v", err)
 			regions = []string{"Toscana"}
+			trackeroo.DeleteRoute(lastRouteFile)
 		}
 		cities = make([]string, 0)
 		for _, region := range regions {

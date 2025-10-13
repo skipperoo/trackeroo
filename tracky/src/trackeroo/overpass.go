@@ -130,7 +130,7 @@ func (c *OverpassClient) GetRegions() ([]string, error) {
 
 	query := `[out:json][timeout:60];
 area["ISO3166-1"="IT"][admin_level=2]->.italy;
-relation["boundary"="administrative"]["admin_level"=4](area.italy);
+relation["boundary"="administrative"]["admin_level"=4]["ISO3166-2"~"^IT-"](area.italy);
 out tags;`
 
 	overpassResp, err := c.runQuery(query)
