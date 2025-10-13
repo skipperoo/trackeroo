@@ -41,7 +41,7 @@ func (c *OverpassClient) GetStreets(city string, limit int, radiusMeters int) ([
 	}
 
 	query := fmt.Sprintf(`
-[out:json][timeout:25];
+[out:json][timeout:60];
 area["ISO3166-1"="IT"][admin_level=2]->.italy;
 node["name"="%s"]["place"~"city|town"](area.italy)->.citynode;
 (
@@ -84,7 +84,7 @@ func (c *OverpassClient) GetRandomStreet(city string, radiusMeters int) (Street,
 
 func (c *OverpassClient) GetRegions() ([]string, error) {
 
-	query := `[out:json][timeout:25];
+	query := `[out:json][timeout:60];
 area["ISO3166-1"="IT"][admin_level=2]->.italy;
 relation["boundary"="administrative"]["admin_level"=4](area.italy);
 out tags;`
@@ -118,7 +118,7 @@ out tags;`
 }
 
 func (c *OverpassClient) GetCities(region string) ([]string, error) {
-	query := fmt.Sprintf(`'[out:json][timeout:25];
+	query := fmt.Sprintf(`'[out:json][timeout:60];
 relation["boundary"="administrative"]["name"="%s"]["admin_level"=4]->.reg;
 .reg map_to_area->.region;
 node["place"~"city|town"](area.region);
