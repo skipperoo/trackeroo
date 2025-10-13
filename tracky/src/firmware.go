@@ -132,7 +132,7 @@ func Loop() {
 	speedVar := trackeroo.NewStatVar[float64]()
 	consumptionVar := trackeroo.NewStatVar[float64]()
 	for {
-		trackeroo.Info("Getting route from %v", lastEnd)
+		trackeroo.Info("Getting route from %+v in %s - REGIONAL: %t - URBAN: %t", lastEnd, cities, os.Getenv("REGIONAL") == "true", os.Getenv("URBAN") == "true")
 		route, err := trackeroo.GetRoute(streetProvider, cities, lastEnd)
 		if err != nil {
 			trackeroo.Error("Error getting route %v", err)
