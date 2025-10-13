@@ -100,11 +100,12 @@ func Init() {
 func Terminate() {
 	taskManager.Shutdown(0)
 }
+
 func Loop() {
 	rand.Seed(time.Now().UnixNano())
 	creds, _ := trackeroo.GetCredentials()
+	lastRouteFile := "/data/last_route.json"
 	deviceType := creds.DeviceType
-	// streetProvider := trackeroo.NewCachedStreetProvider("http://localhost:12345/api/interpreter")
 	overpassClient := trackeroo.NewOverpassClient(os.Getenv("OVERPASS_URL"))
 	streetProvider := trackeroo.NewCachedStreetProvider(os.Getenv("OVERPASS_URL"), overpassClient)
 	routingService := trackeroo.NewRoutingService(
@@ -161,19 +162,39 @@ func Loop() {
 	speedVar := trackeroo.NewStatVar[float64]()
 	consumptionVar := trackeroo.NewStatVar[float64]()
 	for {
-		trackeroo.Info("Getting route from %+v - REGIONAL: %t - URBAN: %t", lastEnd, isRegional, isUrban)
-		route, err, cityErr := trackeroo.GetRoute(streetProvider, cities, lastEnd)
-		if err != nil {
-			trackeroo.Error("Error getting route in %s %v", cityErr, err)
-			trackeroo.Warning("Removing %s", cityErr)
-			for i, city := range cities {
-				if city == cityErr {
-					cities = append(cities[:i], cities[i+1:]...)
-				}
+		var route []trackeroo.Street
+		var err error
+		if trackeroo.ExistsPrevRoute(lastRouteFile) {
+			route, err = trackeroo.LoadRoute(lastRouteFile)
+			if err != nil {
+				trackeroo.Error("Error loading route %v, discarding file", err)
+				trackeroo.DeleteRoute(lastRouteFile)
+				continue
 			}
-			continue
+			lastEnd = route[1]
+		} else {
+			trackeroo.Info("Getting route from %+v - REGIONAL: %t - URBAN: %t", lastEnd, isRegional, isUrban)
+			var cityErr string
+			route, err, cityErr = trackeroo.GetRoute(streetProvider, cities, lastEnd, isUrban)
+			if err != nil {
+				trackeroo.Error("Error getting route from %s %v", cityErr, err)
+				trackeroo.Warning("Removing %s", cityErr)
+				for i, city := range cities {
+					if city == cityErr {
+						cities = append(cities[:i], cities[i+1:]...)
+					}
+				}
+				continue
+			}
 		}
 		trackeroo.Info("Route: %+v -> %+v", route[0], route[1])
+		err = trackeroo.SaveRoute(route, lastRouteFile)
+		if err != nil {
+			trackeroo.Error("Error saving route %v", err)
+		} else {
+			trackeroo.Info("Route saved to %s", lastRouteFile)
+		}
+
 		drivingSimulator, err := trackeroo.NewDrivingSimulator(routingService, route, 60, 100, isPirate, creds.DeviceType)
 		if err != nil {
 			trackeroo.Error("Error initializing driving simulator %v", err)
@@ -237,6 +258,7 @@ func Loop() {
 			trackeroo.Millisleep(100)
 		}
 		/* Routing terminated, waiting before next route */
+		trackeroo.DeleteRoute(lastRouteFile)
 		time.Sleep(time.Second * 120)
 		if !normalRun {
 			/* Wait some more */
