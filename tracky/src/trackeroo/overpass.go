@@ -37,6 +37,7 @@ func NewOverpassClient(baseURL string) *OverpassClient {
 }
 
 func (c *OverpassClient) runQuery(query string) (OverpassResponse, error) {
+	Info("Running Overpass query: %s", query)
 	const maxRetries = 5
 
 	form := url.Values{}
