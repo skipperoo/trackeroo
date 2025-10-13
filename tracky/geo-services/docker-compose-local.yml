@@ -1,6 +1,7 @@
 services:
   overpass:
     image: wiktorn/overpass-api
+    command: --allow-duplicate-queries
     container_name: overpass-italy
     ports:
       - "12345:80"
