@@ -1,12 +1,13 @@
 package trackeroo
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -49,8 +50,10 @@ node["name"="%s"]["place"~"city|town"](area.italy)->.citynode;
 );
 out tags geom %d;
 `, city, radiusMeters, limit)
+	form := url.Values{}
+	form.Set("data", query)
 
-	resp, err := c.Client.Post(c.BaseURL, "application/x-www-form-urlencoded", bytes.NewBufferString(query))
+	resp, err := c.Client.Post(c.BaseURL, "application/x-www-form-urlencoded", strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to query Overpass API: %w", err)
 	}
@@ -89,7 +92,10 @@ area["ISO3166-1"="IT"][admin_level=2]->.italy;
 relation["boundary"="administrative"]["admin_level"=4](area.italy);
 out tags;`
 
-	resp, err := c.Client.Post(c.BaseURL, "application/x-www-form-urlencoded", bytes.NewBufferString(query))
+	form := url.Values{}
+	form.Set("data", query)
+
+	resp, err := c.Client.Post(c.BaseURL, "application/x-www-form-urlencoded", strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to query Overpass API: %w", err)
 	}
@@ -123,7 +129,11 @@ relation["boundary"="administrative"]["name"="%s"]["admin_level"=4]->.reg;
 .reg map_to_area->.region;
 node["place"~"city|town"](area.region);
 out tags;'`, region)
-	resp, err := c.Client.Post(c.BaseURL, "application/x-www-form-urlencoded", bytes.NewBufferString(query))
+
+	form := url.Values{}
+	form.Set("data", query)
+
+	resp, err := c.Client.Post(c.BaseURL, "application/x-www-form-urlencoded", strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to query Overpass API: %w", err)
 	}
