@@ -11,9 +11,10 @@ import (
 )
 
 type OverpassElement struct {
-	Type string            `json:"type"`
-	ID   int64             `json:"id"`
-	Tags map[string]string `json:"tags"`
+	Type     string            `json:"type"`
+	ID       int64             `json:"id"`
+	Tags     map[string]string `json:"tags"`
+	Geometry []Coordinate      `json:"geometry"`
 }
 
 type OverpassResponse struct {
@@ -25,6 +26,18 @@ type OverpassClient struct {
 	Client  *http.Client
 }
 
+type Location struct {
+	Coordinate Coordinate
+	StreetName string
+}
+
+func streetToLocation(street OverpassElement) Location {
+	return Location{
+		Coordinate: street.Geometry[rand.Intn(len(street.Geometry))],
+		StreetName: street.Tags["name"],
+	}
+}
+
 func NewOverpassClient(baseURL string) *OverpassClient {
 	return &OverpassClient{
 		BaseURL: baseURL,
@@ -34,7 +47,7 @@ func NewOverpassClient(baseURL string) *OverpassClient {
 	}
 }
 
-func (c *OverpassClient) GetStreets(city string, limit int) ([]string, error) {
+func (c *OverpassClient) GetStreets(city string, limit int) ([]OverpassElement, error) {
 	if limit == 0 {
 		limit = 100
 	}
@@ -47,7 +60,7 @@ node["name"="%s"]["place"~"city|town"](area.italy)->.citynode;
 (
   way(around.citynode:%d)["highway"~"primary|secondary|tertiary|residential|unclassified"]["name"]["highway"!~"motorway|trunk|motorway_link|trunk_link"](area.italy);
 );
-out tags %d;
+out tags geom %d;
 `, city, radiusMeters, limit)
 
 	resp, err := c.Client.Post(c.BaseURL, "application/x-www-form-urlencoded", bytes.NewBufferString(query))
@@ -66,67 +79,55 @@ out tags %d;
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	var streets []string
-	for _, element := range overpassResp.Elements {
-		if name, ok := element.Tags["name"]; ok && name != "" {
-			postcode := element.Tags["addr:postcode"]
-
-			if postcode != "" {
-				streets = append(streets, fmt.Sprintf("%s, %s, Italy, %s", name, city, postcode))
-			} else {
-				streets = append(streets, fmt.Sprintf("%s, %s, Italy", name, city))
-			}
-		}
-	}
-
-	if len(streets) == 0 {
+	if len(overpassResp.Elements) == 0 {
 		return nil, fmt.Errorf("no streets found for city: %s", city)
 	}
 
-	return streets, nil
+	return overpassResp.Elements, nil
 }
 
-func (c *OverpassClient) GetRandomStreet(city string) (string, error) {
+func (c *OverpassClient) GetRandomStreet(city string) (Location, error) {
 	streets, err := c.GetStreets(city, 100)
 	if err != nil {
-		return "", err
+		return Location{}, err
 	}
-	return streets[rand.Intn(len(streets))], nil
+	randStreet := streets[rand.Intn(len(streets))]
+	return streetToLocation(randStreet), nil
 }
 
 type CachedStreetProvider struct {
 	client *OverpassClient
-	cache  map[string][]string
+	cache  map[string][]OverpassElement
 }
 
 func NewCachedStreetProvider(baseURL string) *CachedStreetProvider {
 	return &CachedStreetProvider{
 		client: NewOverpassClient(baseURL),
-		cache:  make(map[string][]string),
+		cache:  make(map[string][]OverpassElement),
 	}
 }
 
-func (p *CachedStreetProvider) GetRandomStreet(city string) (string, error) {
+func (p *CachedStreetProvider) GetRandomStreet(city string) (Location, error) {
 	if streets, ok := p.cache[city]; ok && len(streets) > 0 {
-		return streets[rand.Intn(len(streets))], nil
+		return streetToLocation(streets[rand.Intn(len(streets))]), nil
 	}
 
 	streets, err := p.client.GetStreets(city, 100)
 	if err != nil {
-		return "", err
+		return Location{}, err
 	}
 
 	p.cache[city] = streets
 
-	return streets[rand.Intn(len(streets))], nil
+	return streetToLocation(streets[rand.Intn(len(streets))]), nil
 }
 
 // GetRoute generates a route with random streets
 // If using cached provider, pass cities to select from
-func GetRoute(provider *CachedStreetProvider, cities []string, lastEnd string) ([]string, error) {
-	var route []string
+func GetRoute(provider *CachedStreetProvider, cities []string, lastEnd Location) ([]Location, error) {
+	var route []Location
 
-	if lastEnd != "" {
+	if lastEnd.StreetName != "" {
 		route = append(route, lastEnd)
 	} else {
 		city := cities[rand.Intn(len(cities))]

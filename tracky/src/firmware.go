@@ -127,7 +127,7 @@ func Loop() {
 	}
 	trackeroo.Info("Is pirate: %t", isPirate)
 	lastStatus := ""
-	lastEnd := ""
+	lastEnd := trackeroo.Location{}
 	normalRun := true
 	deltaDistance := 0.0
 	speedVar := trackeroo.NewStatVar[float64]()
