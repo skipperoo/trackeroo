@@ -144,11 +144,11 @@ out tags;`
 }
 
 func (c *OverpassClient) GetCities(region string) ([]string, error) {
-	query := fmt.Sprintf(`'[out:json][timeout:60];
+	query := fmt.Sprintf(`[out:json][timeout:60];
 relation["boundary"="administrative"]["name"="%s"]["admin_level"=4]->.reg;
 .reg map_to_area->.region;
 node["place"~"city|town"](area.region);
-out tags;'`, region)
+out tags;`, region)
 
 	overpassResp, err := c.runQuery(query)
 	if err != nil {
