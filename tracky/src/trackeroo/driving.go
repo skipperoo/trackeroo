@@ -138,7 +138,7 @@ func (rs *RoutingService) Geocode(address string) (*Coordinate, error) {
 }
 
 // GetRoute gets routing directions from point A to B using OSRM
-func (rs *RoutingService) GetRoute(from, to *Coordinate) ([]RouteSegment, error) {
+func (rs *RoutingService) GetRoute(from, to Coordinate) ([]RouteSegment, error) {
 	requestURL := fmt.Sprintf(
 		"%s/route/v1/driving/%f,%f;%f,%f?geometries=geojson&overview=full&steps=true",
 		rs.OSRMURL, from.Lng, from.Lat, to.Lng, to.Lat)
@@ -224,14 +224,8 @@ type DrivingSimulator struct {
 func NewDrivingSimulator(routingService *RoutingService, waypoints []Location, avgSpeed float64, updateIntervalMs int, isPirate bool, devType string) (*DrivingSimulator, error) {
 	route := make([]RouteSegment, 0)
 	for i := 0; i < len(waypoints)-1; i++ {
-		start, err := routingService.Geocode(waypoints[i])
-		if err != nil {
-			return nil, fmt.Errorf("Error geocoding address %s: %v", waypoints[i], err)
-		}
-		end, err := routingService.Geocode(waypoints[i+1])
-		if err != nil {
-			return nil, fmt.Errorf("Error geocoding address %s: %v", waypoints[i], err)
-		}
+		start := waypoints[i].Coordinate
+		end := waypoints[i+1].Coordinate
 		r, err := routingService.GetRoute(start, end)
 		if err != nil {
 			return nil, err
