@@ -73,8 +73,8 @@ out tags geom %d;
 	return overpassResp.Elements, nil
 }
 
-func (c *OverpassClient) GetRandomStreet(city string) (Street, error) {
-	streets, err := c.GetStreets(city, 100)
+func (c *OverpassClient) GetRandomStreet(city string, radiusMeters int) (Street, error) {
+	streets, err := c.GetStreets(city, 100, radiusMeters)
 	if err != nil {
 		return Street{}, err
 	}
