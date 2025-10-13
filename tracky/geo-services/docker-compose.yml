@@ -16,18 +16,6 @@ services:
     volumes:
       - ./overpass-data:/db
 
-  nominatim:
-    image: mediagis/nominatim:4.4
-    container_name: nominatim
-    ports:
-      - "8082:8080"
-    environment:
-      - PBF_URL=https://download.geofabrik.de/europe/italy-latest.osm.pbf
-      - REPLICATION_URL=https://download.geofabrik.de/europe/italy-updates
-      - NOMINATIM_PASSWORD=password
-    volumes:
-      - ./nominatim-data:/var/lib/postgresql/14/main
-
   osrm:
     image: osrm/osrm-backend
     container_name: osrm
