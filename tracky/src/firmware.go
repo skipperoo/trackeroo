@@ -105,7 +105,8 @@ func Loop() {
 	creds, _ := trackeroo.GetCredentials()
 	deviceType := creds.DeviceType
 	// streetProvider := trackeroo.NewCachedStreetProvider("http://localhost:12345/api/interpreter")
-	streetProvider := trackeroo.NewCachedStreetProvider(os.Getenv("OVERPASS_URL"))
+	overpassClient := trackeroo.NewOverpassClient(os.Getenv("OVERPASS_URL"))
+	streetProvider := trackeroo.NewCachedStreetProvider(os.Getenv("OVERPASS_URL"), overpassClient)
 	routingService := trackeroo.NewRoutingService(
 		os.Getenv("ROUTING_SERVICE_URL"),
 	)
@@ -118,21 +119,49 @@ func Loop() {
 	}
 	lastPublish := time.Now()
 	isPirate := os.Getenv("PIRATE") == "true" || os.Getenv("PIRATE") == "1"
+	isRegional := os.Getenv("REGIONAL") == "true"
+	isUrban := os.Getenv("URBAN") == "true"
+	if isUrban {
+		isRegional = true
+	}
 	var cities []string
-	if os.Getenv("REGIONAL") == "true" {
-		cities = trackeroo.GetRandomRegion()
+	if isRegional {
+		regions, err := overpassClient.GetRegions()
+		if err != nil || len(regions) == 0 {
+			trackeroo.Error("Error getting regions, falling back to Toscana: %v", err)
+			regions = []string{"Toscana"}
+		}
+		cities, err = overpassClient.GetCities(regions[rand.Intn(len(regions))])
+		if err != nil || len(cities) == 0 {
+			trackeroo.Error("Error getting cities, falling back to default cities: %v", err)
+			cities = []string{"Firenze", "Pisa", "Siena", "Lucca", "Vinci", "Prato", "Montecatini", "Arezzo", "Grosseto", "Massa"}
+		}
+
+		if isUrban {
+			city := cities[rand.Intn(len(cities))]
+			cities = []string{city}
+		}
 	} else {
-		cities = trackeroo.GetAllCities()
+		regions, err := overpassClient.GetRegions()
+		if err != nil || len(regions) == 0 {
+			trackeroo.Error("Error getting regions, falling back to Toscana: %v", err)
+			regions = []string{"Toscana"}
+		}
+		cities = make([]string, 0)
+		for _, region := range regions {
+			c, _ := overpassClient.GetCities(region)
+			cities = append(cities, c...)
+		}
 	}
 	trackeroo.Info("Is pirate: %t", isPirate)
 	lastStatus := ""
-	lastEnd := trackeroo.Location{}
+	lastEnd := trackeroo.Street{}
 	normalRun := true
 	deltaDistance := 0.0
 	speedVar := trackeroo.NewStatVar[float64]()
 	consumptionVar := trackeroo.NewStatVar[float64]()
 	for {
-		trackeroo.Info("Getting route from %+v - REGIONAL: %t - URBAN: %t", lastEnd, os.Getenv("REGIONAL") == "true", os.Getenv("URBAN") == "true")
+		trackeroo.Info("Getting route from %+v - REGIONAL: %t - URBAN: %t", lastEnd, isRegional, isUrban)
 		route, err, cityErr := trackeroo.GetRoute(streetProvider, cities, lastEnd)
 		if err != nil {
 			trackeroo.Error("Error getting route in %s %v", cityErr, err)

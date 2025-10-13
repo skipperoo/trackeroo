@@ -171,7 +171,7 @@ type DrivingSimulator struct {
 	Distance       float64
 }
 
-func NewDrivingSimulator(routingService *RoutingService, waypoints []Location, avgSpeed float64, updateIntervalMs int, isPirate bool, devType string) (*DrivingSimulator, error) {
+func NewDrivingSimulator(routingService *RoutingService, waypoints []Street, avgSpeed float64, updateIntervalMs int, isPirate bool, devType string) (*DrivingSimulator, error) {
 	route := make([]RouteSegment, 0)
 	for i := 0; i < len(waypoints)-1; i++ {
 		start := waypoints[i].Coordinate
