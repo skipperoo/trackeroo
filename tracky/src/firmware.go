@@ -133,9 +133,15 @@ func Loop() {
 	consumptionVar := trackeroo.NewStatVar[float64]()
 	for {
 		trackeroo.Info("Getting route from %+v - REGIONAL: %t - URBAN: %t", lastEnd, os.Getenv("REGIONAL") == "true", os.Getenv("URBAN") == "true")
-		route, err := trackeroo.GetRoute(streetProvider, cities, lastEnd)
+		route, err, cityErr := trackeroo.GetRoute(streetProvider, cities, lastEnd)
 		if err != nil {
-			trackeroo.Error("Error getting route %v", err)
+			trackeroo.Error("Error getting route in %s %v", cityErr, err)
+			trackeroo.Warning("Removing %s", cityErr)
+			for i, city := range cities {
+				if city == cityErr {
+					cities = append(cities[:i], cities[i+1:]...)
+				}
+			}
 			continue
 		}
 		trackeroo.Info("Route: %+v -> %+v", route[0], route[1])

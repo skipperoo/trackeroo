@@ -112,6 +112,7 @@ func NewCachedStreetProvider(baseURL string) *CachedStreetProvider {
 func (p *CachedStreetProvider) GetRandomStreet(city string) (Location, error) {
 	Info("Getting random street from %s", city)
 	if streets, ok := p.cache[city]; ok && len(streets) > 0 {
+		Info("Cache hit for %s", city)
 		return streetToLocation(city, streets[rand.Intn(len(streets))]), nil
 	}
 
@@ -127,7 +128,7 @@ func (p *CachedStreetProvider) GetRandomStreet(city string) (Location, error) {
 
 // GetRoute generates a route with random streets
 // If using cached provider, pass cities to select from
-func GetRoute(provider *CachedStreetProvider, cities []string, lastEnd Location) ([]Location, error) {
+func GetRoute(provider *CachedStreetProvider, cities []string, lastEnd Location) ([]Location, error, string) {
 	var route []Location
 
 	if lastEnd.StreetName != "" {
@@ -136,7 +137,7 @@ func GetRoute(provider *CachedStreetProvider, cities []string, lastEnd Location)
 		city := cities[rand.Intn(len(cities))]
 		randStreet, err := provider.GetRandomStreet(city)
 		if err != nil {
-			return nil, err
+			return nil, err, city
 		}
 		route = append(route, randStreet)
 	}
@@ -144,9 +145,9 @@ func GetRoute(provider *CachedStreetProvider, cities []string, lastEnd Location)
 	city := cities[rand.Intn(len(cities))]
 	randStreet, err := provider.GetRandomStreet(city)
 	if err != nil {
-		return nil, err
+		return nil, err, city
 	}
 	route = append(route, randStreet)
 
-	return route, nil
+	return route, nil, ""
 }
