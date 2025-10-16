@@ -180,28 +180,28 @@ func NewDrivingSimulator(routingService *RoutingService, checkpoint *Checkpoint,
 		if err != nil {
 			return nil, err
 		}
-		checkpointIndex := -1
+		checkpointRouteIndex := -1
+		checkpointCoordinatesIndex := -1
 
 		for i, pos := range r {
 			if checkpoint == nil || checkpoint.LastPosition.Lat == 0.0 || checkpoint.LastPosition.Lng == 0.0 {
 				Warning("Invalid checkpoit +%v, starting from first waypoint", checkpoint)
 				break
 			}
-			// 100 meters
-			distPos1 := haversineDistance(checkpoint.LastPosition, pos.Coordinates[0])
-			distPos2 := haversineDistance(checkpoint.LastPosition, pos.Coordinates[0])
-			Info("Index %d, %+v: pos1 %f - pos2 %f", i, pos, distPos1, distPos2)
-			if distPos1 < 0.1 || distPos2 < 0.1 {
-				checkpointIndex = i
-				Info("Found checkpoint %+v at index %d", checkpoint, checkpointIndex)
-				break
+			for j, c := range pos.Coordinates {
+				// 50 meters
+				if haversineDistance(checkpoint.LastPosition, c) < 0.05 {
+					checkpointRouteIndex = i
+					checkpointCoordinatesIndex = j
+					Info("Found checkpoint %+v at index (%d, %d)", checkpoint, checkpointRouteIndex, checkpointCoordinatesIndex)
+					goto found
+				}
 			}
 		}
-		if checkpointIndex == len(r)-1 {
-			checkpointIndex = -1
-		}
-		if checkpointIndex >= 0 {
-			r = r[checkpointIndex:]
+	found:
+		if checkpointRouteIndex >= 0 {
+			r = r[checkpointRouteIndex:]
+			r[0].Coordinates = r[0].Coordinates[checkpointCoordinatesIndex:]
 		}
 		route = append(route, r...)
 	}
