@@ -223,6 +223,7 @@ func Loop() {
 						Poles:        checkpoint.Poles,
 						LastPosition: position.Coordinate,
 					}, checkpointFile)
+					lastCheckpoint = time.Now()
 					trackeroo.Warning("Cannot save checkpoint: %+v", err)
 				}
 				lastStatus = position.Status
