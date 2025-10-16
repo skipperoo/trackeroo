@@ -91,7 +91,22 @@ func alteredFoodData(position trackeroo.DrivePosition) FoodSensors {
 var taskManager *trackeroo.TaskManager
 
 func Init() {
-	trackeroo.InitLogger(trackeroo.INFO, "")
+	debugLevel := os.Getenv("DEBUG_LEVEL")
+	level := trackeroo.INFO
+	switch debugLevel {
+	case "DEBUG":
+		level = trackeroo.DEBUG
+	case "INFO":
+		level = trackeroo.INFO
+	case "WARN":
+	case "WARNING":
+		level = trackeroo.WARNING
+	case "ERROR":
+		level = trackeroo.ERROR
+	default:
+		level = trackeroo.INFO
+	}
+	trackeroo.InitLogger(level, "")
 	trackeroo.InitQueue("data")
 	taskManager = trackeroo.NewTaskManager()
 	go taskManager.Start()
