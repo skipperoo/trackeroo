@@ -194,6 +194,9 @@ func NewDrivingSimulator(routingService *RoutingService, checkpoint *Checkpoint,
 				break
 			}
 		}
+		if checkpointIndex == len(r)-1 {
+			checkpointIndex = -1
+		}
 		if checkpointIndex >= 0 {
 			r = r[checkpointIndex:]
 		}
@@ -341,6 +344,7 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 			Distance:    0,
 		}
 	}()
+	Info("Simulation started")
 
 	return positionChan
 }
