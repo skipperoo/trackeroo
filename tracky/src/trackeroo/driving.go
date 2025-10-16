@@ -183,11 +183,12 @@ func NewDrivingSimulator(routingService *RoutingService, checkpoint *Checkpoint,
 		checkpointIndex := -1
 
 		for i, pos := range r {
-			if checkpoint == nil {
+			if checkpoint == nil || checkpoint.LastPosition.Lat == 0.0 || checkpoint.LastPosition.Lng == 0.0 {
+				Warning("Invalid checkpoit +%v, starting from first waypoint", checkpoint)
 				break
 			}
-			// 50 meters
-			if haversineDistance(checkpoint.LastPosition, pos.Coordinates[0]) < 0.05 {
+			// 500 meters
+			if haversineDistance(checkpoint.LastPosition, pos.Coordinates[0]) < 0.5 {
 				checkpointIndex = i
 				Info("Found checkpoint %+v at index %d", checkpoint, checkpointIndex)
 				break
