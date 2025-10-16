@@ -157,6 +157,8 @@ func getConsumption(speed float64, devType string) float64 {
 // DrivingSimulator simulates realistic car driving
 type DrivingSimulator struct {
 	Route               []RouteSegment
+	Start               Coordinate
+	End                 Coordinate
 	DefaultAverageSpeed float64 // km/h
 	SpeedVariation      float64 // percentage (0.0-1.0)
 	StopProbability     float64 // probability of stopping per segment (0.0-1.0)
@@ -209,6 +211,8 @@ func NewDrivingSimulator(routingService *RoutingService, checkpoint *Checkpoint,
 	return &DrivingSimulator{
 		Route:               route,
 		DefaultAverageSpeed: avgSpeed,
+		Start:               checkpoint.Poles[0].Coordinate,
+		End:                 checkpoint.Poles[1].Coordinate,
 		SpeedVariation:      0.03, // 3% speed variation
 		StopProbability:     0.05, // 5% chance of stopping per segment
 		StopDuration: struct {
@@ -258,8 +262,8 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 						Speed:       0,
 						SpeedLimit:  speedLimit,
 						Status:      STOPPED,
-						Start:       ds.Route[0].Coordinates[0],
-						End:         lastCoord,
+						Start:       ds.Start,
+						End:         ds.End,
 						Consumption: 0,
 						Distance:    0,
 					}
@@ -323,8 +327,8 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 						Speed:       currentSpeed,
 						SpeedLimit:  speedLimit,
 						Status:      status,
-						Start:       ds.Route[0].Coordinates[0],
-						End:         lastCoord,
+						Start:       ds.Start,
+						End:         ds.End,
 						Consumption: getConsumption(currentSpeed, ds.DevType) * consumptionCompensation,
 						Distance:    distance,
 					}
@@ -341,8 +345,8 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 			Speed:       0,
 			SpeedLimit:  speedLimit,
 			Status:      ARRIVED,
-			Start:       ds.Route[0].Coordinates[0],
-			End:         lastCoord,
+			Start:       ds.Start,
+			End:         ds.End,
 			Consumption: 0,
 			Distance:    0,
 		}
