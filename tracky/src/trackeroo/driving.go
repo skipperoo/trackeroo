@@ -186,7 +186,7 @@ func NewDrivingSimulator(routingService *RoutingService, checkpoint *Checkpoint,
 			if checkpoint == nil {
 				break
 			}
-			if checkpoint.LastPosition != pos.Coordinates[0] {
+			if checkpoint.LastPosition == pos.Coordinates[0] {
 				checkpointIndex = i
 				Info("Found checkpoint %+v at index %d", checkpoint, checkpointIndex)
 				break
