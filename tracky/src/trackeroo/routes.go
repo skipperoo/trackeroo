@@ -13,6 +13,11 @@ type Street struct {
 	City       string     `json:"city"`
 }
 
+type Checkpoint struct {
+	Poles        []Street   `json:"poles"`
+	LastPosition Coordinate `json:"last_position"`
+}
+
 func stringToStreet(city string, street OverpassElement) Street {
 	return Street{
 		Coordinate: street.Geometry[rand.Intn(len(street.Geometry))],
@@ -77,19 +82,22 @@ func GetRoute(provider *CachedStreetProvider, cities []string, lastEnd Street, i
 	return route, nil, ""
 }
 
-func ExistsPrevRoute(filename string) bool {
+func ExistsCheckpoint(filename string) bool {
 	_, err := os.Stat(filename)
 	return !os.IsNotExist(err)
 }
 
-func SaveRoute(route []Street, filename string) error {
+func SaveCheckpoint(checkpoint *Checkpoint, filename string) error {
+	if checkpoint == nil {
+		return fmt.Errorf("cannot save nil checkpoint")
+	}
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	jsonData, err := json.Marshal(route)
+	jsonData, err := json.Marshal(checkpoint)
 	if err != nil {
 		return err
 	}
@@ -98,22 +106,22 @@ func SaveRoute(route []Street, filename string) error {
 	return nil
 }
 
-func LoadRoute(filename string) ([]Street, error) {
+func LoadCheckpoint(filename string) (*Checkpoint, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var route []Street
-	err = json.NewDecoder(file).Decode(&route)
+	var checkpoint Checkpoint
+	err = json.NewDecoder(file).Decode(&checkpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	return route, nil
+	return &checkpoint, nil
 }
 
-func DeleteRoute(filename string) error {
+func DeleteCheckpoit(filename string) error {
 	return os.Remove(filename)
 }

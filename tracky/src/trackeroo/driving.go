@@ -171,14 +171,29 @@ type DrivingSimulator struct {
 	Distance       float64
 }
 
-func NewDrivingSimulator(routingService *RoutingService, waypoints []Street, avgSpeed float64, updateIntervalMs int, isPirate bool, devType string) (*DrivingSimulator, error) {
+func NewDrivingSimulator(routingService *RoutingService, checkpoint *Checkpoint, avgSpeed float64, updateIntervalMs int, isPirate bool, devType string) (*DrivingSimulator, error) {
 	route := make([]RouteSegment, 0)
-	for i := 0; i < len(waypoints)-1; i++ {
-		start := waypoints[i].Coordinate
-		end := waypoints[i+1].Coordinate
+	for i := 0; i < len(checkpoint.Poles)-1; i++ {
+		start := checkpoint.Poles[i].Coordinate
+		end := checkpoint.Poles[i+1].Coordinate
 		r, err := routingService.GetRoute(start, end)
 		if err != nil {
 			return nil, err
+		}
+		checkpointIndex := -1
+
+		for i, pos := range r {
+			if checkpoint == nil {
+				break
+			}
+			if haversineDistance(checkpoint.LastPosition, pos.Coordinates[0]) < 1 {
+				checkpointIndex = i
+				Info("Found checkpoint %+v at index %d", checkpoint, checkpointIndex)
+				break
+			}
+		}
+		if checkpointIndex >= 0 {
+			r = r[checkpointIndex:]
 		}
 		route = append(route, r...)
 	}
@@ -224,7 +239,7 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 				nextPos := segment.Coordinates[i+1]
 
 				// Calculate distance between points
-				distance := ds.haversineDistance(currentPos, nextPos)
+				distance := haversineDistance(currentPos, nextPos)
 
 				// Check if we should stop
 				if i == 0 && segment.ShouldStop {
@@ -329,7 +344,7 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 }
 
 // haversineDistance calculates the great circle distance between two points
-func (ds *DrivingSimulator) haversineDistance(pos1, pos2 Coordinate) float64 {
+func haversineDistance(pos1, pos2 Coordinate) float64 {
 	const R = 6371 // Earth's radius in kilometers
 
 	lat1Rad := pos1.Lat * math.Pi / 180
