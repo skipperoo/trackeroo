@@ -167,20 +167,19 @@ func Loop() {
 	speedVar := trackeroo.NewStatVar[float64]()
 	consumptionVar := trackeroo.NewStatVar[float64]()
 	for {
-		var checkpoint trackeroo.Checkpoint
+		var checkpoint *trackeroo.Checkpoint
 		var err error
 		if trackeroo.ExistsCheckpoint(checkpointFile) {
-			c, err := trackeroo.LoadCheckpoint(checkpointFile)
+			checkpoint, err = trackeroo.LoadCheckpoint(checkpointFile)
 			if err != nil {
 				trackeroo.Error("Error loading route %v, discarding file", err)
 				trackeroo.DeleteCheckpoit(checkpointFile)
 				continue
 			}
-			checkpoint = *c
 			lastEnd = checkpoint.Poles[1]
 			trackeroo.Info("Route loaded successfully")
 		} else {
-			checkpoint = trackeroo.Checkpoint{}
+			checkpoint = &trackeroo.Checkpoint{}
 			trackeroo.Info("Getting route from %+v - REGIONAL: %t - URBAN: %t", lastEnd, isRegional, isUrban)
 			route, err, cityErr := trackeroo.GetRoute(streetProvider, cities, lastEnd, isUrban)
 			checkpoint.Poles = route
@@ -196,14 +195,14 @@ func Loop() {
 			}
 		}
 		trackeroo.Info("Route: %+v -> %+v @ %+v", checkpoint.Poles[0], checkpoint.Poles[1], checkpoint.LastPosition)
-		err = trackeroo.SaveCheckpoint(&checkpoint, checkpointFile)
+		err = trackeroo.SaveCheckpoint(checkpoint, checkpointFile)
 		if err != nil {
 			trackeroo.Error("Error saving route %v", err)
 		} else {
 			trackeroo.Info("Route saved to %s", checkpointFile)
 		}
 
-		drivingSimulator, err := trackeroo.NewDrivingSimulator(routingService, &checkpoint, 60, 100, isPirate, creds.DeviceType)
+		drivingSimulator, err := trackeroo.NewDrivingSimulator(routingService, checkpoint, 60, 100, isPirate, creds.DeviceType)
 		if err != nil {
 			trackeroo.Error("Error initializing driving simulator %v", err)
 			continue
@@ -220,10 +219,14 @@ func Loop() {
 			consumptionVar.Add(position.Consumption)
 			if time.Since(lastPublish) > pubPeriod || lastStatus != position.Status {
 				if time.Since(lastCheckpoint) > 60*time.Second {
-					checkpoint.LastPosition = position.Coordinate
-					err := trackeroo.SaveCheckpoint(&checkpoint, checkpointFile)
+					err := trackeroo.SaveCheckpoint(&trackeroo.Checkpoint{
+						Poles:        checkpoint.Poles,
+						LastPosition: position.Coordinate,
+					}, checkpointFile)
+					if err != nil {
+						trackeroo.Warning("Cannot save checkpoint: %+v", err)
+					}
 					lastCheckpoint = time.Now()
-					trackeroo.Warning("Cannot save checkpoint: %+v", err)
 				}
 				lastStatus = position.Status
 				payload := Payload{
