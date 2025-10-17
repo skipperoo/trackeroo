@@ -89,3 +89,25 @@ def create_compose(credentials: List[Dict]):
         # yaml.safe_dump handles Pydantic dict fine
         yaml_str = yaml.safe_dump(compose_dict, sort_keys=False)
         f.write(yaml_str)
+
+
+def token():
+    response = requests.post(f"http://{sys.argv[1]}/login/", json={"username": "leonardo", "password": "subemelaradio"})
+    return response.json()["token"]
+
+def main():
+    if len(sys.argv) != 2:
+        print(f"Usage: python {sys.argv[0]} <backend_ip:port>")
+        sys.exit(1)
+
+    try:
+        t = token()
+        credentials = requests.get(f"http://{sys.argv[1]}/devices/credentials", headers={"Authorization": f"Bearer {t}"}).json()
+    except Exception as e:
+        print(f"Error fetching credentials: {e}")
+        sys.exit(1)
+
+    create_compose(sorted(credentials, key=lambda x: x["name"]))
+
+if __name__ == "__main__":
+    main()
