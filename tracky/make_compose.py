@@ -64,7 +64,7 @@ def create_compose(credentials: List[Dict]):
 
         # Define service with secrets mounted
         compose.services[service_name] = ServiceConfig(
-            image="tracky:latest",
+            image="ghcr.io/skiby7/tracky:latest",
             environment={
                 "ROUTING_SERVICE_URL": "http://osrm:5000",
                 "OVERPASS_URL": "http://nginx:80/api/interpreter",
