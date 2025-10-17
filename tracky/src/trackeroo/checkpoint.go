@@ -14,21 +14,24 @@ var (
 	ctx         = context.Background()
 )
 
-func InitCheckpoint() {
+func InitCheckpointService() {
 	redisURI := os.Getenv("REDIS_URI")
 	if redisURI != "" {
 		opt, err := redis.ParseURL(redisURI)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to parse REDIS_URI: %v\n", err)
+			Error("Failed to parse REDIS_URI: %v\n", err)
 			return
 		}
 		redisClient = redis.NewClient(opt)
 
 		// Test connection
 		if err := redisClient.Ping(ctx).Err(); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to connect to Redis: %v\n", err)
+			Error("Failed to connect to Redis: %v\n", err)
 			redisClient = nil
 		}
+	}
+	if redisClient != nil {
+		Info("Saving checkpoint to %s", redisURI)
 	}
 }
 

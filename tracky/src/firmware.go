@@ -121,6 +121,7 @@ func Loop() {
 	rand.Seed(time.Now().UnixNano())
 	creds, _ := trackeroo.GetCredentials()
 	checkpointFile := fmt.Sprintf("/data/%s_checkpoint.json", creds.ID)
+	trackeroo.InitCheckpointService()
 	deviceType := creds.DeviceType
 	overpassClient := trackeroo.NewOverpassClient(os.Getenv("OVERPASS_URL"))
 	streetProvider := trackeroo.NewCachedStreetProvider(os.Getenv("OVERPASS_URL"), overpassClient)
