@@ -15,6 +15,9 @@ class SecretConfig(BaseModel):
 class NetworkConfig(BaseModel):
     driver: Optional[str] = None
     attachable: Optional[bool] = None
+    external: Optional[bool] = None
+    name: Optional[str] = None
+
 
 
 class ServiceSecret(BaseModel):
@@ -40,7 +43,8 @@ def create_compose(credentials: List[Dict]):
     compose = DockerCompose(
         services={},
         secrets={},
-        networks={"trackynet": NetworkConfig(driver="overlay", attachable=True)},
+        # networks={"trackynet": NetworkConfig(driver="overlay", attachable=True)},
+        networks={"trackynet": NetworkConfig(external=True, name="geoservices_trackynet")},
     )
 
     for cred in credentials:
