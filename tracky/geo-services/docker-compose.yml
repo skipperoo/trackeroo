@@ -11,7 +11,7 @@ services:
     volumes:
       - ./overpass-data:/db
     networks:
-      - trackynet
+      - tracky
     deploy:
       placement:
         constraints: [node.role == manager]
@@ -27,7 +27,7 @@ services:
     depends_on:
       - overpass
     networks:
-      - trackynet
+      - tracky
     deploy:
       placement:
         constraints: [node.role == manager]
@@ -50,7 +50,7 @@ services:
     ports:
       - "5000:5000"
     networks:
-      - trackynet
+      - tracky
     deploy:
       placement:
         constraints: [node.role == manager]
@@ -68,7 +68,7 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - trackynet
+      - tracky
     deploy:
       placement:
         constraints: [node.role == manager]
@@ -76,6 +76,5 @@ services:
         condition: on-failure
 
 networks:
-  trackynet:
-    driver: overlay
-    attachable: true
+  tracky:
+    external: true
