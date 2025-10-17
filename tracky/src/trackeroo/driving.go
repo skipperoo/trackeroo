@@ -213,8 +213,8 @@ func NewDrivingSimulator(routingService *RoutingService, checkpoint *Checkpoint,
 		DefaultAverageSpeed: avgSpeed,
 		Start:               checkpoint.Poles[0].Coordinate,
 		End:                 checkpoint.Poles[1].Coordinate,
-		SpeedVariation:      0.03, // 3% speed variation
-		StopProbability:     0.05, // 5% chance of stopping per segment
+		SpeedVariation:      0.03,
+		StopProbability:     0.05,
 		StopDuration: struct {
 			Min time.Duration
 			Max time.Duration
