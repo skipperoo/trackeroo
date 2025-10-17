@@ -2,7 +2,7 @@ name: Build and Push Tracky Image
 
 on:
   push:
-    branches: ["*"]
+    branches: ["**"]
     paths:
       - "tracky/**"
   workflow_dispatch:
