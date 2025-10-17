@@ -83,7 +83,7 @@ def create_compose(credentials: List[Dict]):
             ],
             deploy={
                 "replicas": 1,
-                "restart_policy": {"condition": "unless-stopped"},
+                "restart_policy": {"condition": "any"},
             },
         )
         if i == len(credentials) - 1:
