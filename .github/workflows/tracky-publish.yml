@@ -33,7 +33,7 @@ jobs:
         include:
           - image: tracky
             context: ./tracky/src
-            dockerfile: ./tsdb/src/Dockerfile
+            dockerfile: ./tracky/src/Dockerfile
     permissions:
       contents: read
       packages: write
