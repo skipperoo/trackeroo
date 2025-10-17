@@ -83,7 +83,7 @@ type RoutingService struct {
 func NewRoutingService(osrmURL string) *RoutingService {
 	return &RoutingService{
 		OSRMURL:    osrmURL,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		httpClient: &http.Client{Timeout: 120 * time.Second},
 	}
 }
 
