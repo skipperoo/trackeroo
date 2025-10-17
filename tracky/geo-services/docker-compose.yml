@@ -2,29 +2,40 @@ services:
   overpass:
     image: wiktorn/overpass-api
     environment:
-      - OVERPASS_META=yes
-      - OVERPASS_MODE=init
-      - OVERPASS_PLANET_URL=http://download.geofabrik.de/europe/italy-latest.osm.bz2-disabled
-      - OVERPASS_RATE_LIMIT=0
-      - OVERPASS_RATE_SPACE=1073741824
-      - OVERPASS_ALLOW_DUPLICATE_QUERIES=yes
+      OVERPASS_META: "yes"
+      OVERPASS_MODE: "init"
+      OVERPASS_PLANET_URL: "http://download.geofabrik.de/europe/italy-latest.osm.bz2-disabled"
+      OVERPASS_RATE_LIMIT: "0"
+      OVERPASS_RATE_SPACE: "1073741824"
+      OVERPASS_ALLOW_DUPLICATE_QUERIES: "yes"
     volumes:
       - ./overpass-data:/db
+    networks:
+      - trackynet
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
 
   nginx:
     image: nginx:alpine
     ports:
-      - "12345:80"
+      - "12345:80" # external port for Overpass
     volumes:
       - ./nginx:/etc/nginx:ro
     depends_on:
       - overpass
+    networks:
+      - trackynet
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
 
   osrm:
     image: osrm/osrm-backend
-    container_name: osrm
-    ports:
-      - "5000:5000"
     volumes:
       - ./osrm-data:/data
     command: >
@@ -36,3 +47,16 @@ services:
         fi &&
         osrm-routed --algorithm mld /data/italy-latest.osrm
       "
+    ports:
+      - "5000:5000"
+    networks:
+      - trackynet
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
+
+networks:
+  trackynet:
+    driver: overlay
