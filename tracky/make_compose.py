@@ -74,7 +74,7 @@ def create_compose(credentials: List[Dict]):
                 "PUBLISH_PERIOD": "2000",
                 "PIRATE": "true" if random.randint(1, 100) < 10 else "false",
             },
-            networks=["trackynet"],
+            networks=["tracky"],
             secrets=[
                 ServiceSecret(
                     source=tdevice_secret,
