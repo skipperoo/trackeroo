@@ -14,13 +14,19 @@ class SecretConfig(BaseModel):
 
 class NetworkConfig(BaseModel):
     driver: Optional[str] = None
+    attachable: Optional[bool] = None
+
+
+class ServiceSecret(BaseModel):
+    source: str
+    target: str
 
 
 class ServiceConfig(BaseModel):
     image: Optional[str] = None
     environment: Optional[Dict[str, Union[str, int]]] = None
     networks: Optional[List[str]] = None
-    secrets: Optional[List[Dict[str, str]]] = None
+    secrets: Optional[List[ServiceSecret]] = None
     deploy: Optional[Dict] = None
 
 
@@ -34,26 +40,25 @@ def create_compose(credentials: List[Dict]):
     compose = DockerCompose(
         services={},
         secrets={},
-        networks={"trackynet": NetworkConfig(driver="overlay")},
+        networks={"trackynet": NetworkConfig(driver="overlay", attachable=True)},
     )
 
-    # Device-specific services
     for cred in credentials:
         regional = "true" if random.randint(1, 100) > 10 else "false"
         urban = "true" if random.randint(1, 100) > 50 and regional == "true" else "false"
 
         service_name = cred["id"]
 
-        # ensure dir exists + dump files
+        # Ensure dir exists + dump credential file
         os.makedirs(service_name, exist_ok=True)
         with open(f"{service_name}/tdevice.json", "w") as f:
             json.dump(cred, f, indent=2)
 
-        # register secrets
+        # Register secrets
         tdevice_secret = f"{service_name}_tdevice"
         compose.secrets[tdevice_secret] = SecretConfig(file=f"./{service_name}/tdevice.json")
 
-        # define service with secrets mounted
+        # Define service with secrets mounted
         compose.services[service_name] = ServiceConfig(
             image="tracky:latest",
             environment={
@@ -66,7 +71,10 @@ def create_compose(credentials: List[Dict]):
             },
             networks=["trackynet"],
             secrets=[
-                {"source": tdevice_secret, "target": "/app/credentials/tdevice.json"},
+                ServiceSecret(
+                    source=tdevice_secret,
+                    target="/app/credentials/tdevice.json",
+                )
             ],
             deploy={
                 "replicas": 1,
@@ -74,7 +82,10 @@ def create_compose(credentials: List[Dict]):
             },
         )
 
-    # write compose file
+    # Dump YAML correctly
     with open("docker-compose.yml", "w") as f:
-        yaml_str = yaml.safe_dump(compose.model_dump(exclude_none=True), sort_keys=False)
+        compose_dict = compose.model_dump(exclude_none=True)
+
+        # yaml.safe_dump handles Pydantic dict fine
+        yaml_str = yaml.safe_dump(compose_dict, sort_keys=False)
         f.write(yaml_str)
