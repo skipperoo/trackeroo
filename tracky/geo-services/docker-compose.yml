@@ -60,3 +60,4 @@ services:
 networks:
   trackynet:
     driver: overlay
+    attachable: true
