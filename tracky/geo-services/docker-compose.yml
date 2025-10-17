@@ -58,7 +58,6 @@ services:
         condition: on-failure
 
   redis:
-    container_name: redis
     image: redis:8.2.1-alpine
     volumes:
       - ./redis-data:/data
