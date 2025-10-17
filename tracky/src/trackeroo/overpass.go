@@ -206,7 +206,7 @@ func (c *OverpassClient) GetCities(region string) ([]string, error) {
 		if err == nil {
 			var cities []string
 			if err := json.Unmarshal([]byte(cached), &cities); err == nil {
-				Info("Retrieved %d cities from Redis cache", len(cities))
+				Info("Retrieved %d cities (%s) from Redis cache", len(cities), region)
 				return cities, nil
 			}
 			Warning("Failed to unmarshal cached cities: %v", err)
