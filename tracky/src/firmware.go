@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"os"
 	"strconv"
@@ -119,7 +120,7 @@ func Terminate() {
 func Loop() {
 	rand.Seed(time.Now().UnixNano())
 	creds, _ := trackeroo.GetCredentials()
-	checkpointFile := "/data/checkpoint.json"
+	checkpointFile := fmt.Sprintf("/data/%s_checkpoint.json", creds.ID)
 	deviceType := creds.DeviceType
 	overpassClient := trackeroo.NewOverpassClient(os.Getenv("OVERPASS_URL"))
 	streetProvider := trackeroo.NewCachedStreetProvider(os.Getenv("OVERPASS_URL"), overpassClient)
@@ -147,14 +148,14 @@ func Loop() {
 		if err != nil || len(regions) == 0 {
 			trackeroo.Error("Error getting regions, falling back to Toscana: %v", err)
 			regions = []string{"Toscana"}
-			trackeroo.DeleteCheckpoit(checkpointFile)
+			trackeroo.DeleteCheckpoint(checkpointFile)
 		}
 		region := regions[rand.Intn(len(regions))]
 		cities, err = overpassClient.GetCities(region)
 		if err != nil || len(cities) == 0 {
 			trackeroo.Error("Error getting cities for %s, falling back to default cities: %v", region, err)
 			cities = []string{"Firenze", "Pisa", "Siena", "Lucca", "Vinci", "Prato", "Montecatini", "Arezzo", "Grosseto", "Massa"}
-			trackeroo.DeleteCheckpoit(checkpointFile)
+			trackeroo.DeleteCheckpoint(checkpointFile)
 		}
 
 		if isUrban {
@@ -166,7 +167,7 @@ func Loop() {
 		if err != nil || len(regions) == 0 {
 			trackeroo.Error("Error getting regions, falling back to Toscana: %v", err)
 			regions = []string{"Toscana"}
-			trackeroo.DeleteCheckpoit(checkpointFile)
+			trackeroo.DeleteCheckpoint(checkpointFile)
 		}
 		cities = make([]string, 0)
 		for _, region := range regions {
@@ -188,7 +189,7 @@ func Loop() {
 			checkpoint, err = trackeroo.LoadCheckpoint(checkpointFile)
 			if err != nil {
 				trackeroo.Error("Error loading route %v, discarding file", err)
-				trackeroo.DeleteCheckpoit(checkpointFile)
+				trackeroo.DeleteCheckpoint(checkpointFile)
 				continue
 			}
 			lastEnd = checkpoint.Poles[1]
@@ -290,7 +291,7 @@ func Loop() {
 			trackeroo.Millisleep(100)
 		}
 		/* Routing terminated, waiting before next route */
-		trackeroo.DeleteCheckpoit(checkpointFile)
+		trackeroo.DeleteCheckpoint(checkpointFile)
 		time.Sleep(time.Second * 120)
 		if !normalRun {
 			/* Wait some more */

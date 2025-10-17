@@ -1,10 +1,7 @@
 package trackeroo
 
 import (
-	"encoding/json"
-	"fmt"
 	"math/rand"
-	"os"
 )
 
 type Street struct {
@@ -80,48 +77,4 @@ func GetRoute(provider *CachedStreetProvider, cities []string, lastEnd Street, i
 	route = append(route, randStreet)
 
 	return route, nil, ""
-}
-
-func ExistsCheckpoint(filename string) bool {
-	_, err := os.Stat(filename)
-	return !os.IsNotExist(err)
-}
-
-func SaveCheckpoint(checkpoint *Checkpoint, filename string) error {
-	if checkpoint == nil {
-		return fmt.Errorf("cannot save nil checkpoint")
-	}
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	jsonData, err := json.Marshal(checkpoint)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(file, "%s\n", jsonData)
-
-	return nil
-}
-
-func LoadCheckpoint(filename string) (*Checkpoint, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var checkpoint Checkpoint
-	err = json.NewDecoder(file).Decode(&checkpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	return &checkpoint, nil
-}
-
-func DeleteCheckpoit(filename string) error {
-	return os.Remove(filename)
 }

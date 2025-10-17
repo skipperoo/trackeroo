@@ -68,6 +68,7 @@ def create_compose(credentials: List[Dict]):
             environment={
                 "ROUTING_SERVICE_URL": "http://osrm:5000",
                 "OVERPASS_URL": "http://nginx:80/api/interpreter",
+                "REDIS_URI": "redis://redis:6379",
                 "REGIONAL": regional,
                 "URBAN": urban,
                 "PUBLISH_PERIOD": "2000",
