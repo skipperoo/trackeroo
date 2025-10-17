@@ -44,7 +44,7 @@ def create_compose(credentials: List[Dict]):
         services={},
         secrets={},
         # networks={"trackynet": NetworkConfig(driver="overlay", attachable=True)},
-        networks={"trackynet": NetworkConfig(external=True, name="tracky")},
+        networks={"tracky": NetworkConfig(external=True)},
     )
     print("SELECT * FROM ( VALUES ")
     for i, cred in enumerate(credentials):
