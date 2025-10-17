@@ -34,7 +34,7 @@ func NewOverpassClient(baseURL string) *OverpassClient {
 	return &OverpassClient{
 		BaseURL: baseURL,
 		Client: &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout: 120 * time.Second,
 		},
 	}
 }
@@ -113,7 +113,7 @@ func (c *OverpassClient) GetStreets(city string, limit int, radiusMeters int) ([
 	}
 
 	query := fmt.Sprintf(`
-[out:json][timeout:60];
+[out:json][timeout:120];
 area["ISO3166-1"="IT"][admin_level=2]->.italy;
 node["name"="%s"]["place"~"city|town"](area.italy)->.citynode;
 (
@@ -167,7 +167,7 @@ func (c *OverpassClient) GetRegions() ([]string, error) {
 			Warning("Redis get error: %v", err)
 		}
 	}
-	query := `[out:json][timeout:60];
+	query := `[out:json][timeout:120];
 area["ISO3166-1"="IT"][admin_level=2]->.italy;
 relation["boundary"="administrative"]["admin_level"=4]["ISO3166-2"~"^IT-"](area.italy);
 out tags;`
@@ -214,7 +214,7 @@ func (c *OverpassClient) GetCities(region string) ([]string, error) {
 			Warning("Redis get error: %v", err)
 		}
 	}
-	query := fmt.Sprintf(`[out:json][timeout:60];
+	query := fmt.Sprintf(`[out:json][timeout:120];
 relation["boundary"="administrative"]["name"="%s"]["admin_level"=4]->.reg;
 .reg map_to_area->.region;
 node["place"~"city|town"](area.region);
