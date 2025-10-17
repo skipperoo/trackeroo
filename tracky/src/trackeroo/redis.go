@@ -22,7 +22,6 @@ func InitRedisClient() {
 		}
 		redisClient = redis.NewClient(opt)
 
-		// Test connection
 		if err := redisClient.Ping(ctx).Err(); err != nil {
 			Error("Failed to connect to Redis: %v\n", err)
 			redisClient = nil
