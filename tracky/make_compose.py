@@ -66,9 +66,9 @@ def create_compose(credentials: List[Dict]):
         compose.services[service_name] = ServiceConfig(
             image="ghcr.io/skiby7/tracky:latest",
             environment={
-                "ROUTING_SERVICE_URL": "http://osrm:5000",
-                "OVERPASS_URL": "http://nginx:80/api/interpreter",
-                "REDIS_URI": "redis://redis:6379",
+                "ROUTING_SERVICE_URL": "http://tracky_osrm:5000",
+                "OVERPASS_URL": "http://tracky_nginx:80/api/interpreter",
+                "REDIS_URI": "redis://tracky_redis:6379",
                 "REGIONAL": regional,
                 "URBAN": urban,
                 "PUBLISH_PERIOD": "2000",
@@ -83,7 +83,7 @@ def create_compose(credentials: List[Dict]):
             ],
             deploy={
                 "replicas": 1,
-                "restart_policy": {"condition": "on-failure"},
+                "restart_policy": {"condition": "unless-stopped"},
             },
         )
         if i == len(credentials) - 1:
