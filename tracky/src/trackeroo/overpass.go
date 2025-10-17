@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type OverpassElement struct {
@@ -95,6 +97,21 @@ func (c *OverpassClient) GetStreets(city string, limit int, radiusMeters int) ([
 		limit = 100
 	}
 
+	cityKey := fmt.Sprintf("tracky::cities::%s::limits::%d::radius::%d", city, limit, radiusMeters)
+	if redisClient != nil {
+		cached, err := redisClient.Get(ctx, cityKey).Result()
+		if err == nil {
+			var elements []OverpassElement
+			if err := json.Unmarshal([]byte(cached), &elements); err == nil {
+				Info("Retrieved %d streets from Redis cache", len(elements))
+				return elements, nil
+			}
+			Warning("Failed to unmarshal cached streets: %v", err)
+		} else if err != redis.Nil {
+			Warning("Redis get error: %v", err)
+		}
+	}
+
 	query := fmt.Sprintf(`
 [out:json][timeout:60];
 area["ISO3166-1"="IT"][admin_level=2]->.italy;
@@ -114,6 +131,16 @@ out tags geom %d;
 		return nil, fmt.Errorf("no streets found for city: %s", city)
 	}
 
+	if redisClient != nil {
+		data, err := json.Marshal(overpassResp.Elements)
+		if err == nil {
+			if err := redisClient.Set(ctx, cityKey, data, 0).Err(); err != nil {
+				Warning("Failed to cache regions in Redis: %v", err)
+			} else {
+				Info("Cached %d streets (city: %s, limit: %d, radius: %d) in Redis", len(overpassResp.Elements), city, limit, radiusMeters)
+			}
+		}
+	}
 	return overpassResp.Elements, nil
 }
 
@@ -127,7 +154,19 @@ func (c *OverpassClient) GetRandomStreet(city string, radiusMeters int) (Street,
 }
 
 func (c *OverpassClient) GetRegions() ([]string, error) {
-
+	if redisClient != nil {
+		cached, err := redisClient.Get(ctx, "tracky::regions").Result()
+		if err == nil {
+			var regions []string
+			if err := json.Unmarshal([]byte(cached), &regions); err == nil {
+				Info("Retrieved %d regions from Redis cache", len(regions))
+				return regions, nil
+			}
+			Warning("Failed to unmarshal cached regions: %v", err)
+		} else if err != redis.Nil {
+			Warning("Redis get error: %v", err)
+		}
+	}
 	query := `[out:json][timeout:60];
 area["ISO3166-1"="IT"][admin_level=2]->.italy;
 relation["boundary"="administrative"]["admin_level"=4]["ISO3166-2"~"^IT-"](area.italy);
@@ -147,10 +186,34 @@ out tags;`
 			regions = append(regions, element.Tags["name"])
 		}
 	}
+	if redisClient != nil {
+		data, err := json.Marshal(regions)
+		if err == nil {
+			if err := redisClient.Set(ctx, "tracky::regions", data, 0).Err(); err != nil {
+				Warning("Failed to cache regions in Redis: %v", err)
+			} else {
+				Info("Cached %d regions in Redis", len(regions))
+			}
+		}
+	}
 	return regions, nil
 }
 
 func (c *OverpassClient) GetCities(region string) ([]string, error) {
+	regionKey := fmt.Sprintf("tracky::regions::%s", region)
+	if redisClient != nil {
+		cached, err := redisClient.Get(ctx, regionKey).Result()
+		if err == nil {
+			var cities []string
+			if err := json.Unmarshal([]byte(cached), &cities); err == nil {
+				Info("Retrieved %d cities from Redis cache", len(cities))
+				return cities, nil
+			}
+			Warning("Failed to unmarshal cached cities: %v", err)
+		} else if err != redis.Nil {
+			Warning("Redis get error: %v", err)
+		}
+	}
 	query := fmt.Sprintf(`[out:json][timeout:60];
 relation["boundary"="administrative"]["name"="%s"]["admin_level"=4]->.reg;
 .reg map_to_area->.region;
@@ -169,6 +232,17 @@ out tags;`, region)
 	for _, element := range overpassResp.Elements {
 		if element.Type == "node" {
 			cities = append(cities, element.Tags["name"])
+		}
+	}
+
+	if redisClient != nil {
+		data, err := json.Marshal(cities)
+		if err == nil {
+			if err := redisClient.Set(ctx, regionKey, data, 0).Err(); err != nil {
+				Warning("Failed to cache regions in Redis: %v", err)
+			} else {
+				Info("Cached %d cities in Redis", len(cities))
+			}
 		}
 	}
 	return cities, nil

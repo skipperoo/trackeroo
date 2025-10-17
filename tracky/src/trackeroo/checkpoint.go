@@ -1,39 +1,10 @@
 package trackeroo
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-
-	"github.com/redis/go-redis/v9"
 )
-
-var (
-	redisClient *redis.Client
-	ctx         = context.Background()
-)
-
-func InitCheckpointService() {
-	redisURI := os.Getenv("REDIS_URI")
-	if redisURI != "" {
-		opt, err := redis.ParseURL(redisURI)
-		if err != nil {
-			Error("Failed to parse REDIS_URI: %v\n", err)
-			return
-		}
-		redisClient = redis.NewClient(opt)
-
-		// Test connection
-		if err := redisClient.Ping(ctx).Err(); err != nil {
-			Error("Failed to connect to Redis: %v\n", err)
-			redisClient = nil
-		}
-	}
-	if redisClient != nil {
-		Info("Saving checkpoint to %s", redisURI)
-	}
-}
 
 func ExistsCheckpoint(filename string) bool {
 	if redisClient != nil {
