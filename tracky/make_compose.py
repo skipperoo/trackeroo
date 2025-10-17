@@ -46,8 +46,8 @@ def create_compose(credentials: List[Dict]):
         # networks={"trackynet": NetworkConfig(driver="overlay", attachable=True)},
         networks={"trackynet": NetworkConfig(external=True, name="geoservices_trackynet")},
     )
-
-    for cred in credentials:
+    print("SELECT * FROM ( VALUES ")
+    for i, cred in enumerate(credentials):
         regional = "true" if random.randint(1, 100) > 10 else "false"
         urban = "true" if random.randint(1, 100) > 50 and regional == "true" else "false"
 
@@ -86,7 +86,11 @@ def create_compose(credentials: List[Dict]):
                 "restart_policy": {"condition": "on-failure"},
             },
         )
-
+        if i == len(credentials) - 1:
+                   print(f"('{cred['name']}', '{cred['id']}')")
+        else:
+            print(f"('{cred['name']}', '{cred['id']}'),")
+    print(") AS t (__text, __value)")
     # Dump YAML correctly
     with open("docker-compose.yml", "w") as f:
         compose_dict = compose.model_dump(exclude_none=True)
