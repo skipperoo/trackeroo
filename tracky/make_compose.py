@@ -53,16 +53,13 @@ def create_compose(credentials: List[Dict]):
 
         service_name = cred["id"]
 
-        # Ensure dir exists + dump credential file
         os.makedirs(service_name, exist_ok=True)
         with open(f"{service_name}/tdevice.json", "w") as f:
             json.dump(cred, f, indent=2)
 
-        # Register secrets
         tdevice_secret = f"{service_name}_tdevice"
         compose.secrets[tdevice_secret] = SecretConfig(file=f"./{service_name}/tdevice.json")
 
-        # Define service with secrets mounted
         compose.services[service_name] = ServiceConfig(
             image="ghcr.io/skiby7/tracky:latest",
             environment={
@@ -94,8 +91,6 @@ def create_compose(credentials: List[Dict]):
     # Dump YAML correctly
     with open("docker-compose.yml", "w") as f:
         compose_dict = compose.model_dump(exclude_none=True)
-
-        # yaml.safe_dump handles Pydantic dict fine
         yaml_str = yaml.safe_dump(compose_dict, sort_keys=False)
         f.write(yaml_str)
 
