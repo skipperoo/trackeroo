@@ -124,7 +124,7 @@ func Loop() {
 	trackeroo.InitRedisClient()
 	deviceType := creds.DeviceType
 	overpassClient := trackeroo.NewOverpassClient(os.Getenv("OVERPASS_URL"))
-	streetProvider := trackeroo.NewCachedStreetProvider(os.Getenv("OVERPASS_URL"), overpassClient)
+	streetProvider := trackeroo.NewCachedStreetProvider(overpassClient)
 	routingService := trackeroo.NewRoutingService(
 		os.Getenv("ROUTING_SERVICE_URL"),
 	)

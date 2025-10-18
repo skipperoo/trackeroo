@@ -87,7 +87,7 @@ def create_compose(credentials: List[Dict]):
             },
         )
         if i == len(credentials) - 1:
-                   print(f"('{cred['name']}', '{cred['id']}')")
+            print(f"('{cred['name']}', '{cred['id']}')")
         else:
             print(f"('{cred['name']}', '{cred['id']}'),")
     print(") AS t (__text, __value)")

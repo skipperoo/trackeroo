@@ -28,7 +28,7 @@ type CachedStreetProvider struct {
 	cache  map[string][]OverpassElement
 }
 
-func NewCachedStreetProvider(baseURL string, overpassClient *OverpassClient) *CachedStreetProvider {
+func NewCachedStreetProvider(overpassClient *OverpassClient) *CachedStreetProvider {
 	return &CachedStreetProvider{
 		client: overpassClient,
 		cache:  make(map[string][]OverpassElement),
