@@ -242,6 +242,7 @@ func (s *Service) handleMessage(delivery amqp.Delivery) {
 		delivery.Ack(false)
 		return
 	}
+	log.Printf("%+v\n", delivery)
 
 	topic := incoming.Topic
 	payload := incoming.Payload
