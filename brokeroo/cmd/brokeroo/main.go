@@ -148,6 +148,7 @@ func (s *Service) connectMQTT() error {
 	opts.SetConnectTimeout(10 * time.Second)
 	opts.SetOrderMatters(false)
 	opts.SetAutoAckDisabled(true)
+	opts.SetProtocolVersion(4)
 
 	// Set connection lost handler
 	opts.SetConnectionLostHandler(func(client mqtt.Client, err error) {
