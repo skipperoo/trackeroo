@@ -236,16 +236,9 @@ func (s *Service) startConsuming(ctx context.Context) error {
 
 func (s *Service) handleMessage(delivery amqp.Delivery) {
 	// Parse the incoming message
-	var incoming IncomingMessage
-	if err := json.Unmarshal(delivery.Body, &incoming); err != nil {
-		log.Printf("Invalid JSON payload: %v", err)
-		delivery.Ack(false)
-		return
-	}
-	log.Printf("%+v\n", delivery)
 
-	topic := incoming.Topic
-	payload := incoming.Payload
+	topic := strings.ReplaceAll(delivery.RoutingKey, ".", "/")
+	payload := delivery.Body
 
 	log.Printf("Received message on topic %s", topic)
 
