@@ -6,13 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/eclipse/paho.golang/autopaho"
+	"github.com/eclipse/paho.golang/paho"
 	_ "github.com/lib/pq"
 	"github.com/segmentio/kafka-go"
 )
@@ -36,10 +38,12 @@ type MQTTData struct {
 
 type Service struct {
 	config      *Config
-	mqttClient  mqtt.Client
+	mqttClient  *autopaho.ConnectionManager
 	db          *sql.DB
 	kafkaWriter *kafka.Writer
-	knownTopics map[string]bool /* for caching kafka topics  */
+	knownTopics map[string]bool
+	ctx         context.Context
+	cancel      context.CancelFunc
 }
 
 type Envelope struct {
@@ -51,9 +55,12 @@ type Envelope struct {
 }
 
 func NewService(config *Config) *Service {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &Service{
 		config:      config,
 		knownTopics: make(map[string]bool),
+		ctx:         ctx,
+		cancel:      cancel,
 	}
 }
 
@@ -78,7 +85,7 @@ func (s *Service) connectKafka() error {
 	})
 
 	if err := s.ensureTopicExists("health-check"); err != nil {
-		log.Printf("failed to create first topic for healt-check: %v", err)
+		log.Printf("failed to create first topic for health-check: %v", err)
 	}
 
 	err := s.kafkaWriter.WriteMessages(context.Background(),
@@ -98,7 +105,6 @@ func (s *Service) connectKafka() error {
 }
 
 func (s *Service) ensureTopicExists(topic string) error {
-
 	if s.knownTopics[topic] {
 		return nil
 	}
@@ -131,68 +137,80 @@ func (s *Service) ensureTopicExists(topic string) error {
 	}
 
 	s.knownTopics[topic] = true
-	log.Printf("Topic pronto: %s", topic)
+	log.Printf("Topic ready: %s", topic)
 	return nil
 }
 
 func (s *Service) connectMQTT() error {
-	opts := mqtt.NewClientOptions()
-	opts.AddBroker(s.config.MQTTBroker)
-	opts.SetClientID(s.config.MQTTClientID)
-	opts.SetUsername(s.config.MQTTUsername)
-	opts.SetPassword(s.config.MQTTPassword)
-	opts.SetCleanSession(false) // Keep unacked messages
-	opts.SetAutoReconnect(true)
-	opts.SetKeepAlive(60 * time.Second)
-	opts.SetPingTimeout(10 * time.Second)
-	opts.SetConnectTimeout(10 * time.Second)
-	opts.SetOrderMatters(false)
-	opts.SetAutoAckDisabled(true)
-	opts.SetProtocolVersion(4)
+	// Parse broker URL
+	serverURL := s.config.MQTTBroker
 
-	// Set connection lost handler
-	opts.SetConnectionLostHandler(func(client mqtt.Client, err error) {
-		log.Printf("MQTT connection lost: %v", err)
-	})
+	// Create autopaho config
+	cliCfg := autopaho.ClientConfig{
+		ServerUrls:                    []*url.URL{{Scheme: "tcp", Host: strings.TrimPrefix(serverURL, "tcp://")}},
+		KeepAlive:                     60,
+		CleanStartOnInitialConnection: false,
+		SessionExpiryInterval:         60,
+		OnConnectionUp: func(cm *autopaho.ConnectionManager, connAck *paho.Connack) {
+			log.Println("MQTT connected")
+			s.subscribeToTopics(cm)
+		},
+		OnConnectError: func(err error) {
+			log.Printf("MQTT connection error: %v", err)
+		},
+		ClientConfig: paho.ClientConfig{
+			ClientID: s.config.MQTTClientID,
+			OnPublishReceived: []func(paho.PublishReceived) (bool, error){
+				s.messageHandler,
+			},
+			OnClientError: func(err error) {
+				log.Printf("MQTT client error: %v", err)
+			},
+		},
+	}
 
-	// Set reconnect handler
-	opts.SetOnConnectHandler(func(client mqtt.Client) {
-		log.Println("MQTT connected/reconnected")
-		s.subscribeToTopics()
-	})
+	// Add authentication if provided
+	if s.config.MQTTUsername != "" {
+		cliCfg.ConnectUsername = s.config.MQTTUsername
+		cliCfg.ConnectPassword = []byte(s.config.MQTTPassword)
+	}
 
-	s.mqttClient = mqtt.NewClient(opts)
+	// Create connection manager
+	cm, err := autopaho.NewConnection(s.ctx, cliCfg)
+	if err != nil {
+		return fmt.Errorf("failed to create MQTT connection: %w", err)
+	}
 
-	c := 0
-	for {
-		if token := s.mqttClient.Connect(); token.Wait() && token.Error() != nil {
-			if c == 10 {
-				return fmt.Errorf("failed to connect to MQTT broker: %w", token.Error())
-			}
-			c += 1
-			log.Println("Connessione fallita, retry tra 2s:", token.Error())
-			time.Sleep(2 * time.Second)
-			continue
-		}
-		break
+	s.mqttClient = cm
+
+	// Wait for initial connection
+	if err := cm.AwaitConnection(s.ctx); err != nil {
+		return fmt.Errorf("failed to await initial MQTT connection: %w", err)
 	}
 
 	log.Println("Successfully connected to MQTT broker")
 	return nil
 }
 
-func (s *Service) subscribeToTopics() {
-	token := s.mqttClient.Subscribe(s.config.TopicPattern, 1, s.messageHandler)
-	if token.Wait() && token.Error() != nil {
-		log.Printf("Failed to subscribe to topics: %v", token.Error())
+func (s *Service) subscribeToTopics(cm *autopaho.ConnectionManager) {
+	_, err := cm.Subscribe(s.ctx, &paho.Subscribe{
+		Subscriptions: []paho.SubscribeOptions{
+			{
+				Topic: s.config.TopicPattern,
+				QoS:   1,
+			},
+		},
+	})
+	if err != nil {
+		log.Printf("Failed to subscribe to topics: %v", err)
 		return
 	}
 	log.Printf("Subscribed to topic pattern: %s", s.config.TopicPattern)
 }
 
-func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
-	topic := msg.Topic()
-	payload := msg.Payload()
+func (s *Service) messageHandler(pr paho.PublishReceived) (bool, error) {
+	topic := pr.Packet.Topic
+	payload := pr.Packet.Payload
 
 	log.Printf("Received message on topic %s", topic)
 
@@ -200,8 +218,7 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	parts := strings.Split(topic, "/")
 	if len(parts) != 4 || parts[0] != "j" || parts[1] != "data" {
 		log.Printf("Invalid topic format: %s, expected j/data/DEVID/TAG", topic)
-		msg.Ack()
-		return
+		return true, nil // Acknowledge message
 	}
 
 	devID := parts[2]
@@ -211,8 +228,7 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	var data map[string]any
 	if err := json.Unmarshal(payload, &data); err != nil {
 		log.Printf("Invalid JSON payload for topic %s: %v", topic, err)
-		msg.Ack()
-		return
+		return true, nil
 	}
 
 	tsUnix, ok := data["ts"].(int64)
@@ -225,35 +241,35 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	jsonPayload := json.RawMessage(payload)
 	if err := s.insertData(tsUnix, ts, devID, tag, jsonPayload); err != nil {
 		log.Printf("Failed to insert data: %v", err)
-		return
+		return false, err // Don't acknowledge on DB failure
 	}
 	log.Printf("Time to write to DB %v", time.Since(start))
 	start = time.Now()
 
-	/* kafka */
+	// Kafka
 	kafkaTopic := sanitizeTopic(topic)
 	if err := s.ensureTopicExists(kafkaTopic); err != nil {
 		log.Printf("Error creating topic %s: %v", kafkaTopic, err)
-		return
+		return false, err
 	}
 
 	log.Printf("Time to create topic %v", time.Since(start))
 	start = time.Now()
 	envelope := Envelope{
 		TsUnix:      tsUnix,
-		Ts:          ts.Format(time.RFC3339), // is this right?
+		Ts:          ts.Format(time.RFC3339),
 		DevID:       devID,
 		Tag:         tag,
-		PayloadJSON: payload, // il payload originale come stringa JSON
+		PayloadJSON: payload,
 	}
 
 	envelopeBytes, err := json.Marshal(envelope)
 	if err != nil {
 		log.Printf("Failed to marshal envelope: %v", err)
-		return
+		return false, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) /* 5 second timeout */
+	ctx, cancel := context.WithTimeout(s.ctx, 5*time.Second)
 	defer cancel()
 
 	err = s.kafkaWriter.WriteMessages(ctx, kafka.Message{
@@ -263,13 +279,13 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 
 	if err != nil {
 		log.Printf("Failed to write to Kafka: %v", err)
-		return
+		return false, err
 	}
 	log.Printf("Message forwarded to Kafka topic: %s", kafkaTopic)
 	log.Printf("Time to write to Kafka %v", time.Since(start))
 
 	log.Printf("Successfully inserted data for dev_id: %s, tag: %s", devID, tag)
-	msg.Ack()
+	return true, nil // Acknowledge message
 }
 
 func (s *Service) insertData(tsUnix int64, ts time.Time, devID, tag string, payload json.RawMessage) error {
@@ -284,17 +300,14 @@ func (s *Service) insertData(tsUnix int64, ts time.Time, devID, tag string, payl
 }
 
 func (s *Service) Start() error {
-	// Connect to PostgreSQL
 	if err := s.connectPostgres(); err != nil {
 		return err
 	}
 
-	// Connect to MQTT
 	if err := s.connectMQTT(); err != nil {
 		return err
 	}
 
-	// Connect to Kafka
 	if err := s.connectKafka(); err != nil {
 		return err
 	}
@@ -304,9 +317,12 @@ func (s *Service) Start() error {
 func (s *Service) Stop() {
 	log.Println("Shutting down service...")
 
-	if s.mqttClient != nil && s.mqttClient.IsConnected() {
-		s.mqttClient.Unsubscribe(s.config.TopicPattern)
-		s.mqttClient.Disconnect(250)
+	s.cancel() // Cancel context to stop MQTT connection
+
+	if s.mqttClient != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		s.mqttClient.Disconnect(ctx)
 		log.Println("Disconnected from MQTT broker")
 	}
 
@@ -356,7 +372,6 @@ func main() {
 
 	log.Println("Service started successfully")
 
-	// Wait for interrupt signal to gracefully shutdown
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
