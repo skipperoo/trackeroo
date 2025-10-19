@@ -25,13 +25,10 @@ type Config struct {
 	PostgresURL   string
 	KafkaBroker   string
 	PrefetchCount int
-}
-
-type MQTTData struct {
-	TSUnix  int64           `json:"ts_unix"`
-	DevID   string          `json:"dev_id"`
-	Tag     string          `json:"tag"`
-	Payload json.RawMessage `json:"payload"`
+	BatchSize     int
+	BatchTimeout  time.Duration
+	MinPrefetch   int
+	MaxPrefetch   int
 }
 
 type Service struct {
@@ -41,6 +38,9 @@ type Service struct {
 	db          *sql.DB
 	kafkaWriter *kafka.Writer
 	knownTopics map[string]bool
+
+	// metrics
+	dbLatencies []time.Duration
 }
 
 type Envelope struct {
@@ -52,8 +52,12 @@ type Envelope struct {
 }
 
 type IncomingMessage struct {
-	Topic   string          `json:"topic"`
-	Payload json.RawMessage `json:"payload"`
+	Msg   amqp.Delivery
+	DevID string
+	Tag   string
+	TS    int64
+	TSStr string
+	Body  json.RawMessage
 }
 
 func NewService(config *Config) *Service {
@@ -69,199 +73,92 @@ func (s *Service) connectPostgres() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to postgres: %w", err)
 	}
-
 	if err = s.db.Ping(); err != nil {
 		return fmt.Errorf("failed to ping postgres: %w", err)
 	}
-
-	return nil
-}
-
-func (s *Service) connectKafka() error {
-	s.kafkaWriter = kafka.NewWriter(kafka.WriterConfig{
-		Brokers: []string{s.config.KafkaBroker},
-		Async:   true,
-	})
-
-	if err := s.ensureTopicExists("health-check"); err != nil {
-		log.Printf("failed to create first topic for health-check: %v", err)
-	}
-
-	err := s.kafkaWriter.WriteMessages(context.Background(),
-		kafka.Message{
-			Topic: "health-check",
-			Value: []byte("ping"),
-		},
-	)
-
-	if err != nil {
-		log.Printf("Failed to write test message to Kafka: %v", err)
-		return err
-	}
-
-	log.Println("Successfully connected to Kafka at", s.config.KafkaBroker)
-	return nil
-}
-
-func (s *Service) ensureTopicExists(topic string) error {
-	if s.knownTopics[topic] {
-		return nil
-	}
-
-	conn, err := kafka.Dial("tcp", s.config.KafkaBroker)
-	if err != nil {
-		return fmt.Errorf("dial broker: %w", err)
-	}
-	defer conn.Close()
-
-	controller, err := conn.Controller()
-	if err != nil {
-		return fmt.Errorf("get controller: %w", err)
-	}
-
-	controllerConn, err := kafka.Dial("tcp", fmt.Sprintf("%s:%d", controller.Host, controller.Port))
-	if err != nil {
-		return fmt.Errorf("dial controller: %w", err)
-	}
-	defer controllerConn.Close()
-
-	err = controllerConn.CreateTopics(kafka.TopicConfig{
-		Topic:             topic,
-		NumPartitions:     1,
-		ReplicationFactor: 1,
-	})
-
-	if err != nil && !strings.Contains(err.Error(), "Topic with this name already exists") {
-		return fmt.Errorf("create topic %s: %w", topic, err)
-	}
-
-	s.knownTopics[topic] = true
-	log.Printf("Topic pronto: %s", topic)
 	return nil
 }
 
 func (s *Service) connectRabbitMQ() error {
 	var err error
-
-	// Connect with retry logic
-	for i := 0; i < 10; i++ {
-		s.amqpConn, err = amqp.Dial(s.config.RabbitMQURL)
-		if err == nil {
-			break
-		}
-		log.Printf("Failed to connect to RabbitMQ (attempt %d/10): %v", i+1, err)
-		time.Sleep(2 * time.Second)
-	}
-
+	s.amqpConn, err = amqp.Dial(s.config.RabbitMQURL)
 	if err != nil {
-		return fmt.Errorf("failed to connect to RabbitMQ after retries: %w", err)
+		return fmt.Errorf("failed to connect to RabbitMQ: %w", err)
 	}
-
 	s.amqpChannel, err = s.amqpConn.Channel()
 	if err != nil {
 		return fmt.Errorf("failed to open channel: %w", err)
 	}
 
-	// Declare queue (durable, to survive broker restarts)
-	_, err = s.amqpChannel.QueueDeclare(
-		s.config.QueueName, // name
-		true,               // durable
-		false,              // delete when unused
-		false,              // exclusive
-		false,              // no-wait
-		nil,                // arguments
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declare queue: %w", err)
-	}
-	err = s.amqpChannel.QueueBind(
-		s.config.QueueName,    // queue name
-		s.config.RoutingKey,   // routing key (j.data.*.*)
-		s.config.ExchangeName, // exchange (amq.topic)
-		false,
-		nil,
-	)
-	if err != nil {
-		return fmt.Errorf("Failed to bind queue: %v", err)
-	}
-
-	// Set QoS (prefetch count) for load balancing
-	// This ensures each worker only gets N messages at a time
-	err = s.amqpChannel.Qos(
-		s.config.PrefetchCount, // prefetch count
-		0,                      // prefetch size
-		false,                  // global
-	)
-	if err != nil {
+	// QoS: start with configured prefetch
+	if err := s.amqpChannel.Qos(s.config.PrefetchCount, 0, false); err != nil {
 		return fmt.Errorf("failed to set QoS: %w", err)
 	}
 
-	log.Printf("Successfully connected to RabbitMQ, queue: %s", s.config.QueueName)
 	return nil
 }
 
 func (s *Service) startConsuming(ctx context.Context) error {
 	msgs, err := s.amqpChannel.Consume(
-		s.config.QueueName, // queue
-		"",                 // consumer tag (auto-generated)
-		false,              // auto-ack (IMPORTANT: false for load balancing)
-		false,              // exclusive
-		false,              // no-local
-		false,              // no-wait
-		nil,                // args
+		s.config.QueueName, "", false, false, false, false, nil,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to register consumer: %w", err)
 	}
 
-	log.Println("Started consuming messages from RabbitMQ")
+	batch := make([]IncomingMessage, 0, s.config.BatchSize)
+	timer := time.NewTimer(s.config.BatchTimeout)
 
 	go func() {
+		defer timer.Stop()
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case msg, ok := <-msgs:
 				if !ok {
-					log.Println("Message channel closed")
 					return
 				}
-				s.handleMessage(msg)
+				incoming, valid := s.parseMessage(msg)
+				if !valid {
+					msg.Ack(false)
+					continue
+				}
+				batch = append(batch, incoming)
+
+				if len(batch) >= s.config.BatchSize {
+					s.processBatch(batch)
+					batch = batch[:0]
+					if !timer.Stop() {
+						<-timer.C
+					}
+					timer.Reset(s.config.BatchTimeout)
+				}
+			case <-timer.C:
+				if len(batch) > 0 {
+					s.processBatch(batch)
+					batch = batch[:0]
+				}
+				timer.Reset(s.config.BatchTimeout)
 			}
 		}
 	}()
-
 	return nil
 }
 
-func (s *Service) handleMessage(delivery amqp.Delivery) {
-	// Parse the incoming message
-
-	topic := strings.ReplaceAll(delivery.RoutingKey, ".", "/")
-	payload := delivery.Body
-
-	log.Printf("Received message on topic %s", topic)
-
-	// Parse topic: j/data/DEVID/TAG
+func (s *Service) parseMessage(msg amqp.Delivery) (IncomingMessage, bool) {
+	topic := strings.ReplaceAll(msg.RoutingKey, ".", "/")
 	parts := strings.Split(topic, "/")
-	if len(parts) != 4 || parts[0] != "j" || parts[1] != "data" {
-		log.Printf("Invalid topic format: %s, expected j/data/DEVID/TAG", topic)
-		delivery.Ack(false)
-		return
+	if len(parts) != 4 {
+		return IncomingMessage{}, false
 	}
 
-	devID := parts[2]
-	tag := parts[3]
-
-	// Parse JSON payload
+	devID, tag := parts[2], parts[3]
 	var data map[string]any
-	if err := json.Unmarshal(payload, &data); err != nil {
-		log.Printf("Invalid JSON payload for topic %s: %v", topic, err)
-		delivery.Ack(false)
-		return
+	if err := json.Unmarshal(msg.Body, &data); err != nil {
+		return IncomingMessage{}, false
 	}
 
-	// Extract timestamp
 	var tsUnix int64
 	if tsFloat, ok := data["ts"].(float64); ok {
 		tsUnix = int64(tsFloat)
@@ -269,120 +166,113 @@ func (s *Service) handleMessage(delivery amqp.Delivery) {
 		tsUnix = time.Now().Unix()
 	}
 
-	ts := time.Unix(tsUnix, 0).UTC()
+	return IncomingMessage{
+		Msg:   msg,
+		DevID: devID,
+		Tag:   tag,
+		TS:    tsUnix,
+		TSStr: time.Unix(tsUnix, 0).UTC().Format(time.RFC3339),
+		Body:  msg.Body,
+	}, true
+}
 
-	// Insert into PostgreSQL
+func (s *Service) processBatch(batch []IncomingMessage) {
 	start := time.Now()
-	if err := s.insertData(tsUnix, ts, devID, tag, payload); err != nil {
-		log.Printf("Failed to insert data: %v", err)
-		// Negative acknowledgment with requeue
-		delivery.Nack(false, true)
-		return
-	}
-	log.Printf("Time to write to DB %v", time.Since(start))
-
-	// Forward to Kafka
-	start = time.Now()
-	kafkaTopic := sanitizeTopic(topic)
-	if err := s.ensureTopicExists(kafkaTopic); err != nil {
-		log.Printf("Error creating topic %s: %v", kafkaTopic, err)
-		delivery.Nack(false, true)
-		return
-	}
-
-	log.Printf("Time to create topic %v", time.Since(start))
-	start = time.Now()
-
-	envelope := Envelope{
-		TsUnix:      tsUnix,
-		Ts:          ts.Format(time.RFC3339),
-		DevID:       devID,
-		Tag:         tag,
-		PayloadJSON: payload,
-	}
-
-	envelopeBytes, err := json.Marshal(envelope)
+	tx, err := s.db.Begin()
 	if err != nil {
-		log.Printf("Failed to marshal envelope: %v", err)
-		delivery.Nack(false, true)
+		s.nackAll(batch)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	// Build multi-values INSERT
+	valueStrings := make([]string, 0, len(batch))
+	valueArgs := make([]interface{}, 0, len(batch)*5)
 
-	err = s.kafkaWriter.WriteMessages(ctx, kafka.Message{
-		Topic: kafkaTopic,
-		Value: envelopeBytes,
-	})
+	for i, m := range batch {
+		valueStrings = append(valueStrings,
+			fmt.Sprintf("($%d,$%d,$%d,$%d,$%d)", i*5+1, i*5+2, i*5+3, i*5+4, i*5+5))
+		valueArgs = append(valueArgs, m.TS, m.TSStr, m.DevID, m.Tag, m.Body)
+	}
 
+	stmt := fmt.Sprintf(`INSERT INTO trackeroo.data (ts_unix, ts, dev_id, tag, payload)
+		VALUES %s ON CONFLICT (ts, dev_id) DO NOTHING`, strings.Join(valueStrings, ","))
+
+	_, err = tx.Exec(stmt, valueArgs...)
 	if err != nil {
-		log.Printf("Failed to write to Kafka: %v", err)
-		delivery.Nack(false, true)
+		_ = tx.Rollback()
+		log.Println("Batch insert error:", err)
+		s.nackAll(batch)
 		return
 	}
 
-	log.Printf("Message forwarded to Kafka topic: %s", kafkaTopic)
-	log.Printf("Time to write to Kafka %v", time.Since(start))
-	log.Printf("Successfully processed data for dev_id: %s, tag: %s", devID, tag)
+	if err := tx.Commit(); err != nil {
+		s.nackAll(batch)
+		return
+	}
 
-	// Acknowledge message only after successful processing
-	delivery.Ack(false)
+	// Kafka forward + ack
+	for _, m := range batch {
+		kafkaTopic := strings.ReplaceAll(m.Msg.RoutingKey, ".", "-")
+		_ = s.kafkaWriter.WriteMessages(context.Background(), kafka.Message{
+			Topic: kafkaTopic,
+			Value: m.Body,
+		})
+		m.Msg.Ack(false)
+	}
+
+	latency := time.Since(start)
+	s.dbLatencies = append(s.dbLatencies, latency)
+	if len(s.dbLatencies) > 100 {
+		s.dbLatencies = s.dbLatencies[1:]
+	}
+	log.Printf("✅ batch of %d inserted in %v", len(batch), latency)
 }
 
-func (s *Service) insertData(tsUnix int64, ts time.Time, devID, tag string, payload json.RawMessage) error {
-	query := `INSERT INTO trackeroo.data (ts_unix, ts, dev_id, tag, payload)
-              VALUES ($1, $2, $3, $4, $5)
-              ON CONFLICT (ts, dev_id) DO NOTHING`
-	_, err := s.db.Exec(query, tsUnix, ts, devID, tag, payload)
-	if err != nil {
-		return fmt.Errorf("failed to insert into database: %w", err)
+func (s *Service) nackAll(batch []IncomingMessage) {
+	for _, m := range batch {
+		m.Msg.Nack(false, true)
 	}
-	return nil
 }
 
-func (s *Service) Start(ctx context.Context) error {
-	if err := s.connectPostgres(); err != nil {
-		return err
-	}
+// Auto prefetch adjuster
+func (s *Service) startPrefetchTuner(ctx context.Context) {
+	go func() {
+		current := s.config.PrefetchCount
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
 
-	if err := s.connectRabbitMQ(); err != nil {
-		return err
-	}
-
-	if err := s.connectKafka(); err != nil {
-		return err
-	}
-
-	if err := s.startConsuming(ctx); err != nil {
-		return err
-	}
-
-	return nil
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				avgLatency := s.avgDbLatency()
+				q, err := s.amqpChannel.QueueInspect(s.config.QueueName)
+				if err != nil {
+					continue
+				}
+				if q.Messages > 1000 && avgLatency < 5*time.Millisecond && current < s.config.MaxPrefetch {
+					current += 5
+				} else if q.Messages < 100 && avgLatency > 20*time.Millisecond && current > s.config.MinPrefetch {
+					current -= 5
+				}
+				if err := s.amqpChannel.Qos(current, 0, false); err == nil {
+					log.Printf("Adjusted prefetch=%d (queue=%d, avgDB=%v)", current, q.Messages, avgLatency)
+				}
+			}
+		}
+	}()
 }
 
-func (s *Service) Stop() {
-	log.Println("Shutting down service...")
-
-	if s.amqpChannel != nil {
-		s.amqpChannel.Close()
-		log.Println("Closed RabbitMQ channel")
+func (s *Service) avgDbLatency() time.Duration {
+	if len(s.dbLatencies) == 0 {
+		return 0
 	}
-
-	if s.amqpConn != nil {
-		s.amqpConn.Close()
-		log.Println("Closed RabbitMQ connection")
+	var sum time.Duration
+	for _, l := range s.dbLatencies {
+		sum += l
 	}
-
-	if s.db != nil {
-		s.db.Close()
-		log.Println("Closed PostgreSQL connection")
-	}
-
-	if s.kafkaWriter != nil {
-		s.kafkaWriter.Close()
-		log.Println("Closed Kafka writer")
-	}
+	return sum / time.Duration(len(s.dbLatencies))
 }
 
 func loadConfig() *Config {
@@ -393,52 +283,57 @@ func loadConfig() *Config {
 		RoutingKey:    getEnvOrDefault("ROUTING_KEY", "j.data.*.*"),
 		PostgresURL:   getEnvOrDefault("POSTGRES_URL", "postgres://user:password@localhost/dbname?sslmode=disable"),
 		KafkaBroker:   getEnvOrDefault("KAFKA_BROKER", "kafka:9092"),
-		PrefetchCount: getEnvOrDefaultInt("PREFETCH_COUNT", 1),
+		PrefetchCount: getEnvOrDefaultInt("PREFETCH_COUNT", 10),
+		BatchSize:     getEnvOrDefaultInt("BATCH_SIZE", 50),
+		BatchTimeout:  500 * time.Millisecond,
+		MinPrefetch:   5,
+		MaxPrefetch:   100,
 	}
 }
 
-func getEnvOrDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+func getEnvOrDefault(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
 	}
-	return defaultValue
+	return def
 }
 
-func getEnvOrDefaultInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		var intVal int
-		if _, err := fmt.Sscanf(value, "%d", &intVal); err == nil {
-			return intVal
+func getEnvOrDefaultInt(key string, def int) int {
+	if v := os.Getenv(key); v != "" {
+		var iv int
+		if _, err := fmt.Sscanf(v, "%d", &iv); err == nil {
+			return iv
 		}
 	}
-	return defaultValue
-}
-
-func sanitizeTopic(topic string) string {
-	return strings.ReplaceAll(topic, "/", "-")
+	return def
 }
 
 func main() {
-	log.Println("Starting RabbitMQ to Kafka and PostgreSQL service...")
-
 	config := loadConfig()
 	service := NewService(config)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := service.Start(ctx); err != nil {
-		log.Fatalf("Failed to start service: %v", err)
+	if err := service.connectPostgres(); err != nil {
+		log.Fatal(err)
 	}
+	if err := service.connectRabbitMQ(); err != nil {
+		log.Fatal(err)
+	}
+	service.kafkaWriter = kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{config.KafkaBroker},
+		Async:   true,
+	})
 
-	log.Println("Service started successfully")
+	if err := service.startConsuming(ctx); err != nil {
+		log.Fatal(err)
+	}
+	service.startPrefetchTuner(ctx)
 
-	// Wait for interrupt signal
+	log.Println("Service running...")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-
 	<-c
 	cancel()
-	service.Stop()
-	log.Println("Service stopped")
 }
