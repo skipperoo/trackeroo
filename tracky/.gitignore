@@ -1,2 +1,3 @@
 trk-*
 docker-compose.yml
+geo-services/*data
