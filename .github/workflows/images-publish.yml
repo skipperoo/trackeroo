@@ -2,7 +2,7 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [master, dev]
+    branches: [master, dev, feature/**, bugfix/**]
     paths:
       - "tsdb/**"
       - "trackeroo-backend/**"
