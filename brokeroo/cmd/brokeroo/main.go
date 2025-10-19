@@ -146,6 +146,8 @@ func (s *Service) connectMQTT() error {
 	opts.SetKeepAlive(60 * time.Second)
 	opts.SetPingTimeout(10 * time.Second)
 	opts.SetConnectTimeout(10 * time.Second)
+	opts.SetOrderMatters(false)
+	opts.SetAutoAckDisabled(true)
 
 	// Set connection lost handler
 	opts.SetConnectionLostHandler(func(client mqtt.Client, err error) {
@@ -197,6 +199,7 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	parts := strings.Split(topic, "/")
 	if len(parts) != 4 || parts[0] != "j" || parts[1] != "data" {
 		log.Printf("Invalid topic format: %s, expected j/data/DEVID/TAG", topic)
+		msg.Ack()
 		return
 	}
 
@@ -207,6 +210,7 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	var data map[string]any
 	if err := json.Unmarshal(payload, &data); err != nil {
 		log.Printf("Invalid JSON payload for topic %s: %v", topic, err)
+		msg.Ack()
 		return
 	}
 
@@ -224,45 +228,47 @@ func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	}
 	log.Printf("Time to write to DB %v", time.Since(start))
 	start = time.Now()
+
 	/* kafka */
 	kafkaTopic := sanitizeTopic(topic)
 	if err := s.ensureTopicExists(kafkaTopic); err != nil {
-		log.Printf("Errore creazione topic %s: %v", kafkaTopic, err)
+		log.Printf("Error creating topic %s: %v", kafkaTopic, err)
 		return
-	} else {
-		log.Printf("Time to create topic %v", time.Since(start))
-		start = time.Now()
-		envelope := Envelope{
-			TsUnix:      tsUnix,
-			Ts:          ts.Format(time.RFC3339), // is this right?
-			DevID:       devID,
-			Tag:         tag,
-			PayloadJSON: payload, // il payload originale come stringa JSON
-		}
-
-		envelopeBytes, err := json.Marshal(envelope)
-		if err != nil {
-			log.Printf("Failed to marshal envelope: %v", err)
-			return
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) /* 5 second timeout */
-		defer cancel()
-
-		err = s.kafkaWriter.WriteMessages(ctx, kafka.Message{
-			Topic: kafkaTopic,
-			Value: envelopeBytes,
-		})
-
-		if err != nil {
-			log.Printf("Failed to write to Kafka: %v", err)
-		} else {
-			log.Printf("Message forwarded to Kafka topic: %s", kafkaTopic)
-		}
-		log.Printf("Time to write to Kafka %v", time.Since(start))
 	}
 
+	log.Printf("Time to create topic %v", time.Since(start))
+	start = time.Now()
+	envelope := Envelope{
+		TsUnix:      tsUnix,
+		Ts:          ts.Format(time.RFC3339), // is this right?
+		DevID:       devID,
+		Tag:         tag,
+		PayloadJSON: payload, // il payload originale come stringa JSON
+	}
+
+	envelopeBytes, err := json.Marshal(envelope)
+	if err != nil {
+		log.Printf("Failed to marshal envelope: %v", err)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) /* 5 second timeout */
+	defer cancel()
+
+	err = s.kafkaWriter.WriteMessages(ctx, kafka.Message{
+		Topic: kafkaTopic,
+		Value: envelopeBytes,
+	})
+
+	if err != nil {
+		log.Printf("Failed to write to Kafka: %v", err)
+		return
+	}
+	log.Printf("Message forwarded to Kafka topic: %s", kafkaTopic)
+	log.Printf("Time to write to Kafka %v", time.Since(start))
+
 	log.Printf("Successfully inserted data for dev_id: %s, tag: %s", devID, tag)
+	msg.Ack()
 }
 
 func (s *Service) insertData(tsUnix int64, ts time.Time, devID, tag string, payload json.RawMessage) error {
