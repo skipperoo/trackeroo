@@ -382,7 +382,7 @@ func (s *Service) Stop() {
 func loadConfig() *Config {
 	return &Config{
 		RabbitMQURL:   getEnvOrDefault("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
-		QueueName:     getEnvOrDefault("QUEUE_NAME", "trackeroo_data"),
+		QueueName:     getEnvOrDefault("QUEUE_NAME", "brokeroo"),
 		PostgresURL:   getEnvOrDefault("POSTGRES_URL", "postgres://user:password@localhost/dbname?sslmode=disable"),
 		KafkaBroker:   getEnvOrDefault("KAFKA_BROKER", "kafka:9092"),
 		PrefetchCount: getEnvOrDefaultInt("PREFETCH_COUNT", 1),
