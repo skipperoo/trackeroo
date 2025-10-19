@@ -20,6 +20,8 @@ import (
 type Config struct {
 	RabbitMQURL   string
 	QueueName     string
+	ExchangeName  string
+	RoutingKey    string
 	PostgresURL   string
 	KafkaBroker   string
 	PrefetchCount int
@@ -171,6 +173,16 @@ func (s *Service) connectRabbitMQ() error {
 	)
 	if err != nil {
 		return fmt.Errorf("failed to declare queue: %w", err)
+	}
+	err = s.amqpChannel.QueueBind(
+		s.config.QueueName,    // queue name
+		s.config.RoutingKey,   // routing key (j.data.*.*)
+		s.config.ExchangeName, // exchange (amq.topic)
+		false,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("Failed to bind queue: %v", err)
 	}
 
 	// Set QoS (prefetch count) for load balancing
@@ -383,6 +395,8 @@ func loadConfig() *Config {
 	return &Config{
 		RabbitMQURL:   getEnvOrDefault("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
 		QueueName:     getEnvOrDefault("QUEUE_NAME", "brokeroo"),
+		ExchangeName:  getEnvOrDefault("EXCHANGE_NAME", "amq.topic"),
+		RoutingKey:    getEnvOrDefault("ROUTING_KEY", "j.data.*.*"),
 		PostgresURL:   getEnvOrDefault("POSTGRES_URL", "postgres://user:password@localhost/dbname?sslmode=disable"),
 		KafkaBroker:   getEnvOrDefault("KAFKA_BROKER", "kafka:9092"),
 		PrefetchCount: getEnvOrDefaultInt("PREFETCH_COUNT", 1),
