@@ -37,7 +37,7 @@ spec:
               done
               echo "RabbitMQ is up. Applying HA policy..."
               rabbitmqadmin \
-                -H rabbitmq-service.{{ rabbitmq_namespace }}.svc.cluster.local \
+                -H rabbitmq.{{ rabbitmq_namespace }}.svc.cluster.local \
                 -u "$RABBITMQ_USER" \
                 -p "$RABBITMQ_PASSWORD" \
                 declare policy \
