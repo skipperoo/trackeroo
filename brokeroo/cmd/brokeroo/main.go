@@ -238,6 +238,7 @@ func (s *Service) nackAll(batch []IncomingMessage) {
 func (s *Service) startPrefetchTuner(ctx context.Context) {
 	go func() {
 		current := s.config.PrefetchCount
+		last := s.config.PrefetchCount
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
@@ -256,8 +257,12 @@ func (s *Service) startPrefetchTuner(ctx context.Context) {
 				} else if q.Messages < 100 && avgLatency > 20*time.Millisecond && current > s.config.MinPrefetch {
 					current -= 5
 				}
+				if last == current {
+					continue
+				}
 				if err := s.amqpChannel.Qos(current, 0, false); err == nil {
 					log.Printf("Adjusted prefetch=%d (queue=%d, avgDB=%v)", current, q.Messages, avgLatency)
+					last = current
 				}
 			}
 		}
