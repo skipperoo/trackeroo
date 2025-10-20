@@ -98,7 +98,7 @@ func (s *Service) connectRabbitMQ() error {
 	args := amqp.Table{
 		"x-queue-type": "quorum",
 	}
-	q, err := s.amqpChannel.QueueDeclarePassive(
+	q, err := s.amqpChannel.QueueDeclare(
 		s.config.QueueName,
 		true,  // durable
 		false, // auto-delete
