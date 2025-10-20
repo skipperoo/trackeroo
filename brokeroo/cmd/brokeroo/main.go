@@ -207,7 +207,7 @@ func (s *Service) startConsuming(ctx context.Context) error {
 		return fmt.Errorf("failed to register consumer: %w", err)
 	}
 
-	batch := make([]IncomingMessage, 0, s.config.BatchSize)
+	batch := make([]Envelope, 0, s.config.BatchSize)
 	timer := time.NewTimer(s.config.BatchTimeout)
 
 	go func() {
