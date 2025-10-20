@@ -382,7 +382,7 @@ func loadConfig() *Config {
 		KafkaBroker:   getEnvOrDefault("KAFKA_BROKER", "kafka:9092"),
 		PrefetchCount: getEnvOrDefaultInt("PREFETCH_COUNT", 10),
 		BatchSize:     getEnvOrDefaultInt("BATCH_SIZE", 50),
-		BatchTimeout:  500 * time.Millisecond,
+		BatchTimeout:  time.Duration(getEnvOrDefaultInt("BATCH_TIMEOUT_MS", 100)) * time.Millisecond,
 		MinPrefetch:   1,
 		MaxPrefetch:   200,
 	}
