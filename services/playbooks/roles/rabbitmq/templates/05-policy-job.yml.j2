@@ -12,6 +12,11 @@ spec:
         - name: rabbitmq-policy-setter
           image: "{{ rabbitmq_image }}"
           env:
+            - name: RABBITMQ_ERLANG_COOKIE
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ rabbitmq_app_name }}-secrets"
+                  key: rabbitmq_erlang_cookie
             - name: RABBITMQ_USER
               valueFrom:
                 secretKeyRef:
@@ -26,7 +31,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              echo "Waiting for RabbitMQ service to be ready...(user=$RABBITMQ_USER, pass=$RABBITMQ_USER)"
+              echo "Waiting for RabbitMQ service to be ready..."
               while ! rabbitmqctl -q --longnames -n rabbit@rabbitmq-0.rabbitmq-headless.{{ rabbitmq_namespace }}.svc.cluster.local ping; do
                 sleep 5
               done
