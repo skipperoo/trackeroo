@@ -37,6 +37,12 @@ spec:
                   key: rabbitmq_erlang_cookie
             - name: RABBITMQ_USE_LONGNAME
               value: "true"
+            - name: RABBITMQ_NODENAME
+              value: "rabbit@$(POD_NAME).rabbitmq-headless.trackeroo.svc.cluster.local"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           volumeMounts:
             - name: config-volume
               mountPath: /etc/rabbitmq/
