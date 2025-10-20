@@ -35,6 +35,8 @@ spec:
                 secretKeyRef:
                   name: "{{ rabbitmq_app_name }}-secrets"
                   key: rabbitmq_erlang_cookie
+            - name: RABBITMQ_USE_LONGNAME
+              value: "true"
           volumeMounts:
             - name: config-volume
               mountPath: /etc/rabbitmq/
