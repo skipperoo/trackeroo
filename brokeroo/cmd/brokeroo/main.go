@@ -120,7 +120,7 @@ func (s *Service) ensureTopicExists(topic string) error {
 	}
 
 	s.knownTopics[topic] = true
-	log.Printf("Topic pronto: %s", topic)
+	log.Printf("topic ready: %s", topic)
 	return nil
 }
 
@@ -142,7 +142,7 @@ func (s *Service) connectKafka() error {
 	)
 
 	if err != nil {
-		log.Printf("Failed to write test message to Kafka: %v", err)
+		log.Printf("failed to write test message to Kafka: %v", err)
 		return err
 	}
 
@@ -322,13 +322,14 @@ func (s *Service) processBatch(batch []Envelope) {
 	for _, m := range batch {
 		kafkaTopic := sanitizeTopic(m.Msg.RoutingKey)
 		if err := s.ensureTopicExists(kafkaTopic); err != nil {
-			log.Printf("Error creating topic %s: %v", kafkaTopic, err)
+			log.Printf("error creating topic %s: %v", kafkaTopic, err)
 			s.nackAll(batch)
 			return
 		}
 		envelopeBytes, err := json.Marshal(m)
 		if err != nil {
-			log.Printf("Failed to marshal envelope: %v", err)
+			log.Printf("failed to marshal envelope: %v", err)
+			s.nackAll(batch)
 			return
 		}
 		_ = s.kafkaWriter.WriteMessages(context.Background(), kafka.Message{
@@ -391,8 +392,7 @@ func (s *Service) startPrefetchTuner(ctx context.Context) {
 				}
 
 				if err := s.amqpChannel.Qos(current, 0, false); err == nil {
-					log.Printf("Adjusted prefetch=%d (queue=%d, avgDB=%v, batchFill=%.2f%%)",
-						current, q.Messages, avgLatency, batchFillRate*100)
+					log.Printf(">>> adjusted prefetch=%d (queue=%d, avgDB=%v, batchFill=%.2f%%)", current, q.Messages, avgLatency, batchFillRate*100)
 					last = current
 				}
 			}
@@ -410,12 +410,12 @@ func (s *Service) calculateOptimalPrefetch(
 		return max(current-5, s.config.MinPrefetch)
 	}
 
-	if batchFillRate < 0.5 && avgLatency < 5*time.Millisecond &&
+	if batchFillRate < 0.5 && avgLatency < 10*time.Millisecond &&
 		queueDepth > 1000 && current < s.config.MaxPrefetch {
 		return min(current+5, s.config.MaxPrefetch)
 	}
 
-	if avgLatency > 20*time.Millisecond && current > s.config.MinPrefetch {
+	if avgLatency > 25*time.Millisecond && current > s.config.MinPrefetch {
 		return max(current-5, s.config.MinPrefetch)
 	}
 
