@@ -50,6 +50,7 @@ type Service struct {
 }
 
 type Envelope struct {
+	Msg         amqp.Delivery   `json:"-"`
 	TsUnix      int64           `json:"ts_unix"`
 	Ts          string          `json:"ts"`
 	DevID       string          `json:"dev_id"`
@@ -57,14 +58,14 @@ type Envelope struct {
 	PayloadJSON json.RawMessage `json:"payloadJson"`
 }
 
-type IncomingMessage struct {
-	Msg   amqp.Delivery
-	DevID string
-	Tag   string
-	TS    int64
-	TSStr string
-	Body  json.RawMessage
-}
+// type Envelope struct {
+// 	Msg   amqp.Delivery
+// 	DevID string
+// 	Tag   string
+// 	TS    int64
+// 	TSStr string
+// 	Body  json.RawMessage
+// }
 
 func NewService(config *Config) *Service {
 	return &Service{
@@ -246,17 +247,17 @@ func (s *Service) startConsuming(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) parseMessage(msg amqp.Delivery) (IncomingMessage, bool) {
+func (s *Service) parseMessage(msg amqp.Delivery) (Envelope, bool) {
 	topic := strings.ReplaceAll(msg.RoutingKey, ".", "/")
 	parts := strings.Split(topic, "/")
 	if len(parts) != 4 {
-		return IncomingMessage{}, false
+		return Envelope{}, false
 	}
 
 	devID, tag := parts[2], parts[3]
 	var data map[string]any
 	if err := json.Unmarshal(msg.Body, &data); err != nil {
-		return IncomingMessage{}, false
+		return Envelope{}, false
 	}
 
 	var tsUnix int64
@@ -265,18 +266,19 @@ func (s *Service) parseMessage(msg amqp.Delivery) (IncomingMessage, bool) {
 	} else {
 		tsUnix = time.Now().Unix()
 	}
+	ts := time.Unix(tsUnix, 0).UTC()
 
-	return IncomingMessage{
-		Msg:   msg,
-		DevID: devID,
-		Tag:   tag,
-		TS:    tsUnix,
-		TSStr: time.Unix(tsUnix, 0).UTC().Format(time.RFC3339),
-		Body:  msg.Body,
+	return Envelope{
+		Msg:         msg,
+		DevID:       devID,
+		TsUnix:      tsUnix,
+		Tag:         tag,
+		Ts:          ts.Format(time.RFC3339),
+		PayloadJSON: msg.Body,
 	}, true
 }
 
-func (s *Service) processBatch(batch []IncomingMessage) {
+func (s *Service) processBatch(batch []Envelope) {
 	if len(batch) >= s.config.BatchSize {
 		atomic.AddInt64(&s.saturatedBatches, 1)
 	} else {
@@ -297,7 +299,7 @@ func (s *Service) processBatch(batch []IncomingMessage) {
 	for i, m := range batch {
 		valueStrings = append(valueStrings,
 			fmt.Sprintf("($%d,$%d,$%d,$%d,$%d)", i*5+1, i*5+2, i*5+3, i*5+4, i*5+5))
-		valueArgs = append(valueArgs, m.TS, m.TSStr, m.DevID, m.Tag, m.Body)
+		valueArgs = append(valueArgs, m.TsUnix, m.Ts, m.DevID, m.Tag, m.PayloadJSON)
 	}
 
 	stmt := fmt.Sprintf(`INSERT INTO trackeroo.data (ts_unix, ts, dev_id, tag, payload)
@@ -324,9 +326,14 @@ func (s *Service) processBatch(batch []IncomingMessage) {
 			s.nackAll(batch)
 			return
 		}
+		envelopeBytes, err := json.Marshal(m)
+		if err != nil {
+			log.Printf("Failed to marshal envelope: %v", err)
+			return
+		}
 		_ = s.kafkaWriter.WriteMessages(context.Background(), kafka.Message{
 			Topic: kafkaTopic,
-			Value: m.Body,
+			Value: envelopeBytes,
 		})
 		m.Msg.Ack(false)
 	}
@@ -338,10 +345,10 @@ func (s *Service) processBatch(batch []IncomingMessage) {
 	if len(s.dbLatencies) > 100 {
 		s.dbLatencies = s.dbLatencies[1:]
 	}
-	log.Printf("✅ batch of %d inserted in %v", len(batch), latency)
+	log.Printf("batch of %d inserted in %v", len(batch), latency)
 }
 
-func (s *Service) nackAll(batch []IncomingMessage) {
+func (s *Service) nackAll(batch []Envelope) {
 	for _, m := range batch {
 		m.Msg.Nack(false, true)
 	}
