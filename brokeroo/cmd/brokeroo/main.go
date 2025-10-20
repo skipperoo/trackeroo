@@ -373,6 +373,7 @@ func (s *Service) avgDbLatency() time.Duration {
 }
 
 func loadConfig() *Config {
+	batchSize := getEnvOrDefaultInt("BATCH_SIZE", 50)
 	config := &Config{
 		RabbitMQURL:   getEnvOrDefault("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
 		QueueName:     getEnvOrDefault("QUEUE_NAME", "brokeroo"),
@@ -381,10 +382,10 @@ func loadConfig() *Config {
 		PostgresURL:   getEnvOrDefault("POSTGRES_URL", "postgres://user:password@localhost/dbname?sslmode=disable"),
 		KafkaBroker:   getEnvOrDefault("KAFKA_BROKER", "kafka:9092"),
 		PrefetchCount: getEnvOrDefaultInt("PREFETCH_COUNT", 10),
-		BatchSize:     getEnvOrDefaultInt("BATCH_SIZE", 50),
+		BatchSize:     batchSize,
 		BatchTimeout:  time.Duration(getEnvOrDefaultInt("BATCH_TIMEOUT_MS", 100)) * time.Millisecond,
-		MinPrefetch:   1,
-		MaxPrefetch:   200,
+		MinPrefetch:   batchSize * 2,
+		MaxPrefetch:   batchSize * 4,
 	}
 	log.Printf("config -> (queue_name=%s, exchange_name=%s, routing_key=%s, prefetch_count=%d, batch_size=%d)", config.QueueName, config.ExchangeName, config.RoutingKey, config.PrefetchCount, config.BatchSize)
 	return config
