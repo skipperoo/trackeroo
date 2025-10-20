@@ -85,6 +85,7 @@ func (s *Service) connectRabbitMQ() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to RabbitMQ: %w", err)
 	}
+
 	s.amqpChannel, err = s.amqpConn.Channel()
 	if err != nil {
 		return fmt.Errorf("failed to open channel: %w", err)
@@ -93,6 +94,35 @@ func (s *Service) connectRabbitMQ() error {
 	// QoS: start with configured prefetch
 	if err := s.amqpChannel.Qos(s.config.PrefetchCount, 0, false); err != nil {
 		return fmt.Errorf("failed to set QoS: %w", err)
+	}
+	args := amqp.Table{
+		"x-queue-type": "quorum",
+	}
+	q, err := s.amqpChannel.QueueDeclarePassive(
+		s.config.QueueName,
+		true,  // durable
+		false, // auto-delete
+		false, // exclusive
+		false, // no-wait
+		args,
+	)
+	if err != nil {
+		_ = s.amqpChannel.Close()
+		_ = s.amqpConn.Close()
+		time.Sleep(5 * time.Second)
+		return fmt.Errorf("Queue declare failed: %v", err)
+	}
+	err = s.amqpChannel.QueueBind(
+		q.Name,                // queue name
+		s.config.RoutingKey,   // routing key (use "" for fanout exchanges)
+		s.config.ExchangeName, // exchange name
+		false,                 // no-wait
+		nil,                   // arguments
+	)
+	if err != nil {
+		_ = s.amqpChannel.Close()
+		_ = s.amqpConn.Close()
+		return fmt.Errorf("failed to bind queue: %w", err)
 	}
 
 	return nil
@@ -239,7 +269,7 @@ func (s *Service) startPrefetchTuner(ctx context.Context) {
 	go func() {
 		current := s.config.PrefetchCount
 		last := s.config.PrefetchCount
-		ticker := time.NewTicker(5 * time.Second)
+		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 
 		for {
@@ -248,7 +278,17 @@ func (s *Service) startPrefetchTuner(ctx context.Context) {
 				return
 			case <-ticker.C:
 				avgLatency := s.avgDbLatency()
-				q, err := s.amqpChannel.QueueInspect(s.config.QueueName)
+				args := amqp.Table{
+					"x-queue-type": "quorum",
+				}
+				q, err := s.amqpChannel.QueueDeclarePassive(
+					s.config.QueueName,
+					true,  // durable
+					false, // auto-delete
+					false, // exclusive
+					false, // no-wait
+					args,
+				)
 				if err != nil {
 					continue
 				}

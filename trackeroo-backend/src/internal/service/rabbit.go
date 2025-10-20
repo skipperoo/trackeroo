@@ -63,13 +63,16 @@ func runRabbitWatcher(ctx context.Context) {
 		}
 
 		// Declare queue
+		args := amqp.Table{
+			"x-queue-type": "quorum",
+		}
 		q, err := ch.QueueDeclare(
 			"device_conn_events",
 			true,  // durable
 			false, // auto-delete
 			false, // exclusive
 			false, // no-wait
-			nil,
+			args,
 		)
 		if err != nil {
 			logger.Error("Queue declare failed: %v", err)
