@@ -27,6 +27,13 @@ spec:
           ports:
             - containerPort: 8080
               name: http
+          resources:
+            requests:
+                cpu: "100m"
+                memory: "256Mi"
+            limits:
+                cpu: "1"
+                memory: "512Mi"
           env:
             - name: POD_NAME
               valueFrom:
@@ -91,10 +98,3 @@ spec:
         - name: certs-volume
           secret:
             secretName: rabbitmq-certs
-      resources:
-        requests:
-            cpu: "100m"
-            memory: "256Mi"
-        limits:
-            cpu: "1"
-            memory: "512Mi"
