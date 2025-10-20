@@ -381,7 +381,7 @@ func loadConfig() *Config {
 		RoutingKey:    getEnvOrDefault("ROUTING_KEY", "j.data.*.*"),
 		PostgresURL:   getEnvOrDefault("POSTGRES_URL", "postgres://user:password@localhost/dbname?sslmode=disable"),
 		KafkaBroker:   getEnvOrDefault("KAFKA_BROKER", "kafka:9092"),
-		PrefetchCount: getEnvOrDefaultInt("PREFETCH_COUNT", 10),
+		PrefetchCount: batchSize * 3,
 		BatchSize:     batchSize,
 		BatchTimeout:  time.Duration(getEnvOrDefaultInt("BATCH_TIMEOUT_MS", 100)) * time.Millisecond,
 		MinPrefetch:   batchSize * 2,
