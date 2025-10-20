@@ -4,6 +4,8 @@ rabbitmq_namespace: "trackeroo"
 rabbitmq_app_name: "rabbitmq"
 rabbitmq_replicas: 3
 rabbitmq_erlang_cookie: "{{ rabbitmq_erlang_cookie_secret }}"
+rabbitmq_admin_user: "{{ rabbitmq_admin_user_secret }}"
+rabbitmq_admin_password: "{{ rabbitmq_admin_password_secret }}"
 
 # Docker image settings
 rabbitmq_image: "rabbitmq:3-management"

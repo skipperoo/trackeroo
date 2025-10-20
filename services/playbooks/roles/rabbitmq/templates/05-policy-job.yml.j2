@@ -11,6 +11,17 @@ spec:
       containers:
         - name: rabbitmq-policy-setter
           image: "{{ rabbitmq_image }}"
+          env:
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ rabbitmq_app_name }}-secrets"
+                  key: rabbitmq_admin_user
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ rabbitmq_app_name }}-secrets"
+                  key: rabbitmq_admin_password
           command:
             - /bin/sh
             - -c
@@ -22,6 +33,8 @@ spec:
               echo "RabbitMQ is up. Applying HA policy..."
               rabbitmqadmin \
                 -H rabbitmq-service.{{ rabbitmq_namespace }}.svc.cluster.local \
+                -u "$RABBITMQ_USER" \
+                -p "$RABBITMQ_PASSWORD" \
                 declare policy \
                 name={{ rabbitmq_ha_policy_name }} \
                 pattern="{{ rabbitmq_ha_policy_pattern }}" \

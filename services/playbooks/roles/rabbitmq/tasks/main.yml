@@ -14,7 +14,7 @@
     namespace: "{{ rabbitmq_namespace }}"
     definition: "{{ lookup('template', '01-configmap.yml.j2') | from_yaml }}"
 
-- name: "Create RabbitMQ Secrets (Erlang Cookie)"
+- name: "Create RabbitMQ Secrets (Erlang Cookie and admin credentials)"
   kubernetes.core.k8s:
     kubeconfig: /etc/rancher/k3s/k3s.yaml
     state: present
@@ -26,6 +26,8 @@
         name: "{{ rabbitmq_app_name }}-secrets"
       stringData:
         rabbitmq_erlang_cookie: "{{ rabbitmq_erlang_cookie }}"
+        rabbitmq_admin_user: "{{ rabbitmq_admin_user }}"
+        rabbitmq_admin_password: "{{ rabbitmq_admin_password }}"
 
 - name: "Create RabbitMQ TLS certificates Secret"
   kubernetes.core.k8s:
