@@ -30,7 +30,7 @@ spec:
               while ! rabbitmqctl -q --longnames -n rabbit@rabbitmq-0.rabbitmq-headless.{{ rabbitmq_namespace }}.svc.cluster.local ping; do
                 sleep 5
               done
-              echo "RabbitMQ is up. Applying HA policy..."
+              echo "RabbitMQ is up. Applying HA policy... (user=$RABBITMQ_USER, pass=$RABBITMQ_USER)"
               rabbitmqadmin \
                 -H rabbitmq-service.{{ rabbitmq_namespace }}.svc.cluster.local \
                 -u "$RABBITMQ_USER" \
