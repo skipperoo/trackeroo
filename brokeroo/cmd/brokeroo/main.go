@@ -330,19 +330,15 @@ func (s *Service) calculateOptimalPrefetch(
 	batchFillRate float64,
 	current int,
 ) int {
-	// If batches are saturating too quickly (>95%), reduce prefetch
-	// to allow batch timeout to trigger more often
 	if batchFillRate > 0.95 && current > s.config.MinPrefetch {
 		return max(current-5, s.config.MinPrefetch)
 	}
 
-	// If batches rarely fill (<50%) and latency is low, increase prefetch
 	if batchFillRate < 0.5 && avgLatency < 5*time.Millisecond &&
 		queueDepth > 1000 && current < s.config.MaxPrefetch {
 		return min(current+5, s.config.MaxPrefetch)
 	}
 
-	// If latency is high, reduce prefetch to avoid overwhelming DB
 	if avgLatency > 20*time.Millisecond && current > s.config.MinPrefetch {
 		return max(current-5, s.config.MinPrefetch)
 	}
