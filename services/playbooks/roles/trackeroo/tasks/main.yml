@@ -33,3 +33,4 @@
   loop:
     - "01-deployment.yml.j2"
     - "02-service.yml.j2"
+    - "03-hpa.yml.j2"

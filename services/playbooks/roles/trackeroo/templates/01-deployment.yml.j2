@@ -91,3 +91,10 @@ spec:
         - name: certs-volume
           secret:
             secretName: rabbitmq-certs
+      resources:
+      requests:
+          cpu: "100m"
+          memory: "256Mi"
+      limits:
+          cpu: "1"
+          memory: "512Mi"

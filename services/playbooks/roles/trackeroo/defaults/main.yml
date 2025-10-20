@@ -3,7 +3,7 @@
 trackeroo_namespace: "trackeroo"
 trackeroo_app_name: "trackeroo-backend"
 trackeroo_image: "ghcr.io/skiby7/trackeroo-backend:latest"
-trackeroo_replicas: 2
+trackeroo_replicas: 1
 trackeroo_users_key: "{{ trackeroo_users_key_secret }}"
 trackeroo_service_ip: "10.20.30.55"
 
