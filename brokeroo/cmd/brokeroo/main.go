@@ -411,7 +411,7 @@ func (s *Service) calculateOptimalPrefetch(
 	}
 
 	if batchFillRate < 0.5 && avgLatency < 10*time.Millisecond &&
-		queueDepth > 1000 && current < s.config.MaxPrefetch {
+		current < s.config.MaxPrefetch {
 		return min(current+5, s.config.MaxPrefetch)
 	}
 
