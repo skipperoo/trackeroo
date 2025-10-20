@@ -386,7 +386,7 @@ func loadConfig() *Config {
 		MinPrefetch:   1,
 		MaxPrefetch:   200,
 	}
-	log.Printf("(queue_name=%s, exchange_name=%s, routing_key=%s, prefetch_count=%d, batch_size=%d)", config.QueueName, config.ExchangeName, config.RoutingKey, config.PrefetchCount, config.BatchSize)
+	log.Printf("config -> (queue_name=%s, exchange_name=%s, routing_key=%s, prefetch_count=%d, batch_size=%d)", config.QueueName, config.ExchangeName, config.RoutingKey, config.PrefetchCount, config.BatchSize)
 	return config
 }
 
