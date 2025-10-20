@@ -85,6 +85,70 @@ func (s *Service) connectPostgres() error {
 	return nil
 }
 
+func (s *Service) ensureTopicExists(topic string) error {
+
+	if s.knownTopics[topic] {
+		return nil
+	}
+
+	conn, err := kafka.Dial("tcp", s.config.KafkaBroker)
+	if err != nil {
+		return fmt.Errorf("dial broker: %w", err)
+	}
+	defer conn.Close()
+
+	controller, err := conn.Controller()
+	if err != nil {
+		return fmt.Errorf("get controller: %w", err)
+	}
+
+	controllerConn, err := kafka.Dial("tcp", fmt.Sprintf("%s:%d", controller.Host, controller.Port))
+	if err != nil {
+		return fmt.Errorf("dial controller: %w", err)
+	}
+	defer controllerConn.Close()
+
+	err = controllerConn.CreateTopics(kafka.TopicConfig{
+		Topic:             topic,
+		NumPartitions:     1,
+		ReplicationFactor: 1,
+	})
+
+	if err != nil && !strings.Contains(err.Error(), "Topic with this name already exists") {
+		return fmt.Errorf("create topic %s: %w", topic, err)
+	}
+
+	s.knownTopics[topic] = true
+	log.Printf("Topic pronto: %s", topic)
+	return nil
+}
+
+func (s *Service) connectKafka() error {
+	s.kafkaWriter = kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{s.config.KafkaBroker},
+		Async:   true,
+	})
+
+	if err := s.ensureTopicExists("health-check"); err != nil {
+		log.Printf("failed to create first topic for healt-check: %v", err)
+	}
+
+	err := s.kafkaWriter.WriteMessages(context.Background(),
+		kafka.Message{
+			Topic: "health-check",
+			Value: []byte("ping"),
+		},
+	)
+
+	if err != nil {
+		log.Printf("Failed to write test message to Kafka: %v", err)
+		return err
+	}
+
+	log.Println("Successfully connected to Kafka at", s.config.KafkaBroker)
+	return nil
+}
+
 func (s *Service) connectRabbitMQ() error {
 	var err error
 	s.amqpConn, err = amqp.Dial(s.config.RabbitMQURL)
@@ -254,7 +318,12 @@ func (s *Service) processBatch(batch []IncomingMessage) {
 
 	// Kafka forward + ack
 	for _, m := range batch {
-		kafkaTopic := strings.ReplaceAll(m.Msg.RoutingKey, ".", "-")
+		kafkaTopic := sanitizeTopic(m.Msg.RoutingKey)
+		if err := s.ensureTopicExists(kafkaTopic); err != nil {
+			log.Printf("Error creating topic %s: %v", kafkaTopic, err)
+			s.nackAll(batch)
+			return
+		}
 		_ = s.kafkaWriter.WriteMessages(context.Background(), kafka.Message{
 			Topic: kafkaTopic,
 			Value: m.Body,
@@ -366,6 +435,10 @@ func (s *Service) avgDbLatency() time.Duration {
 		sum += l
 	}
 	return sum / time.Duration(len(s.dbLatencies))
+}
+
+func sanitizeTopic(topic string) string {
+	return strings.ReplaceAll(topic, ".", "-")
 }
 
 func loadConfig() *Config {
