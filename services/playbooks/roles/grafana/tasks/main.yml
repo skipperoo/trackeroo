@@ -86,7 +86,7 @@
                   - containerPort: 5432
                 volumeMounts:
                   - name: postgres-storage
-                    mountPath: /var/lib/postgresql/data/pgdata
+                    mountPath: /var/lib/postgresql/data
             volumes:
               - name: postgres-storage
                 persistentVolumeClaim:
