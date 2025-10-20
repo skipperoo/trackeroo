@@ -48,7 +48,7 @@
   cpu: 8
   ram: 6144
   os_storage: 20
-  longhorn_storage: 100
+  longhorn_storage: 150
   networks:
     - net_type: direct
       source: vlan.k3s
@@ -63,7 +63,7 @@
   cpu: 8
   ram: 6144
   os_storage: 20
-  longhorn_storage: 100
+  longhorn_storage: 150
   networks:
     - net_type: direct
       source: vlan.k3s
@@ -78,7 +78,7 @@
   cpu: 8
   ram: 6144
   os_storage: 20
-  longhorn_storage: 100
+  longhorn_storage: 150
   networks:
     - net_type: direct
       source: vlan.k3s
