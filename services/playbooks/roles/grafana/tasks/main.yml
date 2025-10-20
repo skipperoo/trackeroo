@@ -29,12 +29,14 @@
     state: present
     definition:
       apiVersion: v1
-      kind: "{{ grafana_storage_class }}"
+      kind: "PersistentVolumeClaim"
       metadata:
         name: grafana-postgres-pvc
       spec:
         accessModes:
           - ReadWriteOnce
+
+        storageClassName: "{{ grafana_storage_class }}"
         resources:
           requests:
             storage: 5Gi
