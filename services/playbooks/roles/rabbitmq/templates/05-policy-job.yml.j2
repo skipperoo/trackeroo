@@ -31,17 +31,13 @@ spec:
             - /bin/sh
             - -c
             - |
-              echo "Waiting for RabbitMQ service to be ready..."
-              while ! rabbitmqctl -q --longnames -n rabbit@rabbitmq-0.rabbitmq-headless.{{ rabbitmq_namespace }}.svc.cluster.local ping; do
-                sleep 5
-              done
-              echo "RabbitMQ is up. Applying HA policy..."
-              rabbitmqadmin \
-                -H rabbitmq.{{ rabbitmq_namespace }}.svc.cluster.local \
-                -P 15672 \
-                -u "$RABBITMQ_USER" \
-                -p "$RABBITMQ_PASSWORD" \
-                declare policy \
-                name={{ rabbitmq_ha_policy_name }} \
-                pattern="{{ rabbitmq_ha_policy_pattern }}" \
-                definition='{{ rabbitmq_ha_policy_definition }}'
+              echo "RabbitMQ is up. Applying quorum queue policy..."
+              rabbitmqctl --longnames -n rabbit@rabbitmq-0.rabbitmq-headless.{{ rabbitmq_namespace }}.svc.cluster.local \
+                set_policy {{ rabbitmq_ha_policy_name }} \
+                "{{ rabbitmq_ha_policy_pattern }}" \
+                '{{ rabbitmq_ha_policy_definition }}' \
+                --apply-to queues
+
+              echo "Policy applied successfully!"
+              rabbitmqctl --longnames -n rabbit@rabbitmq-0.rabbitmq-headless.{{ rabbitmq_namespace }}.svc.cluster.local \
+                list_policies
