@@ -33,10 +33,10 @@ spec:
             - |
               echo "RabbitMQ is up. Applying quorum queue policy..."
               rabbitmqctl --longnames -n rabbit@rabbitmq-0.rabbitmq-headless.{{ rabbitmq_namespace }}.svc.cluster.local \
+                --apply-to queues \
                 set_policy {{ rabbitmq_ha_policy_name }} \
                 "{{ rabbitmq_ha_policy_pattern }}" \
-                '{{ rabbitmq_ha_policy_definition }}' \
-                --apply-to queues
+                '{{ rabbitmq_ha_policy_definition }}'
 
               echo "Policy applied successfully!"
               rabbitmqctl --longnames -n rabbit@rabbitmq-0.rabbitmq-headless.{{ rabbitmq_namespace }}.svc.cluster.local \
