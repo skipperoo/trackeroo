@@ -46,7 +46,7 @@ spec:
                 pattern="{{ rabbitmq_ha_policy_pattern }}" \
                 definition='{{ rabbitmq_ha_policy_definition }}'
 
-              if [[ "$?" == "0" ]]; then
+              if [ $? -eq 0 ]; then
                 echo "Policy applied successfully!"
               else
                 echo "Error applying policies!"
