@@ -9,6 +9,8 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -38,9 +40,13 @@ type Service struct {
 	db          *sql.DB
 	kafkaWriter *kafka.Writer
 	knownTopics map[string]bool
+	mu          sync.RWMutex
 
 	// metrics
-	dbLatencies []time.Duration
+	dbLatencies      []time.Duration
+	saturatedBatches int64
+	timeoutBatches   int64
+	totalBatches     int64
 }
 
 type Envelope struct {
@@ -207,6 +213,12 @@ func (s *Service) parseMessage(msg amqp.Delivery) (IncomingMessage, bool) {
 }
 
 func (s *Service) processBatch(batch []IncomingMessage) {
+	if len(batch) >= s.config.BatchSize {
+		atomic.AddInt64(&s.saturatedBatches, 1)
+	} else {
+		atomic.AddInt64(&s.timeoutBatches, 1)
+	}
+	atomic.AddInt64(&s.totalBatches, 1)
 	start := time.Now()
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -251,6 +263,8 @@ func (s *Service) processBatch(batch []IncomingMessage) {
 	}
 
 	latency := time.Since(start)
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.dbLatencies = append(s.dbLatencies, latency)
 	if len(s.dbLatencies) > 100 {
 		s.dbLatencies = s.dbLatencies[1:]
@@ -278,35 +292,73 @@ func (s *Service) startPrefetchTuner(ctx context.Context) {
 				return
 			case <-ticker.C:
 				avgLatency := s.avgDbLatency()
-				args := amqp.Table{
-					"x-queue-type": "quorum",
-				}
+				batchFillRate := s.getBatchFillRate() // New metric
+
+				args := amqp.Table{"x-queue-type": "quorum"}
 				q, err := s.amqpChannel.QueueDeclarePassive(
-					s.config.QueueName,
-					true,  // durable
-					false, // auto-delete
-					false, // exclusive
-					false, // no-wait
-					args,
+					s.config.QueueName, true, false, false, false, args,
 				)
 				if err != nil {
 					continue
 				}
-				if q.Messages > 1000 && avgLatency < 5*time.Millisecond && current < s.config.MaxPrefetch {
-					current += 5
-				} else if q.Messages < 100 && avgLatency > 20*time.Millisecond && current > s.config.MinPrefetch {
-					current -= 5
-				}
+
+				// Calculate optimal prefetch
+				current = s.calculateOptimalPrefetch(
+					q.Messages,
+					avgLatency,
+					batchFillRate,
+					current,
+				)
+
 				if last == current {
 					continue
 				}
+
 				if err := s.amqpChannel.Qos(current, 0, false); err == nil {
-					log.Printf("Adjusted prefetch=%d (queue=%d, avgDB=%v)", current, q.Messages, avgLatency)
+					log.Printf("Adjusted prefetch=%d (queue=%d, avgDB=%v, batchFill=%.2f%%)",
+						current, q.Messages, avgLatency, batchFillRate*100)
 					last = current
 				}
 			}
 		}
 	}()
+}
+
+func (s *Service) calculateOptimalPrefetch(
+	queueDepth int,
+	avgLatency time.Duration,
+	batchFillRate float64,
+	current int,
+) int {
+	// If batches are saturating too quickly (>95%), reduce prefetch
+	// to allow batch timeout to trigger more often
+	if batchFillRate > 0.95 && current > s.config.MinPrefetch {
+		return max(current-5, s.config.MinPrefetch)
+	}
+
+	// If batches rarely fill (<50%) and latency is low, increase prefetch
+	if batchFillRate < 0.5 && avgLatency < 5*time.Millisecond &&
+		queueDepth > 1000 && current < s.config.MaxPrefetch {
+		return min(current+5, s.config.MaxPrefetch)
+	}
+
+	// If latency is high, reduce prefetch to avoid overwhelming DB
+	if avgLatency > 20*time.Millisecond && current > s.config.MinPrefetch {
+		return max(current-5, s.config.MinPrefetch)
+	}
+
+	return current
+}
+
+func (s *Service) getBatchFillRate() float64 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.totalBatches == 0 {
+		return 0
+	}
+	// Return ratio of batches that reached maxBatchSize vs timeout
+	return float64(s.saturatedBatches) / float64(s.totalBatches)
 }
 
 func (s *Service) avgDbLatency() time.Duration {
@@ -331,8 +383,8 @@ func loadConfig() *Config {
 		PrefetchCount: getEnvOrDefaultInt("PREFETCH_COUNT", 10),
 		BatchSize:     getEnvOrDefaultInt("BATCH_SIZE", 50),
 		BatchTimeout:  500 * time.Millisecond,
-		MinPrefetch:   5,
-		MaxPrefetch:   100,
+		MinPrefetch:   20,
+		MaxPrefetch:   200,
 	}
 }
 
