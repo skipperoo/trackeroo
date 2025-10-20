@@ -373,7 +373,7 @@ func (s *Service) avgDbLatency() time.Duration {
 }
 
 func loadConfig() *Config {
-	return &Config{
+	config := &Config{
 		RabbitMQURL:   getEnvOrDefault("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
 		QueueName:     getEnvOrDefault("QUEUE_NAME", "brokeroo"),
 		ExchangeName:  getEnvOrDefault("EXCHANGE_NAME", "amq.topic"),
@@ -383,9 +383,11 @@ func loadConfig() *Config {
 		PrefetchCount: getEnvOrDefaultInt("PREFETCH_COUNT", 10),
 		BatchSize:     getEnvOrDefaultInt("BATCH_SIZE", 50),
 		BatchTimeout:  500 * time.Millisecond,
-		MinPrefetch:   20,
+		MinPrefetch:   1,
 		MaxPrefetch:   200,
 	}
+	log.Printf("(queue_name=%s, exchange_name=%s, routing_key=%s, prefetch_count=%d, batch_size=%d)", config.QueueName, config.ExchangeName, config.RoutingKey, config.PrefetchCount, config.BatchSize)
+	return config
 }
 
 func getEnvOrDefault(key, def string) string {
