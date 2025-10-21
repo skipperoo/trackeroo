@@ -44,9 +44,9 @@ type Service struct {
 
 	// metrics
 	dbLatencies      []time.Duration
-	saturatedBatches int64
-	timeoutBatches   int64
-	totalBatches     int64
+	saturatedBatches atomic.Int64
+	timeoutBatches   atomic.Int64
+	totalBatches     atomic.Int64
 }
 
 type Envelope struct {
@@ -280,11 +280,11 @@ func (s *Service) parseMessage(msg amqp.Delivery) (Envelope, bool) {
 
 func (s *Service) processBatch(batch []Envelope) {
 	if len(batch) >= s.config.BatchSize {
-		atomic.AddInt64(&s.saturatedBatches, 1)
+		s.saturatedBatches.Add(1)
 	} else {
-		atomic.AddInt64(&s.timeoutBatches, 1)
+		s.timeoutBatches.Add(1)
 	}
-	atomic.AddInt64(&s.totalBatches, 1)
+	s.totalBatches.Add(1)
 	start := time.Now()
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -379,7 +379,6 @@ func (s *Service) startPrefetchTuner(ctx context.Context) {
 					continue
 				}
 
-				// Calculate optimal prefetch
 				current = s.calculateOptimalPrefetch(
 					q.Messages,
 					avgLatency,
@@ -426,11 +425,10 @@ func (s *Service) getBatchFillRate() float64 {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if s.totalBatches == 0 {
+	if s.totalBatches.Load() == 0 {
 		return 0
 	}
-	// Return ratio of batches that reached maxBatchSize vs timeout
-	return float64(s.saturatedBatches) / float64(s.totalBatches)
+	return float64(s.saturatedBatches.Load()) / float64(s.totalBatches.Load())
 }
 
 func (s *Service) avgDbLatency() time.Duration {
