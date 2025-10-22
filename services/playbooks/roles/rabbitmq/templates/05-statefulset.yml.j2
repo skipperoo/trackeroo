@@ -26,6 +26,10 @@ spec:
               containerPort: 5672
             - name: management
               containerPort: 15672
+            - name: epmd
+              containerPort: 4369
+            - name: dist
+              containerPort: 25672
             - name: mqtt
               containerPort: 1883
             - name: mqtts
@@ -38,6 +42,8 @@ spec:
                   key: rabbitmq_erlang_cookie
             - name: RABBITMQ_USE_LONGNAME
               value: "true"
+            - name: K8S_SERVICE_NAME
+              value: "{{ rabbitmq_app_name }}-headless"
           volumeMounts:
             - name: config-volume
               mountPath: /etc/rabbitmq/

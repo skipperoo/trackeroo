@@ -7,3 +7,6 @@ rules:
 - apiGroups: [""]
   resources: ["endpoints"]
   verbs: ["get", "list", "watch"] # These are the required permissions
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create"]
