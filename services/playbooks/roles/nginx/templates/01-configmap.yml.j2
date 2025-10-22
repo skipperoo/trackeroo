@@ -11,10 +11,6 @@ data:
         server_name _;
 
         location /dashboards/ {
-          # Strip the /dashboards prefix before proxying
-          rewrite ^/dashboards/(.*)$ /$1 break;
-
-          # Proxy to the Grafana service
           proxy_pass http://grafana.grafana.svc.cluster.local:3000;
 
           # Set headers for proxying
