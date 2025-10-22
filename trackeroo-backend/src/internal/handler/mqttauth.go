@@ -41,7 +41,7 @@ func UserAuth(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "deny")
 			return
 		}
-		fmt.Fprint(w, "allow administrator")
+		fmt.Fprint(w, "allow administrator monitoring")
 		return
 	}
 	key, err := service.GetDeviceKey(ctx, form.Username)
