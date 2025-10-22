@@ -1,0 +1,9 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: "{{ rabbitmq_app_name }}-peer-finder"
+  namespace: "{{ rabbitmq_namespace }}"
+rules:
+- apiGroups: [""]
+  resources: ["endpoints"]
+  verbs: ["get", "list", "watch"] # These are the required permissions

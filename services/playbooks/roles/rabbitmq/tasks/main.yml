@@ -7,13 +7,6 @@
     kind: Namespace
     state: present
 
-- name: "Create RabbitMQ ConfigMap"
-  kubernetes.core.k8s:
-    kubeconfig: /etc/rancher/k3s/k3s.yaml
-    state: present
-    namespace: "{{ rabbitmq_namespace }}"
-    definition: "{{ lookup('template', '01-configmap.yml.j2') | from_yaml }}"
-
 - name: "Create RabbitMQ Secrets (Erlang Cookie and admin credentials)"
   kubernetes.core.k8s:
     kubeconfig: /etc/rancher/k3s/k3s.yaml
@@ -47,38 +40,18 @@
         server_certificate.pem: "{{ server_certificate }}"
         server_key.pem: "{{ server_key }}"
 
-- name: "Create RabbitMQ Headless Service for clustering"
+- name: "Deploy RabbitMQ"
   kubernetes.core.k8s:
     kubeconfig: /etc/rancher/k3s/k3s.yaml
     state: present
-    namespace: "{{ rabbitmq_namespace }}"
-    definition: "{{ lookup('template', '03-headless-service.yml.j2') | from_yaml }}"
-
-- name: "Create RabbitMQ StatefulSet"
-  kubernetes.core.k8s:
-    kubeconfig: /etc/rancher/k3s/k3s.yaml
-    state: present
-    namespace: "{{ rabbitmq_namespace }}"
-    definition: "{{ lookup('template', '02-statefulset.yml.j2') | from_yaml }}"
-
-- name: "Create RabbitMQ client-facing Service"
-  kubernetes.core.k8s:
-    kubeconfig: /etc/rancher/k3s/k3s.yaml
-    state: present
-    namespace: "{{ rabbitmq_namespace }}"
-    definition: "{{ lookup('template', '04-service.yml.j2') | from_yaml }}"
-# - name: "Ensure previous HA Policy Job is removed"
-#   kubernetes.core.k8s:
-#     kubeconfig: /etc/rancher/k3s/k3s.yaml
-#     state: absent
-#     namespace: "{{ rabbitmq_namespace }}"
-#     kind: Job
-#     # The name must match the metadata.name in your J2 template
-#     name: "{{ rabbitmq_app_name }}-set-ha-policy"
-
-# - name: "Create Job to apply RabbitMQ HA Policy"
-#   kubernetes.core.k8s:
-#     kubeconfig: /etc/rancher/k3s/k3s.yaml
-#     state: present
-#     namespace: "{{ rabbitmq_namespace }}"
-#     definition: "{{ lookup('template', '05-policy-job.yml.j2') | from_yaml }}"
+    namespace: "{{ brokeroo_namespace }}"
+    definition: "{{ lookup('template', item) | from_yaml }}"
+  loop:
+    - "01-configmap.yml.j2"
+    - "02-sa.yml.j2"
+    - "03-role.yml.j2"
+    - "04-rolebinding.yml.j2"
+    - "05-statefulset.yml.j2"
+    - "06-headless-service.yml.j2"
+    - "07-service.yml.j2"
+    - "08-policy-job.yml.j2"
