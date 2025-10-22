@@ -18,8 +18,20 @@
         name: "{{ brokeroo_app_name }}-secrets"
       stringData:
         brokeroo_rabbitmq_connection_string: "{{ brokeroo_rabbitmq_connection_string }}"
-        brokeroo_rabbitmq_connection_string_base64: "{{ brokeroo_rabbitmq_connection_string | b64encode }}"
         brokeroo_tsdb_connection_string: "{{ brokeroo_tsdb_connection_string }}"
+
+- name: "Create Secrets for KEDA (RabbitMQ connection strings)"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    namespace: "{{ brokeroo_namespace }}"
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ brokeroo_app_name }}-keda-secrets"
+      data:
+        brokeroo_rabbitmq_connection_string: "{{ brokeroo_rabbitmq_connection_string }}"
 
 - name: "Deploy Brokeroo Deployment and Service"
   kubernetes.core.k8s:
