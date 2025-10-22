@@ -13,7 +13,6 @@ data:
     cluster_formation.peer_discovery_backend = k8s
     cluster_formation.k8s.host = kubernetes.default.svc.cluster.local
     cluster_formation.k8s.hostname_suffix = .rabbitmq-headless.trackeroo.svc.cluster.local
-    cluster_formation.k8s.namespace = trackeroo
     cluster_formation.k8s.address_type = hostname
     cluster_formation.k8s.service_name = {{ rabbitmq_app_name }}-headless
     cluster_formation.node_cleanup.interval = 60
