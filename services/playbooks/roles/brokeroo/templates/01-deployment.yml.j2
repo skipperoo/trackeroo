@@ -27,8 +27,6 @@ spec:
           env:
             - name: RABBITMQ_URL
               value: "amqp://apps:apps@rabbitmq:5672/"
-            - name: PREFETCH_COUNT
-              value: "10"
             - name: POSTGRES_URL
               value: "postgres://apps:apps@tsdb-rw.data.svc.cluster.local:5432/tracker_db?sslmode=disable"
             - name: ROUTING_KEY
