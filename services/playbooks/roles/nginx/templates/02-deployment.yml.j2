@@ -16,8 +16,6 @@ spec:
       labels:
         app: {{ nginx_app_name }}
     spec:
-      securityContext:
-        fsGroup: 472
       nodeSelector:
         workload-type: apps
       containers:
@@ -25,61 +23,12 @@ spec:
           image: {{ nginx_image }}
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: {{ nginx_port }}
-          env:
-            - name: GF_SECURITY_ADMIN_USER
-              value: "{{ nginx_admin_user }}"
-            - name: GF_SECURITY_ADMIN_PASSWORD
-              value: "{{ nginx_admin_password }}"
-            - name: GF_DATABASE_TYPE
-              value: "{{ nginx_db_type }}"
-            - name: GF_DATABASE_HOST
-              value: "{{ nginx_db_host }}"
-            - name: GF_DATABASE_NAME
-              value: "{{ nginx_db_name }}"
-            - name: GF_DATABASE_USER
-              value: "{{ nginx_db_user }}"
-            - name: GF_DATABASE_PASSWORD
-              value: "{{ nginx_db_password }}"
-          volumeMounts:
-            - name: nginx-storage
-              mountPath: /var/lib/nginx
-      volumes:
-        - name: nginx-storage
-          persistentVolumeClaim:
-            claimName: nginx-pvc
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ nginx_app_name }}
-  labels:
-    app: {{ nginx_app_name }}
-spec:
-  nodeSelector:
-    workload-type: apps
-  replicas: 1
-  selector:
-    matchLabels:
-      app: {{ nginx_app_name }}
-  template:
-    metadata:
-      labels:
-        app: {{ nginx_app_name }}
-    spec:
-      nodeSelector:
-        workload-type: apps
-      containers:
-        - name: nginx-proxy
-          image: nginx:1.25 # Using a recent stable nginx image
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 80 # Nginx listens on port 80 by default
+            - containerPort: {{ nginx_port }} # Nginx listens on port 80 by default
           volumeMounts:
             - name: nginx-config-volume
               mountPath: /etc/nginx/nginx.conf
-              subPath: nginx.conf # Mount only the nginx.conf file
+              subPath: nginx.conf
       volumes:
         - name: nginx-config-volume
           configMap:
-            name: nginx-conf # This must match the metadata.name of your ConfigMap
+            name: nginx-conf
