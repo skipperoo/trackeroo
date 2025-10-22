@@ -1,7 +1,5 @@
 brokeroo_namespace: trackeroo
 brokeroo_app_name: brokeroo
-brokeroo_rabbitmq_connection_string: "{{ brokeroo_rabbitmq_connection_string_secret }}"
-brokeroo_tsdb_connection_string: "{{ brokeroo_tsdb_connection_string_secret }}"
 brokeroo_kafka_broker: kafka.data.svc.cluster.local:9092
 brokeroo_image: ghcr.io/skiby7/brokeroo:latest
 brokeroo_amqp_queue_name: brokeroo
