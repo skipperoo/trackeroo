@@ -22,9 +22,10 @@ CREATE TABLE IF NOT EXISTS trackeroo.aggregated (
     PRIMARY KEY (ts, route_hash, dev_id)
 );
 
-SELECT create_hypertable('trackeroo.data', 'ts', 'dev_id', 16);
-SELECT create_hypertable('trackeroo.aggregated', 'ts', 'dev_id', 16);
-
+SELECT create_hypertable('trackeroo.data', 'ts', 'dev_id', 4);
+SELECT create_hypertable('trackeroo.aggregated', 'ts', 'dev_id', 4);
+SELECT set_chunk_time_interval('trackeroo.data', INTERVAL '12 hours');
+SELECT set_chunk_time_interval('trackeroo.aggregated', INTERVAL '12 hours');
 CREATE INDEX IF NOT EXISTS idx_trackeroo_data_dev_id ON trackeroo.data(dev_id);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_data_tag ON trackeroo.data(tag);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_data_ts ON trackeroo.data(ts);
