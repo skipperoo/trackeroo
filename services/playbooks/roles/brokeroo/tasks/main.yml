@@ -31,7 +31,7 @@
       metadata:
         name: "{{ brokeroo_app_name }}-keda-secrets"
       data:
-        brokeroo_rabbitmq_connection_string: "{{ brokeroo_rabbitmq_connection_string }}"
+        brokeroo_rabbitmq_connection_string: "{{ brokeroo_rabbitmq_connection_string | b64encode }}"
 
 - name: "Deploy Brokeroo Deployment and Service"
   kubernetes.core.k8s:
