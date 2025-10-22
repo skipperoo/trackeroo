@@ -36,7 +36,7 @@ spec:
   triggers:
     - type: rabbitmq
       metadata:
-        protocol: auto
+        protocol: amqp
         mode: QueueLength
         value: "500"
         queueName: "{{ brokeroo_amqp_queue_name }}"

@@ -35,6 +35,8 @@ spec:
                 secretKeyRef:
                   name: "{{ brokeroo_app_name }}-secrets"
                   key: brokeroo_tsdb_connection_string
+            - name: QUEUE_NAME
+              value: "{{ brokeroo_amqp_queue_name }}"
             - name: ROUTING_KEY
               value: "j.data.*.*"
             - name: KAFKA_BROKER
