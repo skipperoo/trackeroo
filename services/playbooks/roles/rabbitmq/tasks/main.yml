@@ -54,4 +54,3 @@
     - "05-statefulset.yml.j2"
     - "06-headless-service.yml.j2"
     - "07-service.yml.j2"
-    - "08-policy-job.yml.j2"
