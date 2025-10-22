@@ -26,21 +26,27 @@ spec:
             - containerPort: {{ brokeroo_port }}
           env:
             - name: RABBITMQ_URL
-              value: "amqp://apps:apps@rabbitmq:5672/"
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ brokeroo_app_name }}-secrets"
+                  key: brokeroo_rabbitmq_connection_string
             - name: POSTGRES_URL
-              value: "postgres://apps:apps@tsdb-rw.data.svc.cluster.local:5432/tracker_db?sslmode=disable"
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ brokeroo_app_name }}-secrets"
+                  key: brokeroo_tsdb_connection_string
             - name: ROUTING_KEY
               value: "j.data.*.*"
             - name: KAFKA_BROKER
-              value: "kafka.data.svc.cluster.local:9092"
+              value: "{{ brokeroo_kafka_broker }}"
             - name: BATCH_SIZE
               value: "50"
             - name: BATCH_TIMEOUT_MS
               value: "100"
           resources:
             requests:
-              cpu: "250m"
-              memory: "256Mi"
+              cpu: 500m
+              memory: 512Mi
             limits:
-              cpu: "1"
-              memory: "512Mi"
+              cpu: 2000m
+              memory: 2Gi
