@@ -86,6 +86,8 @@
   tags:
     - brokeroo
     - trackeroo
+  vars_files:
+    - secrets.yml
   roles:
     - brokeroo
 

@@ -17,8 +17,8 @@
       metadata:
         name: "{{ brokeroo_app_name }}-secrets"
       stringData:
-        brokeroo_rabbitmq_connection_string: "{{ brokeroo_rabbitmq_connection_string_secret }}"
-        brokeroo_tsdb_connection_string: "{{ brokeroo_tsdb_connection_string_secret }}"
+        brokeroo_rabbitmq_connection_string: "{{ brokeroo_rabbitmq_connection_string }}"
+        brokeroo_tsdb_connection_string: "{{ brokeroo_tsdb_connection_string }}"
 
 - name: "Deploy Brokeroo Deployment and Service"
   kubernetes.core.k8s:
