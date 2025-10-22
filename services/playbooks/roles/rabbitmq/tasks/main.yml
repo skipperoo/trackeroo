@@ -44,7 +44,7 @@
   kubernetes.core.k8s:
     kubeconfig: /etc/rancher/k3s/k3s.yaml
     state: present
-    namespace: "{{ brokeroo_namespace }}"
+    namespace: "{{ rabbitmq_namespace }}"
     definition: "{{ lookup('template', item) | from_yaml }}"
   loop:
     - "01-configmap.yml.j2"
