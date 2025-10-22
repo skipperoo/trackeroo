@@ -346,7 +346,7 @@ func (s *Service) processBatch(batch []Envelope) {
 	if len(s.dbLatencies) > 100 {
 		s.dbLatencies = s.dbLatencies[1:]
 	}
-	log.Printf("batch of %d inserted in %v", len(batch), latency)
+	// log.Printf("batch of %d inserted in %v", len(batch), latency)
 }
 
 func (s *Service) nackAll(batch []Envelope) {
@@ -380,7 +380,6 @@ func (s *Service) startPrefetchTuner(ctx context.Context) {
 				}
 
 				current = s.calculateOptimalPrefetch(
-					q.Messages,
 					avgLatency,
 					batchFillRate,
 					current,
@@ -391,7 +390,7 @@ func (s *Service) startPrefetchTuner(ctx context.Context) {
 				}
 
 				if err := s.amqpChannel.Qos(current, 0, false); err == nil {
-					log.Printf(">>> adjusted prefetch=%d (queue=%d, avgDB=%v, batchFill=%.2f%%)", current, q.Messages, avgLatency, batchFillRate*100)
+					log.Printf(">>> adjusted prefetch=%d (queue=%d, db_latency=%v, batch_fill=%.2f%%)", current, q.Messages, avgLatency, batchFillRate*100)
 					last = current
 				}
 			}
@@ -400,11 +399,11 @@ func (s *Service) startPrefetchTuner(ctx context.Context) {
 }
 
 func (s *Service) calculateOptimalPrefetch(
-	queueDepth int,
 	avgLatency time.Duration,
 	batchFillRate float64,
 	current int,
 ) int {
+
 	if batchFillRate > 0.95 && current > s.config.MinPrefetch {
 		return max(current-5, s.config.MinPrefetch)
 	}
