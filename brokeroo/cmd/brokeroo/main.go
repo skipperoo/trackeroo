@@ -379,6 +379,7 @@ func (s *Service) startPrefetchTuner(ctx context.Context) {
 				)
 				if time.Since(lastLog) > 30*time.Second {
 					log.Printf("prefetch=%d, db_latency=%v, batch_fill=%.2f%%", current, avgLatency, batchFillRate*100)
+					lastLog = time.Now()
 				}
 
 				if last == current {
