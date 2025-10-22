@@ -35,6 +35,22 @@ spec:
             - name: mqtts
               containerPort: 8883
           env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: RABBITMQ_USE_LONGNAME
+              value: "true"
+            - name: RABBITMQ_NODENAME
+              value: "rabbit@$(POD_NAME).rabbitmq-headless.$(POD_NAMESPACE).svc.cluster.local"
+            - name: K8S_SERVICE_NAME
+              value: "rabbitmq-headless"
+            - name: K8S_HOSTNAME_SUFFIX
+              value: ".rabbitmq-headless.$(POD_NAMESPACE).svc.cluster.local"
             - name: RABBITMQ_ERLANG_COOKIE
               valueFrom:
                 secretKeyRef:
