@@ -5,6 +5,6 @@ metadata:
   namespace: "{{ brokeroo_namespace }}"
 spec:
   secretTargetRef:
-    - parameter: connectionString
+    - parameter: host
       name: "{{ brokeroo_app_name }}-secrets"
       key: brokeroo_rabbitmq_connection_string_base64
