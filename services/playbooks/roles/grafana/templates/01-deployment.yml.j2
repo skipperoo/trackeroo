@@ -41,10 +41,6 @@ spec:
               value: "{{ grafana_db_user }}"
             - name: GF_DATABASE_PASSWORD
               value: "{{ grafana_db_password }}"
-            - name: GF_AUTH_TOTP_ENABLED
-              value: "true"
-            - name: GF_AUTH_TOTP_ISSUER
-              value: "Grafana"
           volumeMounts:
             - name: grafana-storage
               mountPath: /var/lib/grafana
