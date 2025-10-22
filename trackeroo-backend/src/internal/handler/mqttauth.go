@@ -106,7 +106,7 @@ func TopicAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logger.Debug("Authenticating device %s for topic %s vhost %s resource %s permission %s", form.Username, form.Topic, form.Vhost, form.Resource, form.Permission)
-	parts := strings.Split(form.Topic, "/")
+	parts := strings.Split(form.Topic, ".")
 	if len(parts) != 4 {
 		logger.Debug("Device %s not authenticated for topic %s", form.Username, form.Topic)
 		fmt.Fprint(w, "deny")
