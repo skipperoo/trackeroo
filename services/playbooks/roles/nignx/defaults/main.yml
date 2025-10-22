@@ -1,0 +1,6 @@
+---
+nginx_namespace: nginx
+nginx_app_name: nginx
+nginx_image: nginx:1.29
+nginx_port: 80
+nginx_service_ip: 10.20.30.55

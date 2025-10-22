@@ -79,6 +79,12 @@
   roles:
     - grafana
 
+- name: Deploy Nginx
+  hosts: servers
+  tags: nginx
+  roles:
+    - nginx
+
 - name: Deploy Kafka and Zookeeper
   hosts: servers
   tags:
