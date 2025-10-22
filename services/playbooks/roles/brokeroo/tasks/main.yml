@@ -29,7 +29,8 @@
   loop:
     - "01-deployment.yml.j2"
     - "02-service.yml.j2"
-    # - "03-hpa.yml.j2"
     - "03-triggerauthentication.yml.j2"
     - "04-scaledobject.yml.j2"
     - "05-poddistruptionbudget.yml.j2"
+
+    # - "03-hpa.yml.j2"

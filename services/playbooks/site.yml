@@ -56,10 +56,11 @@
   roles:
     - redis
 
-- name: Deploy trackeroo
+- name: Deploy trackeroo-backend
   hosts: servers
   tags:
     - trackeroo
+    - trackeroo-backend
   vars_files:
     - secrets.yml
   roles:
