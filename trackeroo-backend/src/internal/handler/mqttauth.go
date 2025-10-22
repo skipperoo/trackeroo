@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"trackeroo-backend/internal/logger"
 	"trackeroo-backend/internal/model"
@@ -65,6 +66,7 @@ func UserAuth(w http.ResponseWriter, r *http.Request) {
 
 func TopicAuth(w http.ResponseWriter, r *http.Request) {
 	/* Every response should be 200 */
+	allowedTopics := []string{"data", "up", "dn"}
 	ctx := r.Context()
 	w.WriteHeader(http.StatusOK)
 	if err := r.ParseForm(); err != nil {
@@ -104,7 +106,22 @@ func TopicAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logger.Debug("Authenticating device %s for topic %s vhost %s resource %s permission %s", form.Username, form.Topic, form.Vhost, form.Resource, form.Permission)
-	if strings.Contains(form.Topic, form.Username) {
+	parts := strings.Split(form.Topic, "/")
+	if len(parts) != 4 {
+		logger.Debug("Device %s not authenticated for topic %s", form.Username, form.Topic)
+		fmt.Fprint(w, "deny")
+		return
+	}
+
+	topic := parts[1]
+	if !slices.Contains(allowedTopics, topic) {
+		logger.Debug("Device %s not authenticated for topic %s", form.Username, form.Topic)
+		fmt.Fprint(w, "deny")
+		return
+	}
+
+	devID := parts[2]
+	if devID == form.Username {
 		logger.Debug("Device %s authenticated for topic %s", form.Username, form.Topic)
 		fmt.Fprint(w, "allow")
 		return
