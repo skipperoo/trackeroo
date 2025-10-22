@@ -23,7 +23,7 @@ spec:
       containers:
         - name: {{ grafana_app_name }}
           image: {{ grafana_image }}
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: {{ grafana_port }}
           env:
