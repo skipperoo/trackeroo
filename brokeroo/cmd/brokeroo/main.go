@@ -360,7 +360,8 @@ func (s *Service) startPrefetchTuner(ctx context.Context) {
 	go func() {
 		current := s.config.PrefetchCount
 		last := s.config.PrefetchCount
-		ticker := time.NewTicker(30 * time.Second)
+		ticker := time.NewTicker(10 * time.Second)
+		lastLog := time.Now()
 		defer ticker.Stop()
 
 		for {
@@ -371,26 +372,21 @@ func (s *Service) startPrefetchTuner(ctx context.Context) {
 				avgLatency := s.avgDbLatency()
 				batchFillRate := s.getBatchFillRate() // New metric
 
-				args := amqp.Table{"x-queue-type": "quorum"}
-				q, err := s.amqpChannel.QueueDeclarePassive(
-					s.config.QueueName, true, false, false, false, args,
-				)
-				if err != nil {
-					continue
-				}
-
 				current = s.calculateOptimalPrefetch(
 					avgLatency,
 					batchFillRate,
 					current,
 				)
+				if time.Since(lastLog) > 30*time.Second {
+					log.Printf("prefetch=%d, db_latency=%v, batch_fill=%.2f%%", current, avgLatency, batchFillRate*100)
+				}
 
 				if last == current {
 					continue
 				}
 
 				if err := s.amqpChannel.Qos(current, 0, false); err == nil {
-					log.Printf(">>> adjusted prefetch=%d (queue=%d, db_latency=%v, batch_fill=%.2f%%)", current, q.Messages, avgLatency, batchFillRate*100)
+					log.Printf(">>> adjusted prefetch=%d (db_latency=%v, batch_fill=%.2f%%)", current, avgLatency, batchFillRate*100)
 					last = current
 				}
 			}
