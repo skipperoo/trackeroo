@@ -18,6 +18,7 @@
         name: "{{ brokeroo_app_name }}-secrets"
       stringData:
         brokeroo_rabbitmq_connection_string: "{{ brokeroo_rabbitmq_connection_string }}"
+        brokeroo_rabbitmq_connection_string_base64: "{{ brokeroo_rabbitmq_connection_string | b64encode }}"
         brokeroo_tsdb_connection_string: "{{ brokeroo_tsdb_connection_string }}"
 
 - name: "Deploy Brokeroo Deployment and Service"
