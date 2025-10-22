@@ -15,7 +15,7 @@ spec:
       labels:
         app: "{{ rabbitmq_app_name }}"
     spec:
-      serviceAccountName: "{{ rabbitmq_app_name }}-sa"
+      serviceAccountName: "{{ rabbitmq_app_name }}"
       nodeSelector:
         workload-type: apps
       containers:
