@@ -41,6 +41,12 @@ spec:
               value: "{{ grafana_db_user }}"
             - name: GF_DATABASE_PASSWORD
               value: "{{ grafana_db_password }}"
+            - name: GF_SERVER_DOMAIN
+              value: "trackeroo.rblabs.net"
+            - name: GF_SERVER_ROOT_UR
+              value: "%(protocol)s://%(domain)s/dashboards/"
+            - name: GF_SERVER_SERVE_FROM_SUB_PATH
+              value: "true"
           volumeMounts:
             - name: grafana-storage
               mountPath: /var/lib/grafana
