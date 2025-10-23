@@ -128,18 +128,10 @@ func (t *TdmClient) handleDnMsg(client pahoMqtt.Client, msg pahoMqtt.Message) {
 func (t *TdmClient) run() {
 	t.initClient()
 	t.running = true
-	// fmt.Printf("%+v", z)
 	for t.running {
 		for !t.client.IsConnected() {
-			// t.initClient()
-			Info("Trying to reconnect...")
-			err := t.connect()
-			if err != nil {
-				Error("Cannot connect, %v", err)
-				Millisleep(2000)
-			} else {
-				Info("Connected: %t", t.client.IsConnected())
-			}
+			Info("Not connected...")
+			Millisleep(2000)
 		}
 		t.Kick()
 		Millisleep(1000)
@@ -174,12 +166,12 @@ func (t *TdmClient) initClient() {
 	opts.SetKeepAlive(time.Duration(t.heartbeat) * time.Second)
 	opts.SetPingTimeout(time.Duration(t.heartbeat) * time.Second)
 	opts.SetAutoReconnect(true)
+	opts.SetMaxReconnectInterval(5 * time.Second)
+	opts.SetReconnectingHandler(func(c pahoMqtt.Client, op *pahoMqtt.ClientOptions) {
+		Info("Trying to reconnect...")
+	})
 	opts.SetConnectionLostHandler(func(c pahoMqtt.Client, err error) {
 		Error("MQTT Connection lost:", err)
-		for !c.IsConnected() {
-			Info("Trying to reconnect...")
-
-		}
 	})
 	opts.SetOnConnectHandler(func(c pahoMqtt.Client) {
 		Info("Connected!")
