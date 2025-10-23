@@ -16,7 +16,7 @@
   loop:
     - "01-configmap.yml.j2"
     - "02-sa.yml.j2"
-    - "03-clusterrole.yml.j2"
-    - "04-clusterrolebinding.yml.j2"
+    - "03-role.yml.j2"
+    - "04-rolebinding.yml.j2"
     - "05-deployment.yml.j2"
     - "06-service.yml.j2"
