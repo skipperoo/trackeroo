@@ -143,8 +143,7 @@ func (t *TdmClient) run() {
 
 func (t *TdmClient) connect() error {
 	token := t.client.Connect()
-	for !token.WaitTimeout(3 * time.Second) {
-	}
+	token.WaitTimeout(3 * time.Second)
 	return token.Error()
 }
 
