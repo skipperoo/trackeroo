@@ -131,11 +131,14 @@ func (t *TdmClient) run() {
 	// fmt.Printf("%+v", z)
 	for t.running {
 		for !t.client.IsConnected() {
-			t.initClient()
+			// t.initClient()
+			Info("Trying to reconnect...")
 			err := t.connect()
 			if err != nil {
 				Error("Cannot connect, %v", err)
 				Millisleep(2000)
+			} else {
+				Info("Connected: %t", t.client.IsConnected())
 			}
 		}
 		t.Kick()
@@ -173,6 +176,10 @@ func (t *TdmClient) initClient() {
 	opts.SetAutoReconnect(true)
 	opts.SetConnectionLostHandler(func(c pahoMqtt.Client, err error) {
 		Error("MQTT Connection lost:", err)
+		for !c.IsConnected() {
+			Info("Trying to reconnect...")
+
+		}
 	})
 	opts.SetOnConnectHandler(func(c pahoMqtt.Client) {
 		Info("Connected!")
