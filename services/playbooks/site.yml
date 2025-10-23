@@ -6,6 +6,38 @@
   roles:
     - tsdb
 
+- name: Deploy mongo
+  hosts: kubernetes
+  tags:
+    - mongo
+    - data
+  roles:
+    - mongo
+
+- name: Deploy redis
+  hosts: kubernetes
+  tags:
+    - redis
+    - data
+  roles:
+    - redis
+
+- name: Deploy Kafka and Zookeeper
+  hosts: kubernetes
+  tags:
+    - kafka
+    - data
+  roles:
+    - kafka
+
+- name: Deploy Flink
+  hosts: kubernetes
+  tags:
+    - flink
+    - data
+  roles:
+    - flink
+
 - name: Deploy pgAdmin
   hosts: kubernetes
   tags:
@@ -40,22 +72,6 @@
   roles:
     - rabbitmq
 
-- name: Deploy mongo
-  hosts: kubernetes
-  tags:
-    - mongo
-    - data
-  roles:
-    - mongo
-
-- name: Deploy redis
-  hosts: kubernetes
-  tags:
-    - redis
-    - data
-  roles:
-    - redis
-
 - name: Deploy trackeroo-backend
   hosts: kubernetes
   tags:
@@ -65,22 +81,6 @@
     - secrets.yml
   roles:
     - trackeroo
-
-- name: Deploy Kafka and Zookeeper
-  hosts: kubernetes
-  tags:
-    - kafka
-    - data
-  roles:
-    - kafka
-
-- name: Deploy Flink
-  hosts: kubernetes
-  tags:
-    - flink
-    - data
-  roles:
-    - flink
 
 - name: Deploy Brokeroo
   hosts: kubernetes
@@ -100,6 +100,8 @@
 
 - name: Deploy Nginx
   hosts: kubernetes
-  tags: nginx
+  tags:
+    - grafana
+    - nginx
   roles:
     - nginx
