@@ -126,7 +126,3 @@
   loop:
     - "01-deployment.yml.j2"
     - "02-service.yml.j2"
-    - "04-sa.yml.j2"
-    - "05-role.yml.j2"
-    - "06-rolebinding.yml.j2"
-    - "07-secrettoken.yml.j2"

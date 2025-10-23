@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ prometheus_app_name }}
+  labels:
+    app: {{ prometheus_app_name }}
+spec:
+  replicas: {{ prometheus_replicas }}
+  selector:
+    matchLabels:
+      app: {{ prometheus_app_name }}
+  template:
+    metadata:
+      labels:
+        app: {{ prometheus_app_name }}
+    spec:
+      serviceAccountName: {{ prometheus_app_name }}
+      containers:
+        - name: prometheus
+          image: {{ prometheus_image }}
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+          ports:
+            - containerPort: {{ prometheus_port }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus/
+            - name: data
+              mountPath: /prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: "{{ prometheus_app_name }}-config"
+        - name: data
+          emptyDir: {}

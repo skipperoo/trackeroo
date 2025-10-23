@@ -105,3 +105,11 @@
     - nginx
   roles:
     - nginx
+
+- name: Deploy Prometheus
+  hosts: kubernetes
+  tags:
+    - grafana
+    - prometheus
+  roles:
+    - prometheus

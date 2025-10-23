@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ prometheus_app_name }}
+  labels:
+    app: {{ prometheus_app_name }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ prometheus_port }}
+      targetPort: {{ prometheus_port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ prometheus_app_name }}
