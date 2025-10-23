@@ -128,6 +128,9 @@ func (t *TdmClient) handleDnMsg(client pahoMqtt.Client, msg pahoMqtt.Message) {
 func (t *TdmClient) run() {
 	t.initClient()
 	t.running = true
+	for t.connect() != nil {
+		Info("Trying to connect to the tdm...")
+	}
 	for t.running {
 		for !t.client.IsConnected() {
 			Info("Not connected...")
