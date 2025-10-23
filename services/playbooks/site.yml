@@ -1,5 +1,5 @@
 - name: Deploy tsdb
-  hosts: servers
+  hosts: kubernetes
   tags:
     - tsdb
     - data
@@ -7,7 +7,7 @@
     - tsdb
 
 - name: Deploy pgAdmin
-  hosts: servers
+  hosts: kubernetes
   tags:
     - pgadmin
     - management
@@ -15,7 +15,7 @@
     - pgadmin
 
 - name: Deploy Mongo Express
-  hosts: servers
+  hosts: kubernetes
   tags:
     - mongo-express
     - management
@@ -23,7 +23,7 @@
     - mongo-express
 
 - name: Deploy keda
-  hosts: servers
+  hosts: kubernetes
   tags:
     - trackeroo
     - keda
@@ -31,7 +31,7 @@
     - keda
 
 - name: Deploy rabbitmq
-  hosts: servers
+  hosts: kubernetes
   tags:
     - rabbitmq
     - trackeroo
@@ -41,7 +41,7 @@
     - rabbitmq
 
 - name: Deploy mongo
-  hosts: servers
+  hosts: kubernetes
   tags:
     - mongo
     - data
@@ -49,7 +49,7 @@
     - mongo
 
 - name: Deploy redis
-  hosts: servers
+  hosts: kubernetes
   tags:
     - redis
     - data
@@ -57,7 +57,7 @@
     - redis
 
 - name: Deploy trackeroo-backend
-  hosts: servers
+  hosts: kubernetes
   tags:
     - trackeroo
     - trackeroo-backend
@@ -67,7 +67,7 @@
     - trackeroo
 
 - name: Deploy Kafka and Zookeeper
-  hosts: servers
+  hosts: kubernetes
   tags:
     - kafka
     - data
@@ -75,7 +75,7 @@
     - kafka
 
 - name: Deploy Flink
-  hosts: servers
+  hosts: kubernetes
   tags:
     - flink
     - data
@@ -83,7 +83,7 @@
     - flink
 
 - name: Deploy Brokeroo
-  hosts: servers
+  hosts: kubernetes
   tags:
     - brokeroo
     - trackeroo
@@ -93,13 +93,13 @@
     - brokeroo
 
 - name: Deploy Grafana
-  hosts: servers
+  hosts: kubernetes
   tags: grafana
   roles:
     - grafana
 
 - name: Deploy Nginx
-  hosts: servers
+  hosts: kubernetes
   tags: nginx
   roles:
     - nginx
