@@ -54,3 +54,16 @@
     - "05-statefulset.yml.j2"
     - "06-headless-service.yml.j2"
     - "07-service.yml.j2"
+
+- name: "Wait for RabbitMQ cluster formation"
+  kubernetes.core.k8s_wait:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    namespace: "{{ rabbitmq_namespace }}"
+    api_version: apps/v1
+    kind: StatefulSet
+    name: "{{ rabbitmq_app_name }}"
+    wait_condition:
+      field: status.readyReplicas
+      value: "{{ rabbitmq_replicas }}"
+    wait_timeout: 600 # Wait for up to 10 minutes (600 seconds)
+    wait_sleep: 10
