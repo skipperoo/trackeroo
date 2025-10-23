@@ -14,7 +14,7 @@ const (
 	FOOD              = "food"
 	PRIVATE_TRANSPORT = "private_transport"
 	PUBLIC_TRANSPORT  = "public_transport"
-	OTHER             = "other"
+	// OTHER             = "other"
 )
 
 var adjectives = []string{
@@ -81,7 +81,7 @@ func generateRandomName() string {
 	return fmt.Sprintf("%s_%s", adjective, name)
 }
 
-var deviceTypes = []string{VALUABLES, FOOD, PRIVATE_TRANSPORT, PUBLIC_TRANSPORT, OTHER}
+var deviceTypes = []string{VALUABLES, FOOD, PRIVATE_TRANSPORT, PUBLIC_TRANSPORT}
 
 func GenPrivateKey() (string, error) {
 	privateKey := make([]byte, 32)
