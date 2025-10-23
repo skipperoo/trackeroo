@@ -1,0 +1,43 @@
+services:
+  overpass:
+    image: wiktorn/overpass-api
+    container_name: overpass-italy
+    ports:
+      - "12345:80"
+    environment:
+      - OVERPASS_META=yes
+      - OVERPASS_MODE=init
+      - OVERPASS_PLANET_URL=http://download.geofabrik.de/europe/italy/centro-latest.osm.bz2-disabled
+        - OVERPASS_RATE_LIMIT=0
+      - OVERPASS_RATE_SPACE=1073741824
+      - OVERPASS_ALLOW_DUPLICATE_QUERIES=yes
+    volumes:
+      - ./overpass-data:/db
+  nominatim:
+    image: mediagis/nominatim:4.4
+    container_name: nominatim
+    ports:
+      - "8082:8080"
+    environment:
+      - PBF_URL=https://download.geofabrik.de/europe/italy/centro-latest.osm.pbf
+      - REPLICATION_URL=https://download.geofabrik.de/europe/italy/centro-updates
+      - NOMINATIM_PASSWORD=password
+    volumes:
+      - ./nominatim-data:/var/lib/postgresql/14/main
+
+  osrm:
+    image: osrm/osrm-backend
+    container_name: osrm
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./osrm-data:/data
+    command: >
+      sh -c "
+        if [ ! -f /data/centro-latest.osrm ]; then
+          osrm-extract -p /opt/car.lua /data/centro-latest.osm.pbf &&
+          osrm-partition /data/centro-latest.osrm &&
+          osrm-customize /data/centro-latest.osrm;
+        fi &&
+        osrm-routed --algorithm mld /data/centro-latest.osrm
+      "

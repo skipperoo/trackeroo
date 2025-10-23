@@ -12,7 +12,7 @@ RUN go build -o tracky tracky.go firmware.go
 
 FROM alpine:latest
 WORKDIR /app
-
+RUN mkdir -p /data
 COPY --from=builder /app/tracky .
 
 ENTRYPOINT ["./tracky"]

@@ -17,6 +17,12 @@ status
 brockeroo
 trackeroo-backend/grafana
 trackeroo-backend/mongo/data
+<<<<<<< HEAD
+=======
+nominatim-data
+osrm-data
+overpass-data
+>>>>>>> feature/tracky-italy
 trackeroo-backend/redis
 mqtt_client
 tracky/docker-compose.yml

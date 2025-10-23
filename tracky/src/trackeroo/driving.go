@@ -7,7 +7,6 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -35,12 +34,6 @@ type RouteSegment struct {
 	Coordinates []Coordinate
 	SpeedKmh    float64
 	ShouldStop  bool
-}
-
-type NominatimResponse []struct {
-	Lat         string `json:"lat"`
-	Lon         string `json:"lon"`
-	DisplayName string `json:"display_name"`
 }
 
 type OSRMResponse struct {
@@ -87,58 +80,15 @@ type RoutingService struct {
 	httpClient   *http.Client
 }
 
-func NewRoutingService(nominatimURL, osrmURL string) *RoutingService {
+func NewRoutingService(osrmURL string) *RoutingService {
 	return &RoutingService{
-		NominatimURL: nominatimURL,
-		OSRMURL:      osrmURL,
-		httpClient:   &http.Client{Timeout: 30 * time.Second},
+		OSRMURL:    osrmURL,
+		httpClient: &http.Client{Timeout: 120 * time.Second},
 	}
-}
-
-func (rs *RoutingService) Geocode(address string) (*Coordinate, error) {
-	encodedAddress := url.QueryEscape(address)
-	requestURL := fmt.Sprintf("%s/search?q=%s&format=json&limit=1", rs.NominatimURL, encodedAddress)
-
-	resp, err := rs.httpClient.Get(requestURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to geocode address: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("nominatim API returned status %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	var nominatimResp NominatimResponse
-	if err := json.Unmarshal(body, &nominatimResp); err != nil {
-		return nil, fmt.Errorf("failed to parse nominatim response: %w", err)
-	}
-
-	if len(nominatimResp) == 0 {
-		return nil, fmt.Errorf("no results found for address: %s", address)
-	}
-
-	// Parse coordinates
-	lat, err := parseFloat(nominatimResp[0].Lat)
-	if err != nil {
-		return nil, fmt.Errorf("invalid latitude: %w", err)
-	}
-
-	lng, err := parseFloat(nominatimResp[0].Lon)
-	if err != nil {
-		return nil, fmt.Errorf("invalid longitude: %w", err)
-	}
-
-	return &Coordinate{Lat: lat, Lng: lng}, nil
 }
 
 // GetRoute gets routing directions from point A to B using OSRM
-func (rs *RoutingService) GetRoute(from, to *Coordinate) ([]RouteSegment, error) {
+func (rs *RoutingService) GetRoute(from, to Coordinate) ([]RouteSegment, error) {
 	requestURL := fmt.Sprintf(
 		"%s/route/v1/driving/%f,%f;%f,%f?geometries=geojson&overview=full&steps=true",
 		rs.OSRMURL, from.Lng, from.Lat, to.Lng, to.Lat)
@@ -207,6 +157,8 @@ func getConsumption(speed float64, devType string) float64 {
 // DrivingSimulator simulates realistic car driving
 type DrivingSimulator struct {
 	Route               []RouteSegment
+	Start               Coordinate
+	End                 Coordinate
 	DefaultAverageSpeed float64 // km/h
 	SpeedVariation      float64 // percentage (0.0-1.0)
 	StopProbability     float64 // probability of stopping per segment (0.0-1.0)
@@ -221,20 +173,37 @@ type DrivingSimulator struct {
 	Distance       float64
 }
 
-func NewDrivingSimulator(routingService *RoutingService, waypoints []string, avgSpeed float64, updateIntervalMs int, isPirate bool, devType string) (*DrivingSimulator, error) {
+func NewDrivingSimulator(routingService *RoutingService, checkpoint *Checkpoint, avgSpeed float64, updateIntervalMs int, isPirate bool, devType string) (*DrivingSimulator, error) {
 	route := make([]RouteSegment, 0)
-	for i := 0; i < len(waypoints)-1; i++ {
-		start, err := routingService.Geocode(waypoints[i])
-		if err != nil {
-			return nil, fmt.Errorf("Error geocoding address %s: %v", waypoints[i], err)
-		}
-		end, err := routingService.Geocode(waypoints[i+1])
-		if err != nil {
-			return nil, fmt.Errorf("Error geocoding address %s: %v", waypoints[i], err)
-		}
+	for i := 0; i < len(checkpoint.Poles)-1; i++ {
+		start := checkpoint.Poles[i].Coordinate
+		end := checkpoint.Poles[i+1].Coordinate
 		r, err := routingService.GetRoute(start, end)
 		if err != nil {
 			return nil, err
+		}
+		checkpointRouteIndex := -1
+		checkpointCoordinatesIndex := -1
+
+		for i, pos := range r {
+			if checkpoint == nil || checkpoint.LastPosition.Lat == 0.0 || checkpoint.LastPosition.Lng == 0.0 {
+				Warning("Invalid checkpoit +%v, starting from first waypoint", checkpoint)
+				break
+			}
+			for j, c := range pos.Coordinates {
+				// 50 meters
+				if haversineDistance(checkpoint.LastPosition, c) < 0.05 {
+					checkpointRouteIndex = i
+					checkpointCoordinatesIndex = j
+					Info("Found checkpoint %+v at index (%d, %d)", checkpoint, checkpointRouteIndex, checkpointCoordinatesIndex)
+					goto found
+				}
+			}
+		}
+	found:
+		if checkpointRouteIndex >= 0 {
+			r = r[checkpointRouteIndex:]
+			r[0].Coordinates = r[0].Coordinates[checkpointCoordinatesIndex:]
 		}
 		route = append(route, r...)
 	}
@@ -242,8 +211,10 @@ func NewDrivingSimulator(routingService *RoutingService, waypoints []string, avg
 	return &DrivingSimulator{
 		Route:               route,
 		DefaultAverageSpeed: avgSpeed,
-		SpeedVariation:      0.03, // 3% speed variation
-		StopProbability:     0.05, // 5% chance of stopping per segment
+		Start:               checkpoint.Poles[0].Coordinate,
+		End:                 checkpoint.Poles[1].Coordinate,
+		SpeedVariation:      0.03,
+		StopProbability:     0.05,
 		StopDuration: struct {
 			Min time.Duration
 			Max time.Duration
@@ -280,7 +251,7 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 				nextPos := segment.Coordinates[i+1]
 
 				// Calculate distance between points
-				distance := ds.haversineDistance(currentPos, nextPos)
+				distance := haversineDistance(currentPos, nextPos)
 
 				// Check if we should stop
 				if i == 0 && segment.ShouldStop {
@@ -291,8 +262,8 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 						Speed:       0,
 						SpeedLimit:  speedLimit,
 						Status:      STOPPED,
-						Start:       ds.Route[0].Coordinates[0],
-						End:         lastCoord,
+						Start:       ds.Start,
+						End:         ds.End,
 						Consumption: 0,
 						Distance:    0,
 					}
@@ -356,8 +327,8 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 						Speed:       currentSpeed,
 						SpeedLimit:  speedLimit,
 						Status:      status,
-						Start:       ds.Route[0].Coordinates[0],
-						End:         lastCoord,
+						Start:       ds.Start,
+						End:         ds.End,
 						Consumption: getConsumption(currentSpeed, ds.DevType) * consumptionCompensation,
 						Distance:    distance,
 					}
@@ -374,18 +345,19 @@ func (ds *DrivingSimulator) SimulateDrive() <-chan DrivePosition {
 			Speed:       0,
 			SpeedLimit:  speedLimit,
 			Status:      ARRIVED,
-			Start:       ds.Route[0].Coordinates[0],
-			End:         lastCoord,
+			Start:       ds.Start,
+			End:         ds.End,
 			Consumption: 0,
 			Distance:    0,
 		}
 	}()
+	Info("Simulation started")
 
 	return positionChan
 }
 
 // haversineDistance calculates the great circle distance between two points
-func (ds *DrivingSimulator) haversineDistance(pos1, pos2 Coordinate) float64 {
+func haversineDistance(pos1, pos2 Coordinate) float64 {
 	const R = 6371 // Earth's radius in kilometers
 
 	lat1Rad := pos1.Lat * math.Pi / 180
