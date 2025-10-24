@@ -125,10 +125,11 @@ func Loop() {
 		cities = append(cities, c...)
 	}
 	wg := sync.WaitGroup{}
+	parallelism := 8
 	i := 0
-	for i = 0; i < len(cities); i += 4 {
-		tmp := cities[i : i+4]
-		for j := range 4 {
+	for i = 0; i < len(cities); i += parallelism {
+		tmp := cities[i : i+parallelism]
+		for j := range parallelism {
 			wg.Add(1)
 			go func() {
 				overpassClient.GetStreets(tmp[j], 100, 2000)
@@ -137,7 +138,7 @@ func Loop() {
 		}
 		wg.Wait()
 	}
-	tmp := cities[i-4:]
+	tmp := cities[i-parallelism:]
 	if len(tmp) > 0 {
 		for j := range len(cities) {
 			wg.Add(1)
