@@ -68,7 +68,7 @@ def create_compose(credentials: List[Dict]):
                 "REDIS_URI": "redis://redis:6379",
                 "REGIONAL": regional,
                 "URBAN": urban,
-                "PUBLISH_PERIOD": "1000",
+                "PUBLISH_PERIOD": "10000",
                 "PIRATE": "true" if random.randint(1, 100) < 10 else "false",
             },
             networks=["tracky"],
