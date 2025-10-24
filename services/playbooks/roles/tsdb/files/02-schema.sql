@@ -30,6 +30,9 @@ CREATE INDEX IF NOT EXISTS idx_trackeroo_data_dev_id ON trackeroo.data(dev_id);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_data_tag ON trackeroo.data(tag);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_data_ts ON trackeroo.data(ts);
 
+-- Added to speedup the last position query
+CREATE INDEX IF NOT EXISTS idx_trackeroo_data_dev_id_ts_desc ON trackeroo.data (dev_id, ts DESC);
+
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_dev_id ON trackeroo.aggregated(dev_id);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_route_hash ON trackeroo.aggregated(route_hash);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_tag ON trackeroo.aggregated(tag);

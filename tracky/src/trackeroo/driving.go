@@ -25,6 +25,8 @@ var consumptionMultipliers = map[string]float32{
 	"public_transport":  1.8, // buses have much higher consumption
 }
 
+const MAX_CONSUMPTION = 30.0
+
 type Coordinate struct {
 	Lat float64 `json:"lat"`
 	Lng float64 `json:"lon"`
@@ -151,7 +153,7 @@ func getConsumption(speed float64, devType string) float64 {
 	if speed >= threshold {
 		consumption += 5 * math.Log(speed/threshold)
 	}
-	return consumption * float64(consumptionMultipliers[devType])
+	return max(consumption*float64(consumptionMultipliers[devType]), MAX_CONSUMPTION)
 }
 
 // DrivingSimulator simulates realistic car driving
