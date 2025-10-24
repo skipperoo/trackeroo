@@ -87,8 +87,6 @@ func alteredFoodData(position trackeroo.DrivePosition) FoodSensors {
 	}
 }
 
-var taskManager *trackeroo.TaskManager
-
 func Init() {
 	debugLevel := os.Getenv("DEBUG_LEVEL")
 	level := trackeroo.INFO
@@ -106,13 +104,9 @@ func Init() {
 		level = trackeroo.INFO
 	}
 	trackeroo.InitLogger(level, "")
-	trackeroo.InitQueue("data")
-	taskManager = trackeroo.NewTaskManager()
-	go taskManager.Start()
 }
 
 func Terminate() {
-	taskManager.Shutdown(0)
 }
 
 func Loop() {
