@@ -145,7 +145,7 @@ func (rs *RoutingService) GetRoute(from, to Coordinate) ([]RouteSegment, error) 
 }
 
 func getConsumption(speed float64, devType string) float64 {
-	if speed == 0 {
+	if speed <= 5.0 {
 		return 0.0
 	}
 	threshold := 80.0
