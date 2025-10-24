@@ -153,7 +153,7 @@ func getConsumption(speed float64, devType string) float64 {
 	if speed >= threshold {
 		consumption += 5 * math.Log(speed/threshold)
 	}
-	return max(consumption*float64(consumptionMultipliers[devType]), MAX_CONSUMPTION)
+	return min(consumption*float64(consumptionMultipliers[devType]), MAX_CONSUMPTION)
 }
 
 // DrivingSimulator simulates realistic car driving
