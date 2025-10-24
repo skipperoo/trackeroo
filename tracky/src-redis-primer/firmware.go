@@ -3,6 +3,7 @@ package main
 import (
 	"math/rand"
 	"os"
+	"sync"
 	"time"
 	"tracky/trackeroo"
 )
@@ -123,7 +124,28 @@ func Loop() {
 		c, _ := overpassClient.GetCities(region)
 		cities = append(cities, c...)
 	}
-	for _, city := range cities {
-		overpassClient.GetStreets(city, 100, 2000)
+	wg := sync.WaitGroup{}
+	i := 0
+	for i = 0; i < len(cities); i += 4 {
+		tmp := cities[i : i+4]
+		for j := range 4 {
+			wg.Add(1)
+			go func() {
+				overpassClient.GetStreets(tmp[j], 100, 2000)
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+	}
+	tmp := cities[i-4:]
+	if len(tmp) > 0 {
+		for j := range len(cities) {
+			wg.Add(1)
+			go func() {
+				overpassClient.GetStreets(tmp[j], 100, 2000)
+				wg.Done()
+			}()
+		}
+		wg.Wait()
 	}
 }
