@@ -130,6 +130,9 @@ func Loop() {
 	for i = 0; i < len(cities); i += parallelism {
 		tmp := cities[i : i+parallelism]
 		for j := range parallelism {
+			if j > len(tmp) {
+				break
+			}
 			wg.Add(1)
 			go func() {
 				overpassClient.GetStreets(tmp[j], 100, 2000)
