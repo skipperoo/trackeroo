@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS trackeroo.data (
     PRIMARY KEY (ts, dev_id)
 );
 
-
 CREATE TABLE IF NOT EXISTS trackeroo.aggregated (
     ts_unix BIGINT NOT NULL,
     ts TIMESTAMPTZ NOT NULL,
@@ -23,18 +22,35 @@ CREATE TABLE IF NOT EXISTS trackeroo.aggregated (
     PRIMARY KEY (ts, route_hash, dev_id)
 );
 
-SELECT create_hypertable('trackeroo.data', 'ts', 'dev_id', 16);
-SELECT create_hypertable('trackeroo.aggregated', 'ts', 'dev_id', 16);
-
+SELECT create_hypertable('trackeroo.data', 'ts', 'dev_id', 4);
+SELECT create_hypertable('trackeroo.aggregated', 'ts', 'dev_id', 4);
+SELECT set_chunk_time_interval('trackeroo.data', INTERVAL '12 hours');
+SELECT set_chunk_time_interval('trackeroo.aggregated', INTERVAL '12 hours');
 CREATE INDEX IF NOT EXISTS idx_trackeroo_data_dev_id ON trackeroo.data(dev_id);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_data_tag ON trackeroo.data(tag);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_data_ts ON trackeroo.data(ts);
+
+-- Added to speedup the last position query
+CREATE INDEX IF NOT EXISTS idx_trackeroo_data_dev_id_ts_desc ON trackeroo.data (dev_id, ts DESC);
+CREATE INDEX IF NOT EXISTS idx_data_device_type ON trackeroo.data ((payload->>'device_type'));
+ALTER TABLE trackeroo.data SET (
+    timescaledb.compress,
+    timescaledb.compress_segmentby = 'dev_id,tag',
+    timescaledb.compress_orderby = 'ts DESC'
+);
+SELECT add_compression_policy('trackeroo.data', INTERVAL '6 hours');
 
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_dev_id ON trackeroo.aggregated(dev_id);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_route_hash ON trackeroo.aggregated(route_hash);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_tag ON trackeroo.aggregated(tag);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_ts ON trackeroo.aggregated(ts);
+ALTER TABLE trackeroo.aggregated SET (
+    timescaledb.compress,
+    timescaledb.compress_segmentby = 'dev_id,route_hash,tag',
+    timescaledb.compress_orderby = 'ts DESC'
+);
 
+SELECT add_compression_policy('trackeroo.aggregated', INTERVAL '6 hours');
 SELECT add_retention_policy('trackeroo.data', INTERVAL '3 days');
 SELECT add_retention_policy('trackeroo.aggregated', INTERVAL '3 days');
 

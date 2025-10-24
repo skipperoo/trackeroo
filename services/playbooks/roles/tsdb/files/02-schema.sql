@@ -32,6 +32,13 @@ CREATE INDEX IF NOT EXISTS idx_trackeroo_data_ts ON trackeroo.data(ts);
 
 -- Added to speedup the last position query
 CREATE INDEX IF NOT EXISTS idx_trackeroo_data_dev_id_ts_desc ON trackeroo.data (dev_id, ts DESC);
+CREATE INDEX IF NOT EXISTS idx_data_device_type ON trackeroo.data ((payload->>'device_type'));
+ALTER TABLE trackeroo.data SET (
+    timescaledb.compress,
+    timescaledb.compress_segmentby = 'dev_id,tag',
+    timescaledb.compress_orderby = 'ts DESC'
+);
+SELECT add_compression_policy('trackeroo.data', INTERVAL '6 hours');
 
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_dev_id ON trackeroo.aggregated(dev_id);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_route_hash ON trackeroo.aggregated(route_hash);
