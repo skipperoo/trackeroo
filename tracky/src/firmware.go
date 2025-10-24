@@ -208,6 +208,7 @@ func Loop() {
 						cities = append(cities[:i], cities[i+1:]...)
 					}
 				}
+				trackeroo.DeleteCheckpoint(checkpointFile)
 				continue
 			}
 		}
