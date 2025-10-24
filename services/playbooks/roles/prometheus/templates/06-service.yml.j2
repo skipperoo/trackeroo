@@ -5,7 +5,8 @@ metadata:
   labels:
     app: {{ prometheus_app_name }}
 spec:
-  type: ClusterIP
+  type: LoadBalancer
+  loadBalancerIP: {{ prometheus_ip }}
   ports:
     - port: {{ prometheus_port }}
       targetPort: {{ prometheus_port }}

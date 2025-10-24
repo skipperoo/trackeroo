@@ -2,6 +2,7 @@ prometheus_namespace: monitoring
 prometheus_app_name: prometheus
 prometheus_replicas: 1
 prometheus_image: prom/prometheus:v3.0.0
+prometheus_ip: 10.20.30.130
 prometheus_port: 9090
 prometheus_storage_size: 5Gi
 prometheus_scrape_interval: 15s
