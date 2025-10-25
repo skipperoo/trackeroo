@@ -22,7 +22,6 @@ spec:
   postgresql:
     shared_preload_libraries:
       - "timescaledb"
-      - "pg_cron"
     parameters:
       max_connections: "{{ max_connections }}"
       timescaledb.telemetry_level: "off"
@@ -36,8 +35,6 @@ spec:
       owner: {{ admin_user | default('admin') }}
       # https://cloudnative-pg.io/documentation/preview/bootstrap/#executing-queries-after-initialization
       # The ApplicationSQL indicates that the SQL scripts will be executed against the newly created database defined above.
-      postInitSQL:
-        - CREATE EXTENSION IF NOT EXISTS pg_cron
       postInitApplicationSQLRefs:
         configMapRefs:
           - name: "{{ cluster_name }}-init-scripts"

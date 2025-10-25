@@ -32,5 +32,3 @@ GRANT USAGE ON SCHEMA _timescaledb_config TO apps;
 GRANT USAGE ON SCHEMA _timescaledb_internal TO apps;
 GRANT SELECT ON ALL TABLES IN SCHEMA _timescaledb_catalog TO apps;
 GRANT SELECT ON ALL TABLES IN SCHEMA _timescaledb_config TO apps;
-GRANT USAGE ON SCHEMA cron TO admin;
-GRANT USAGE ON SCHEMA cron TO apps;

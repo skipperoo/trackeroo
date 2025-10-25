@@ -69,3 +69,46 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA trackeroo
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA trackeroo
    GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO apps;
+
+-- Latest positions continuous aggregate (replaces materialized view)
+CREATE MATERIALIZED VIEW trackeroo.latest_positions
+WITH (timescaledb.continuous) AS
+SELECT
+    dev_id,
+    time_bucket('30 seconds', ts) AS bucket,
+    last(ts, ts) AS ts,
+    last((payload->'position'->>'lat')::double precision, ts) AS lat,
+    last((payload->'position'->>'lon')::double precision, ts) AS lon,
+    last(payload->>'device_name', ts) AS device_name,
+    last(payload->>'device_type', ts) AS device_type
+FROM trackeroo.data
+WHERE (payload->'position'->>'lat') IS NOT NULL
+    AND (payload->'position'->>'lon') IS NOT NULL
+GROUP BY dev_id, bucket
+WITH NO DATA;
+
+-- Add automatic refresh policy (refreshes every 2 minutes)
+SELECT add_continuous_aggregate_policy('trackeroo.latest_positions',
+    start_offset => INTERVAL '1 hour',
+    end_offset => INTERVAL '30 seconds',
+    schedule_interval => INTERVAL '2 minutes');
+
+-- Create unique index on the continuous aggregate
+CREATE UNIQUE INDEX idx_latest_positions_dev_bucket ON trackeroo.latest_positions (dev_id, bucket);
+
+-- Create a simple view to get the current position for each device
+-- This view queries the continuous aggregate and returns only the latest position per device
+CREATE VIEW trackeroo.current_positions AS
+SELECT DISTINCT ON (dev_id)
+    dev_id,
+    ts,
+    lat,
+    lon,
+    device_name,
+    device_type
+FROM trackeroo.latest_positions
+ORDER BY dev_id, bucket DESC;
+
+-- Grant permissions on the new views
+GRANT SELECT ON trackeroo.latest_positions TO apps;
+GRANT SELECT ON trackeroo.current_positions TO apps;
