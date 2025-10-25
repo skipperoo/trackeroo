@@ -91,8 +91,3 @@ CROSS JOIN LATERAL (
 
 GRANT UPDATE, SELECT ON trackeroo.latest_positions TO apps;
 CREATE UNIQUE INDEX ON trackeroo.latest_positions (dev_id);
-SELECT cron.schedule(
-    'refresh_latest_positions',
-    '*/2 * * * *',
-    'REFRESH MATERIALIZED VIEW CONCURRENTLY trackeroo.latest_positions;'
-);
