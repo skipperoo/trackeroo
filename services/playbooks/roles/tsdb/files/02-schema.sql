@@ -89,7 +89,7 @@ WITH NO DATA;
 
 -- Add automatic refresh policy (refreshes every 2 minutes)
 SELECT add_continuous_aggregate_policy('trackeroo.latest_positions',
-    start_offset => INTERVAL '1 hour',
+    start_offset => INTERVAL '10 minutes',
     end_offset => INTERVAL '30 seconds',
     schedule_interval => INTERVAL '2 minutes');
 
