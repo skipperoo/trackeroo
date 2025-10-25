@@ -22,6 +22,7 @@ spec:
   postgresql:
     shared_preload_libraries:
       - "timescaledb"
+      - "pg_cron"
     parameters:
       max_connections: "{{ max_connections }}"
       timescaledb.telemetry_level: "off"
