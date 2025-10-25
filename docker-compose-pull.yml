@@ -97,7 +97,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    command: ["postgres", "-c", "shared_preload_libraries=timescaledb"]
+    command: ["postgres", "-c", "shared_preload_libraries=timescaledb,pg_cron"]
     environment:
       POSTGRES_DB: tracker_db
       POSTGRES_USER: postgres
@@ -138,7 +138,7 @@ services:
       TOPIC_PATTERN: j/data/+/+
       KAFKA_BROKER: kafka:9092
     depends_on:
-      kafka: 
+      kafka:
         condition: service_started
       tsdb:
         condition: service_healthy
@@ -182,7 +182,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT 
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
     depends_on:
       - zookeeper
 
@@ -231,7 +231,7 @@ volumes:
   tsdb-data:
   pgadmin-data:
   grafana-data:
-  redis-data: 
+  redis-data:
 
 secrets:
   users_key:

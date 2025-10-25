@@ -100,7 +100,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    command: ["postgres", "-c", "shared_preload_libraries=timescaledb"]
+    command: ["postgres", "-c", "shared_preload_libraries=timescaledb,pg_cron"]
     environment:
       POSTGRES_DB: tracker_db
       POSTGRES_USER: postgres
