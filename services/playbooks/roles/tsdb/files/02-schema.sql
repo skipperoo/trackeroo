@@ -44,7 +44,13 @@ CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_dev_id ON trackeroo.aggregat
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_route_hash ON trackeroo.aggregated(route_hash);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_tag ON trackeroo.aggregated(tag);
 CREATE INDEX IF NOT EXISTS idx_trackeroo_aggregated_ts ON trackeroo.aggregated(ts);
+ALTER TABLE trackeroo.aggregated SET (
+    timescaledb.compress,
+    timescaledb.compress_segmentby = 'dev_id,route_hash,tag',
+    timescaledb.compress_orderby = 'ts DESC'
+);
 
+SELECT add_compression_policy('trackeroo.aggregated', INTERVAL '6 hours');
 SELECT add_retention_policy('trackeroo.data', INTERVAL '3 days');
 SELECT add_retention_policy('trackeroo.aggregated', INTERVAL '3 days');
 
@@ -63,3 +69,30 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA trackeroo
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA trackeroo
    GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO apps;
+
+-- Last position materialized views
+CREATE MATERIALIZED VIEW trackeroo.latest_positions AS
+SELECT d.dev_id,
+       last.ts,
+       (last.payload->'position'->>'lat')::double precision AS lat,
+       (last.payload->'position'->>'lon')::double precision AS lon,
+       last.payload->>'device_name' AS device_name,
+       last.payload->>'device_type' AS device_type
+FROM (SELECT DISTINCT dev_id FROM trackeroo.data) d
+CROSS JOIN LATERAL (
+    SELECT ts, payload
+    FROM trackeroo.data
+    WHERE trackeroo.data.dev_id = d.dev_id
+      AND (payload->'position'->>'lat') IS NOT NULL
+      AND (payload->'position'->>'lon') IS NOT NULL
+    ORDER BY ts DESC
+    LIMIT 1
+) last;
+
+GRANT UPDATE, SELECT ON trackeroo.latest_positions TO apps;
+CREATE UNIQUE INDEX ON trackeroo.latest_positions (dev_id);
+SELECT cron.schedule(
+    'refresh_latest_positions',
+    '*/2 * * * *',
+    'REFRESH MATERIALIZED VIEW CONCURRENTLY trackeroo.latest_positions;'
+);
