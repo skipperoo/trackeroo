@@ -93,8 +93,8 @@ SELECT add_continuous_aggregate_policy('trackeroo.latest_positions',
     end_offset => INTERVAL '30 seconds',
     schedule_interval => INTERVAL '2 minutes');
 
--- Create unique index on the continuous aggregate
-CREATE UNIQUE INDEX idx_latest_positions_dev_bucket ON trackeroo.latest_positions (dev_id, bucket);
+-- Create index on the continuous aggregate
+CREATE INDEX idx_latest_positions_dev_bucket ON trackeroo.latest_positions (dev_id, bucket DESC);
 
 -- Create a simple view to get the current position for each device
 -- This view queries the continuous aggregate and returns only the latest position per device
