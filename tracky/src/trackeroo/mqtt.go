@@ -170,7 +170,13 @@ func (t *TdmClient) initClient() {
 	opts.SetAutoReconnect(true)
 	opts.SetMaxReconnectInterval(5 * time.Second)
 	opts.SetReconnectingHandler(func(c pahoMqtt.Client, op *pahoMqtt.ClientOptions) {
-		Info("Trying to reconnect...")
+		token, err := GetToken(t.creds.PrivateKey, 200, 200, t.creds.ID)
+		// fmt.Println(token)
+		if err != nil {
+			Error("Cannot create token, %v", err)
+		}
+		op.SetPassword(token)
+		Info("Trying to reconnect with new token...")
 	})
 	opts.SetConnectionLostHandler(func(c pahoMqtt.Client, err error) {
 		Error("MQTT Connection lost:", err)
