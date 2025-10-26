@@ -46,7 +46,7 @@
 - machine_type: node
   name: k3s-node-hermes
   cpu: 8
-  ram: 8192
+  ram: 10240
   os_storage: 20
   longhorn_storage: 150
   networks:
@@ -61,7 +61,7 @@
 - machine_type: node
   name: k3s-node-achilles
   cpu: 8
-  ram: 8192
+  ram: 10240
   os_storage: 20
   longhorn_storage: 150
   networks:
@@ -76,7 +76,7 @@
 - machine_type: node
   name: k3s-node-odysseus
   cpu: 8
-  ram: 8192
+  ram: 10240
   os_storage: 20
   longhorn_storage: 150
   networks:
