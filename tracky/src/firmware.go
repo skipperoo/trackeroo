@@ -230,6 +230,8 @@ func Loop() {
 		positionChan := drivingSimulator.SimulateDrive()
 		if rand.Float64() < 0.05 || os.Getenv("NORMAL_RUN") == "false" {
 			normalRun = false
+		} else {
+			normalRun = true
 		}
 		for position := range positionChan {
 			deltaDistance += position.Distance
