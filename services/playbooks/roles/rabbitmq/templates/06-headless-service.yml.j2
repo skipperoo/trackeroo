@@ -15,3 +15,9 @@ spec:
     - name: management
       protocol: TCP
       port: 15672
+    - name: epmd
+      port: 4369
+      targetPort: 4369
+    - name: dist
+      port: 25672
+      targetPort: 25672

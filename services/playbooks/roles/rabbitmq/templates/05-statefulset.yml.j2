@@ -15,6 +15,7 @@ spec:
       labels:
         app: "{{ rabbitmq_app_name }}"
     spec:
+      serviceAccountName: "{{ rabbitmq_app_name }}"
       nodeSelector:
         workload-type: apps
       containers:
@@ -25,16 +26,40 @@ spec:
               containerPort: 5672
             - name: management
               containerPort: 15672
+            - name: epmd
+              containerPort: 4369
+            - name: dist
+              containerPort: 25672
             - name: mqtt
               containerPort: 1883
             - name: mqtts
               containerPort: 8883
           env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: RABBITMQ_USE_LONGNAME
+              value: "true"
+            - name: RABBITMQ_NODENAME
+              value: "rabbit@$(POD_NAME).rabbitmq-headless.$(POD_NAMESPACE).svc.cluster.local"
+            - name: K8S_SERVICE_NAME
+              value: "rabbitmq-headless"
+            - name: K8S_HOSTNAME_SUFFIX
+              value: ".rabbitmq-headless.$(POD_NAMESPACE).svc.cluster.local"
             - name: RABBITMQ_ERLANG_COOKIE
               valueFrom:
                 secretKeyRef:
                   name: "{{ rabbitmq_app_name }}-secrets"
                   key: rabbitmq_erlang_cookie
+            - name: RABBITMQ_USE_LONGNAME
+              value: "true"
+            - name: K8S_SERVICE_NAME
+              value: "{{ rabbitmq_app_name }}-headless"
           volumeMounts:
             - name: config-volume
               mountPath: /etc/rabbitmq/

@@ -1,0 +1,10 @@
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: rabbitmq-auth
+  namespace: "{{ brokeroo_namespace }}"
+spec:
+  secretTargetRef:
+    - parameter: host
+      name: "{{ brokeroo_app_name }}-keda-secrets"
+      key: brokeroo_rabbitmq_connection_string

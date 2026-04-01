@@ -128,15 +128,13 @@ func (t *TdmClient) handleDnMsg(client pahoMqtt.Client, msg pahoMqtt.Message) {
 func (t *TdmClient) run() {
 	t.initClient()
 	t.running = true
-	// fmt.Printf("%+v", z)
+	for t.connect() != nil {
+		Info("Trying to connect to the tdm...")
+	}
 	for t.running {
 		for !t.client.IsConnected() {
-			t.initClient()
-			err := t.connect()
-			if err != nil {
-				Error("Cannot connect, %v", err)
-				Millisleep(2000)
-			}
+			Info("Not connected...")
+			Millisleep(2000)
 		}
 		t.Kick()
 		Millisleep(1000)
@@ -145,8 +143,7 @@ func (t *TdmClient) run() {
 
 func (t *TdmClient) connect() error {
 	token := t.client.Connect()
-	for !token.WaitTimeout(3 * time.Second) {
-	}
+	token.WaitTimeout(3 * time.Second)
 	return token.Error()
 }
 
@@ -171,6 +168,16 @@ func (t *TdmClient) initClient() {
 	opts.SetKeepAlive(time.Duration(t.heartbeat) * time.Second)
 	opts.SetPingTimeout(time.Duration(t.heartbeat) * time.Second)
 	opts.SetAutoReconnect(true)
+	opts.SetMaxReconnectInterval(5 * time.Second)
+	opts.SetReconnectingHandler(func(c pahoMqtt.Client, op *pahoMqtt.ClientOptions) {
+		token, err := GetToken(t.creds.PrivateKey, 200, 200, t.creds.ID)
+		// fmt.Println(token)
+		if err != nil {
+			Error("Cannot create token, %v", err)
+		}
+		op.SetPassword(token)
+		Info("Trying to reconnect with new token...")
+	})
 	opts.SetConnectionLostHandler(func(c pahoMqtt.Client, err error) {
 		Error("MQTT Connection lost:", err)
 	})

@@ -12,6 +12,13 @@ spec:
   instances: {{ instances }}
   imageName: {{ image }}
   imagePullPolicy: Always
+  resources:
+  requests:
+    memory: "1Gi"
+    cpu: "1"
+  limits:
+    memory: "3Gi"
+    cpu: "2"
   postgresql:
     shared_preload_libraries:
       - "timescaledb"

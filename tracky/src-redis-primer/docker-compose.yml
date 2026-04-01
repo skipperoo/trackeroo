@@ -1,0 +1,16 @@
+services:
+  redis-primer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      ROUTING_SERVICE_URL: http://osrm:5000
+      OVERPASS_URL: http://nginx:80/api/interpreter
+      REDIS_URI: redis://redis:6379
+    networks:
+      - tracky
+    restart: "no"
+
+networks:
+  tracky:
+    external: true

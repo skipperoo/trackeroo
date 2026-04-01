@@ -6,6 +6,110 @@
     kind: Namespace
     state: present
 
+- name: "Create Postgres Secret"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    namespace: "{{ grafana_namespace }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: grafana-postgres-secret
+      type: Opaque
+      data:
+        postgres-user: "{{ 'grafana' | b64encode }}"
+        postgres-password: "{{ 'grafana' | b64encode }}"
+        postgres-db: "{{ 'grafana' | b64encode }}"
+
+- name: "Create Postgres PVC"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    namespace: "{{ grafana_namespace }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: "PersistentVolumeClaim"
+      metadata:
+        name: grafana-postgres-pvc
+      spec:
+        accessModes:
+          - ReadWriteOnce
+
+        storageClassName: "{{ grafana_storage_class }}"
+        resources:
+          requests:
+            storage: 5Gi
+
+- name: "Deploy Postgres Deployment"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    namespace: "{{ grafana_namespace }}"
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: grafana-postgres
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: grafana-postgres
+        template:
+          metadata:
+            labels:
+              app: grafana-postgres
+          spec:
+            containers:
+              - name: postgres
+                image: postgres:17
+                env:
+                  - name: POSTGRES_USER
+                    valueFrom:
+                      secretKeyRef:
+                        name: grafana-postgres-secret
+                        key: postgres-user
+                  - name: POSTGRES_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: grafana-postgres-secret
+                        key: postgres-password
+                  - name: POSTGRES_DB
+                    valueFrom:
+                      secretKeyRef:
+                        name: grafana-postgres-secret
+                        key: postgres-db
+                  - name: PGDATA
+                    value: /var/lib/postgresql/data/pgdata
+                ports:
+                  - containerPort: 5432
+                volumeMounts:
+                  - name: postgres-storage
+                    mountPath: /var/lib/postgresql/data
+            volumes:
+              - name: postgres-storage
+                persistentVolumeClaim:
+                  claimName: grafana-postgres-pvc
+
+- name: "Create Postgres Service"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    namespace: "{{ grafana_namespace }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: grafana-postgres
+      spec:
+        type: ClusterIP
+        selector:
+          app: grafana-postgres
+        ports:
+          - port: 5432
+            targetPort: 5432
+
 - name: "Create Grafana Persistent Volume Claim"
   kubernetes.core.k8s:
     kubeconfig: /etc/rancher/k3s/k3s.yaml

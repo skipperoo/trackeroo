@@ -23,7 +23,7 @@ spec:
       containers:
         - name: {{ grafana_app_name }}
           image: {{ grafana_image }}
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: {{ grafana_port }}
           env:
@@ -41,6 +41,13 @@ spec:
               value: "{{ grafana_db_user }}"
             - name: GF_DATABASE_PASSWORD
               value: "{{ grafana_db_password }}"
+            - name: GF_SERVER_DOMAIN
+              value: "trackeroo.rblabs.net"
+            - name: GF_SERVER_ROOT_URL
+              value: "https://trackeroo.rblabs.net/dashboards/"
+            - name: GF_SERVER_SERVE_FROM_SUB_PATH
+              value: "true"
+
           volumeMounts:
             - name: grafana-storage
               mountPath: /var/lib/grafana

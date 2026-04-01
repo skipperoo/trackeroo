@@ -25,6 +25,13 @@ spec:
               containerPort: {{ kafka_port }}
             - name: plaintext-host
               containerPort: {{ kafka_host_port }}
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+            limits:
+              memory: "3Gi"
+              cpu: "2"
           env:
             - name: KAFKA_BROKER_ID
               value: "{{ kafka_broker_id }}"
@@ -38,6 +45,8 @@ spec:
               value: "PLAINTEXT"
             - name: KAFKA_LOG4J_ROOT_LOGLEVEL
               value: "INFO"
+            - name: KAFKA_HEAP_OPTS
+              value: "-Xms1G -Xmx2G"
           readinessProbe:
             tcpSocket:
               port: {{ kafka_port }}

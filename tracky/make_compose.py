@@ -4,102 +4,96 @@ import sys
 from typing import Dict, List, Optional, Union
 from pydantic import BaseModel
 import json
-
 import requests
 import yaml
 
-class VolumeConfig(BaseModel):
-    driver: Optional[str] = None
-    driver_opts: Optional[Dict[str, str]] = None
-    external: Optional[Union[bool, Dict[str, str]]] = None
+
+class SecretConfig(BaseModel):
+    file: str
 
 
 class NetworkConfig(BaseModel):
     driver: Optional[str] = None
-    driver_opts: Optional[Dict[str, str]] = None
-    external: Optional[Union[bool, Dict[str, str]]] = None
+    attachable: Optional[bool] = None
+    external: Optional[bool] = None
+    name: Optional[str] = None
+
+
+
+class ServiceSecret(BaseModel):
+    source: str
+    target: str
 
 
 class ServiceConfig(BaseModel):
     image: Optional[str] = None
-    build: Optional[Union[str, Dict[str, Union[str, Dict[str, str]]]]] = None
-    command: Optional[Union[str, List[str]]] = None
-    ports: Optional[List[str]] = None
     environment: Optional[Dict[str, Union[str, int]]] = None
-    volumes: Optional[List[str]] = None
-    depends_on: Optional[List[str]] = None
     networks: Optional[List[str]] = None
-    network_mode: Optional[str] = None
-    restart: Optional[str] = None
-    extra_hosts: Optional[List[str]] = None
+    secrets: Optional[List[ServiceSecret]] = None
+    deploy: Optional[Dict] = None
 
 
 class DockerCompose(BaseModel):
     services: Dict[str, ServiceConfig]
-    volumes: Optional[Dict[str, VolumeConfig]] = None
-    networks: Optional[Dict[str, NetworkConfig]] = None
-    include: Optional[List[str]] = None
+    secrets: Dict[str, SecretConfig]
+    networks: Dict[str, NetworkConfig]
 
-def load_credentials(path: str):
-    with open(path, 'r') as file:
-        return json.load(file)
 
 def create_compose(credentials: List[Dict]):
-    """
-    Create a DockerCompose object from a dictionary of credentials.
-    An example item of the credentials list is:
-    {
-      "id": "trk-5dac1f15577caca3",
-      "name": "fancy_shockley",
-      "device_type": "valuable",
-      "private_key": "2mtRLJjIO0yB1UDtOzEVOpiBnAxebQagR7LvaM9MMLM=",
-      "mqtt_host": "localhost",
-      "mqtt_port": 1883,
-      "mqtt_mode": "insecure",
-      "ca_cert": ""
-    }
-    Args:
-        credentials (Dict[str, Dict]): A dictionary of credentials.
-
-    Returns:
-        DockerCompose: A DockerCompose object.
-    """
-    compose = DockerCompose(services={} )#, include=["geo-services/docker-compose.yml"])
+    compose = DockerCompose(
+        services={},
+        secrets={},
+        # networks={"trackynet": NetworkConfig(driver="overlay", attachable=True)},
+        networks={"tracky": NetworkConfig(external=True)},
+    )
     print("SELECT * FROM ( VALUES ")
     for i, cred in enumerate(credentials):
-        # print(f"Processing device {cred}")
-        # continue
-        compose.services[cred["id"]] = ServiceConfig(
-            build={
-                "context": "src",
-                "dockerfile": "Dockerfile"
-            },
-            environment={
-                "GEOCODING_SERVICE_URL": "http://localhost:8082",
-                "ROUTING_SERVICE_URL": "http://localhost:5000",
-                "PUBLISH_PERIOD": "500",
-                "PIRATE": "true" if random.randint(1, 100) < 10 else "false"
-            },
-            # depends_on=["nominatim", "osrm"],
-            network_mode="host",
-            volumes=[f"./{cred["id"]}:/app/credentials"],
-            restart="no",
-        )
-        # if compose.services[cred["id"]].environment["PIRATE"] == "true":
-        #     print(f"{cred['id']} is a pirate 🏴‍☠️")
-        os.makedirs(f"{cred['id']}", exist_ok=True)
-        with open(f"{cred['id']}/tdevice.json", "w") as f:
+        regional = "true" if random.randint(1, 100) > 10 else "false"
+        urban = "true" if random.randint(1, 100) > 50 and regional == "true" else "false"
+
+        service_name = cred["id"]
+
+        os.makedirs(service_name, exist_ok=True)
+        with open(f"{service_name}/tdevice.json", "w") as f:
             json.dump(cred, f, indent=2)
+
+        tdevice_secret = f"{service_name}_tdevice"
+        compose.secrets[tdevice_secret] = SecretConfig(file=f"./{service_name}/tdevice.json")
+
+        compose.services[service_name] = ServiceConfig(
+            image="ghcr.io/skiby7/tracky:latest",
+            environment={
+                "ROUTING_SERVICE_URL": "http://osrm:5000",
+                "OVERPASS_URL": "http://nginx:80/api/interpreter",
+                "REDIS_URI": "redis://redis:6379",
+                "REGIONAL": regional,
+                "URBAN": urban,
+                "PUBLISH_PERIOD": "10000",
+                "PIRATE": "true" if random.randint(1, 100) < 10 else "false",
+            },
+            networks=["tracky"],
+            secrets=[
+                ServiceSecret(
+                    source=tdevice_secret,
+                    target="/app/credentials/tdevice.json",
+                )
+            ],
+            deploy={
+                "replicas": 1,
+                "restart_policy": {"condition": "any"},
+            },
+        )
         if i == len(credentials) - 1:
             print(f"('{cred['name']}', '{cred['id']}')")
         else:
             print(f"('{cred['name']}', '{cred['id']}'),")
     print(") AS t (__text, __value)")
+    # Dump YAML correctly
     with open("docker-compose.yml", "w") as f:
         compose_dict = compose.model_dump(exclude_none=True)
-
         yaml_str = yaml.safe_dump(compose_dict, sort_keys=False)
         f.write(yaml_str)
+
 
 def token():
     response = requests.post(f"http://{sys.argv[1]}/login/", json={"username": "leonardo", "password": "subemelaradio"})

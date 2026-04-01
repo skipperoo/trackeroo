@@ -1,29 +1,80 @@
 services:
-  nominatim:
-    image: mediagis/nominatim:4.4
-    container_name: nominatim
-    ports:
-      - "8082:8080"
+  overpass:
+    image: wiktorn/overpass-api
     environment:
-      - PBF_URL=https://download.geofabrik.de/europe/italy/centro-latest.osm.pbf
-      - REPLICATION_URL=https://download.geofabrik.de/europe/italy/centro-updates
-      - NOMINATIM_PASSWORD=password
+      OVERPASS_META: "yes"
+      OVERPASS_MODE: "init"
+      OVERPASS_PLANET_URL: "http://download.geofabrik.de/europe/italy-latest.osm.bz2-disabled"
+      OVERPASS_RATE_LIMIT: "0"
+      OVERPASS_RATE_SPACE: "1073741824"
+      OVERPASS_ALLOW_DUPLICATE_QUERIES: "yes"
     volumes:
-      - ./nominatim-data:/var/lib/postgresql/14/main
+      - ./overpass-data:/db
+    networks:
+      - tracky
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "12345:80" # external port for Overpass
+    volumes:
+      - ./nginx:/etc/nginx:ro
+    depends_on:
+      - overpass
+    networks:
+      - tracky
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
 
   osrm:
     image: osrm/osrm-backend
-    container_name: osrm
-    ports:
-      - "5000:5000"
     volumes:
       - ./osrm-data:/data
     command: >
       sh -c "
-        if [ ! -f /data/centro-latest.osrm ]; then
-          osrm-extract -p /opt/car.lua /data/centro-latest.osm.pbf &&
-          osrm-partition /data/centro-latest.osrm &&
-          osrm-customize /data/centro-latest.osrm;
+        if [ ! -f /data/italy-latest.osrm ]; then
+          osrm-extract -p /opt/car.lua /data/italy-latest.osm.pbf &&
+          osrm-partition /data/italy-latest.osrm &&
+          osrm-customize /data/italy-latest.osrm;
         fi &&
-        osrm-routed --algorithm mld /data/centro-latest.osrm
+        osrm-routed --algorithm mld /data/italy-latest.osrm
       "
+    ports:
+      - "5000:5000"
+    networks:
+      - tracky
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
+
+  redis:
+    image: redis:8.2.1-alpine
+    volumes:
+      - ./redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - tracky
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
+
+networks:
+  tracky:
+    external: true

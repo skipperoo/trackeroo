@@ -6,6 +6,33 @@
     kind: Namespace
     state: present
 
+- name: "Create Brokeroo Secrets (RabbitMQ and TSDB connection strings)"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    namespace: "{{ brokeroo_namespace }}"
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ brokeroo_app_name }}-secrets"
+      stringData:
+        brokeroo_rabbitmq_connection_string: "{{ brokeroo_rabbitmq_connection_string }}"
+        brokeroo_tsdb_connection_string: "{{ brokeroo_tsdb_connection_string }}"
+
+- name: "Create Secrets for KEDA (RabbitMQ connection strings)"
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    namespace: "{{ brokeroo_namespace }}"
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ brokeroo_app_name }}-keda-secrets"
+      data:
+        brokeroo_rabbitmq_connection_string: "{{ brokeroo_rabbitmq_connection_string | b64encode }}"
+
 - name: "Deploy Brokeroo Deployment and Service"
   kubernetes.core.k8s:
     kubeconfig: /etc/rancher/k3s/k3s.yaml
@@ -15,3 +42,6 @@
   loop:
     - "01-deployment.yml.j2"
     - "02-service.yml.j2"
+    - "03-triggerauthentication.yml.j2"
+    - "04-scaledobject.yml.j2"
+    - "05-poddistruptionbudget.yml.j2"

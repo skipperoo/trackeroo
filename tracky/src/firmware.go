@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"os"
 	"strconv"
@@ -91,7 +92,22 @@ func alteredFoodData(position trackeroo.DrivePosition) FoodSensors {
 var taskManager *trackeroo.TaskManager
 
 func Init() {
-	trackeroo.InitLogger(trackeroo.INFO, "")
+	debugLevel := os.Getenv("DEBUG_LEVEL")
+	level := trackeroo.INFO
+	switch debugLevel {
+	case "DEBUG":
+		level = trackeroo.DEBUG
+	case "INFO":
+		level = trackeroo.INFO
+	case "WARN":
+	case "WARNING":
+		level = trackeroo.WARNING
+	case "ERROR":
+		level = trackeroo.ERROR
+	default:
+		level = trackeroo.INFO
+	}
+	trackeroo.InitLogger(level, "")
 	trackeroo.InitQueue("data")
 	taskManager = trackeroo.NewTaskManager()
 	go taskManager.Start()
@@ -102,10 +118,14 @@ func Terminate() {
 }
 
 func Loop() {
+	rand.Seed(time.Now().UnixNano())
 	creds, _ := trackeroo.GetCredentials()
+	checkpointFile := fmt.Sprintf("/data/%s_checkpoint.json", creds.ID)
+	trackeroo.InitRedisClient()
 	deviceType := creds.DeviceType
+	overpassClient := trackeroo.NewOverpassClient(os.Getenv("OVERPASS_URL"))
+	streetProvider := trackeroo.NewCachedStreetProvider(overpassClient)
 	routingService := trackeroo.NewRoutingService(
-		os.Getenv("GEOCODING_SERVICE_URL"),
 		os.Getenv("ROUTING_SERVICE_URL"),
 	)
 	pubPeriod := time.Millisecond * 2000
@@ -116,34 +136,118 @@ func Loop() {
 		}
 	}
 	lastPublish := time.Now()
+	lastCheckpoint := time.Now()
 	isPirate := os.Getenv("PIRATE") == "true" || os.Getenv("PIRATE") == "1"
+	isRegional := os.Getenv("REGIONAL") == "true"
+	isUrban := os.Getenv("URBAN") == "true"
+	if isUrban {
+		isRegional = true
+	}
+	var cities []string
+	if isRegional {
+		regions, err := overpassClient.GetRegions()
+		if err != nil || len(regions) == 0 {
+			trackeroo.Error("Error getting regions, falling back to Toscana: %v", err)
+			regions = []string{"Toscana"}
+			trackeroo.DeleteCheckpoint(checkpointFile)
+		}
+		region := regions[rand.Intn(len(regions))]
+		cities, err = overpassClient.GetCities(region)
+		if err != nil || len(cities) == 0 {
+			trackeroo.Error("Error getting cities for %s, falling back to default cities: %v", region, err)
+			cities = []string{"Firenze", "Pisa", "Siena", "Lucca", "Vinci", "Prato", "Montecatini", "Arezzo", "Grosseto", "Massa"}
+			trackeroo.DeleteCheckpoint(checkpointFile)
+		}
+
+		if isUrban {
+			city := cities[rand.Intn(len(cities))]
+			cities = []string{city}
+		}
+	} else {
+		regions, err := overpassClient.GetRegions()
+		if err != nil || len(regions) == 0 {
+			trackeroo.Error("Error getting regions, falling back to Toscana: %v", err)
+			regions = []string{"Toscana"}
+			trackeroo.DeleteCheckpoint(checkpointFile)
+		}
+		cities = make([]string, 0)
+		for _, region := range regions {
+			c, _ := overpassClient.GetCities(region)
+			cities = append(cities, c...)
+		}
+	}
 	trackeroo.Info("Is pirate: %t", isPirate)
 	lastStatus := ""
-	lastEnd := ""
+	lastEnd := trackeroo.Street{}
 	normalRun := true
 	deltaDistance := 0.0
 	speedVar := trackeroo.NewStatVar[float64]()
 	consumptionVar := trackeroo.NewStatVar[float64]()
 	for {
-		trackeroo.Info("Getting route from %s", lastEnd)
-		route := trackeroo.GetRoute(lastEnd)
-		trackeroo.Info("Route: %+v", route)
-		drivingSimulator, err := trackeroo.NewDrivingSimulator(routingService, route, 60, 100, isPirate, creds.DeviceType)
+		var checkpoint *trackeroo.Checkpoint
+		var err error
+		if trackeroo.ExistsCheckpoint(checkpointFile) {
+			checkpoint, err = trackeroo.LoadCheckpoint(checkpointFile)
+			if err != nil {
+				trackeroo.Error("Error loading route %v, discarding file", err)
+				trackeroo.DeleteCheckpoint(checkpointFile)
+				continue
+			}
+			lastEnd = checkpoint.Poles[1]
+			trackeroo.Info("Route loaded successfully")
+		} else {
+			checkpoint = &trackeroo.Checkpoint{}
+			trackeroo.Info("Getting route from %+v - REGIONAL: %t - URBAN: %t", lastEnd, isRegional, isUrban)
+			route, err, cityErr := trackeroo.GetRoute(streetProvider, cities, lastEnd, isUrban)
+			checkpoint.Poles = route
+			if err != nil {
+				trackeroo.Error("Error getting route from %s %v", cityErr, err)
+				trackeroo.Warning("Removing %s", cityErr)
+				for i, city := range cities {
+					if city == cityErr {
+						cities = append(cities[:i], cities[i+1:]...)
+					}
+				}
+				trackeroo.DeleteCheckpoint(checkpointFile)
+				continue
+			}
+		}
+		trackeroo.Info("Route: %+v -> %+v @ %+v", checkpoint.Poles[0], checkpoint.Poles[1], checkpoint.LastPosition)
+		err = trackeroo.SaveCheckpoint(checkpoint, checkpointFile)
+		if err != nil {
+			trackeroo.Error("Error saving route %v", err)
+		} else {
+			trackeroo.Info("Route saved to %s", checkpointFile)
+		}
+
+		drivingSimulator, err := trackeroo.NewDrivingSimulator(routingService, checkpoint, 60, 100, isPirate, creds.DeviceType)
 		if err != nil {
 			trackeroo.Error("Error initializing driving simulator %v", err)
 			continue
 		}
-		lastEnd = route[len(route)-1]
+		lastEnd = checkpoint.Poles[len(checkpoint.Poles)-1]
 
 		positionChan := drivingSimulator.SimulateDrive()
 		if rand.Float64() < 0.05 || os.Getenv("NORMAL_RUN") == "false" {
 			normalRun = false
+		} else {
+			normalRun = true
 		}
 		for position := range positionChan {
 			deltaDistance += position.Distance
 			speedVar.Add(position.Speed)
 			consumptionVar.Add(position.Consumption)
 			if time.Since(lastPublish) > pubPeriod || lastStatus != position.Status {
+				if time.Since(lastCheckpoint) > 60*time.Second {
+					err := trackeroo.SaveCheckpoint(&trackeroo.Checkpoint{
+						Poles:        checkpoint.Poles,
+						LastPosition: position.Coordinate,
+					}, checkpointFile)
+					if err != nil {
+						trackeroo.Warning("Cannot save checkpoint: %+v", err)
+					}
+					lastCheckpoint = time.Now()
+				}
 				lastStatus = position.Status
 				payload := Payload{
 					TS:         position.Timestamp.Unix(),
@@ -191,6 +295,7 @@ func Loop() {
 			trackeroo.Millisleep(100)
 		}
 		/* Routing terminated, waiting before next route */
+		trackeroo.DeleteCheckpoint(checkpointFile)
 		time.Sleep(time.Second * 120)
 		if !normalRun {
 			/* Wait some more */

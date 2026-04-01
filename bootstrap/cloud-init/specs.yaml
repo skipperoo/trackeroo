@@ -46,9 +46,9 @@
 - machine_type: node
   name: k3s-node-hermes
   cpu: 8
-  ram: 6144
+  ram: 10240
   os_storage: 20
-  longhorn_storage: 100
+  longhorn_storage: 150
   networks:
     - net_type: direct
       source: vlan.k3s
@@ -61,9 +61,9 @@
 - machine_type: node
   name: k3s-node-achilles
   cpu: 8
-  ram: 6144
+  ram: 10240
   os_storage: 20
-  longhorn_storage: 100
+  longhorn_storage: 150
   networks:
     - net_type: direct
       source: vlan.k3s
@@ -76,9 +76,9 @@
 - machine_type: node
   name: k3s-node-odysseus
   cpu: 8
-  ram: 6144
+  ram: 10240
   os_storage: 20
-  longhorn_storage: 100
+  longhorn_storage: 150
   networks:
     - net_type: direct
       source: vlan.k3s

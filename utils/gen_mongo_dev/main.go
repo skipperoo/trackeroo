@@ -14,47 +14,74 @@ const (
 	FOOD              = "food"
 	PRIVATE_TRANSPORT = "private_transport"
 	PUBLIC_TRANSPORT  = "public_transport"
-	OTHER             = "other"
+	// OTHER             = "other"
 )
 
-// Container-style names for randomization
-var containerNames = []string{
-	"amazing_turing", "boring_wozniak", "clever_newton", "dreamy_tesla",
-	"eager_darwin", "friendly_curie", "gracious_hawking", "happy_einstein",
-	"intelligent_jobs", "jolly_gates", "kind_torvalds", "loving_lovelace",
-	"mystifying_feynman", "naughty_dijkstra", "optimistic_babbage", "peaceful_pascal",
-	"quirky_shannon", "relaxed_turing", "serene_hopper", "trusting_knuth",
-	"upbeat_ritchie", "vibrant_thompson", "wonderful_wirth", "xenodochial_carmack",
-	"youthful_stallman", "zealous_berners", "admiring_bohr", "adoring_morse",
-	"affectionate_bell", "agitated_planck", "amazing_galileo", "angry_maxwell",
-	"boring_heisenberg", "brave_schrodinger", "busy_pauli", "charming_dirac",
-	"clever_fermi", "compassionate_oppenheimer", "competent_rutherford", "condescending_volta",
-	"confident_faraday", "cool_ohm", "cranky_ampere", "crazy_coulomb",
-	"curious_feynman", "dazzling_maxwell", "determined_kelvin", "distracted_planck",
-	"dreamy_euler", "eager_gauss", "ecstatic_riemann", "elastic_fourier",
-	"elegant_lagrange", "elated_laplace", "eloquent_leibniz", "enchanting_poincare",
-	"energetic_hilbert", "epic_cantor", "exciting_godel", "exotic_turing",
-	"fabulous_ramanujan", "faithful_hardy", "fancy_erdos", "fascinated_noether",
-	"fearless_galois", "fervent_abel", "flamboyant_jacobi", "focused_cauchy",
-	"friendly_weierstrass", "frosty_dedekind", "funny_peano", "furious_russell",
-	"gallant_whitehead", "gentle_church", "gifted_kleene", "goofy_markov",
-	"graceful_chebyshev", "great_kolmogorov", "grieving_wiener", "groovy_shannon",
-	"happy_nyquist", "hardcore_bell", "heartwarming_bose", "heuristic_fermi",
-	"hopeful_bardeen", "hungry_cooper", "hyper_shockley", "inspiring_bardeen",
-	"interesting_watson", "inventive_crick", "iron_franklin", "jaunty_pauling",
-	"jovial_mendeleev", "keen_bohr", "laughing_rutherford", "lucid_heisenberg",
-	"magical_dirac", "magnificent_feynman", "merry_schwinger", "modest_dyson",
-	"motivated_penrose", "nervous_hawking", "noble_weinberg", "nostalgic_salam",
-	"objective_glashow", "optimized_higgs", "original_yang", "outstanding_lee",
-	"patient_wu", "pedantic_pauli", "phenomenal_born", "pious_planck",
-	"playful_compton", "polite_millikan", "practical_michelson", "proud_morley",
-	"puzzled_fizeau", "quizzical_doppler", "romantic_hertz", "sad_marconi",
-	"serene_tesla", "sharp_edison", "silly_westinghouse", "sleepy_siemens",
-	"stoic_ohm", "strange_ampere", "suspicious_volta", "sweet_galvani",
-	"tender_faraday", "thirsty_henry", "thoughtful_weber", "thrilled_gauss",
+var adjectives = []string{
+	"admiring", "adoring", "affectionate", "agitated", "amazing",
+	"angry", "awesome", "beautiful", "blissful", "bold",
+	"boring", "brave", "busy", "calm", "charming",
+	"clever", "cool", "compassionate", "competent", "condescending",
+	"confident", "cranky", "crazy", "curious", "dazzling",
+	"determined", "distracted", "dreamy", "eager", "ecstatic",
+	"elastic", "elated", "elegant", "eloquent", "enchanting",
+	"energetic", "epic", "exciting", "exotic", "fabulous",
+	"faithful", "fancy", "fascinated", "fearless", "fervent",
+	"flamboyant", "focused", "friendly", "frosty", "funny",
+	"furious", "gallant", "gentle", "gifted", "goofy",
+	"graceful", "gracious", "great", "grieving", "groovy",
+	"happy", "hardcore", "heartwarming", "heuristic", "hopeful",
+	"hungry", "hyper", "inspiring", "intelligent", "interesting",
+	"inventive", "iron", "jaunty", "jolly", "jovial",
+	"keen", "kind", "laughing", "loving", "lucid",
+	"magical", "magnificent", "merry", "modest", "motivated",
+	"mystifying", "naughty", "nervous", "noble", "nostalgic",
+	"objective", "optimistic", "optimized", "original", "outstanding",
+	"patient", "peaceful", "pedantic", "phenomenal", "pious",
+	"playful", "polite", "practical", "proud", "puzzled",
+	"quirky", "quizzical", "relaxed", "romantic", "sad",
+	"serene", "sharp", "silly", "sleepy", "stoic",
+	"strange", "suspicious", "sweet", "tender", "thirsty",
+	"thoughtful", "thrilled", "trusting", "upbeat", "vibrant",
+	"wonderful", "xenodochial", "youthful", "zealous",
 }
 
-var deviceTypes = []string{VALUABLES, FOOD, PRIVATE_TRANSPORT, PUBLIC_TRANSPORT, OTHER}
+var names = []string{
+	"abel", "ampere", "babbage", "bardeen", "bell",
+	"berners", "bohr", "born", "bose", "cantor",
+	"carmack", "cauchy", "chebyshev", "church", "compton",
+	"cooper", "coulomb", "crick", "curie", "darwin",
+	"dedekind", "dijkstra", "dirac", "doppler", "dyson",
+	"edison", "einstein", "erdos", "euler", "faraday",
+	"fermi", "feynman", "fizeau", "fourier", "franklin",
+	"galileo", "galois", "galvani", "gates", "gauss",
+	"glashow", "godel", "hardy", "hawking", "heisenberg",
+	"henry", "hertz", "higgs", "hilbert", "hopper",
+	"jacobi", "jobs", "kelvin", "kleene", "knuth",
+	"kolmogorov", "lagrange", "laplace", "lee", "leibniz",
+	"lovelace", "marconi", "markov", "maxwell", "mendeleev",
+	"michelson", "millikan", "morley", "morse", "newton",
+	"noether", "nyquist", "ohm", "oppenheimer", "pascal",
+	"pauli", "pauling", "peano", "penrose", "planck",
+	"poincare", "ramanujan", "riemann", "ritchie", "russell",
+	"rutherford", "salam", "schrodinger", "schwinger", "shannon",
+	"shockley", "siemens", "stallman", "tesla", "thompson",
+	"torvalds", "turing", "volta", "watson", "weber",
+	"weinberg", "weierstrass", "westinghouse", "whitehead", "wiener",
+	"wirth", "wozniak", "wu", "yang",
+}
+
+func generateRandomName() string {
+	// Seed the random number generator (do this once in your main function, not every time)
+	rand.Seed(time.Now().UnixNano())
+
+	adjective := adjectives[rand.Intn(len(adjectives))]
+	name := names[rand.Intn(len(names))]
+
+	return fmt.Sprintf("%s_%s", adjective, name)
+}
+
+var deviceTypes = []string{VALUABLES, FOOD, PRIVATE_TRANSPORT, PUBLIC_TRANSPORT}
 
 func GenPrivateKey() (string, error) {
 	privateKey := make([]byte, 32)
@@ -91,7 +118,7 @@ func generateJSObject() (string, error) {
 		return "", err
 	}
 
-	name := containerNames[mrand.Intn(len(containerNames))]
+	name := generateRandomName()
 	deviceType := deviceTypes[mrand.Intn(len(deviceTypes))]
 	id := generateRandomID()
 	connected := mrand.Intn(2) == 1 // Random boolean
@@ -120,7 +147,7 @@ func generateJSObjectList(count int) error {
 
 		// Ensure unique name
 		for {
-			name = containerNames[mrand.Intn(len(containerNames))]
+			name = generateRandomName()
 			if !usedNames[name] {
 				usedNames[name] = true
 				break
@@ -142,18 +169,16 @@ func generateJSObjectList(count int) error {
 		}
 
 		deviceType := deviceTypes[mrand.Intn(len(deviceTypes))]
-		connected := mrand.Intn(2) == 1 // Random boolean
-		lastMessage := generateRandomTime()
 		createdAt := generateRandomTime()
 
 		jsObject := fmt.Sprintf(`{
     _id: "%s",
     name: "%s",
-    status: { connected: %t, last_message: "%s" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "%s",
     private_key: "%s",
     created_at: ISODate("%s"),
-}`, id, name, connected, lastMessage, deviceType, privateKey, createdAt)
+}`, id, name, deviceType, privateKey, createdAt)
 
 		fmt.Print(jsObject)
 		if i < count-1 {
@@ -169,15 +194,7 @@ func generateJSObjectList(count int) error {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	// Generate 5 objects by default (max 50 due to name uniqueness)
 	count := 100
-
-	if count > len(containerNames) {
-		fmt.Printf("Warning: Requested %d objects but only %d unique names available. Using %d objects.\n",
-			count, len(containerNames), len(containerNames))
-		count = len(containerNames)
-	}
-
 	fmt.Printf("// Generated %d JS objects with no duplicates:\n", count)
 	err := generateJSObjectList(count)
 	if err != nil {

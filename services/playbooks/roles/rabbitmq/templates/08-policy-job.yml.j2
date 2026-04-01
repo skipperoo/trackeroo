@@ -1,0 +1,55 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ rabbitmq_app_name }}-policy-setter"
+  namespace: "{{ rabbitmq_namespace }}"
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: rabbitmq-policy-setter
+          image: "{{ rabbitmq_image }}"
+          env:
+            - name: RABBITMQ_ERLANG_COOKIE
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ rabbitmq_app_name }}-secrets"
+                  key: rabbitmq_erlang_cookie
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ rabbitmq_app_name }}-secrets"
+                  key: rabbitmq_admin_user
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ rabbitmq_app_name }}-secrets"
+                  key: rabbitmq_admin_password
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Waiting for RabbitMQ service to be ready..."
+              while ! rabbitmqctl -q --longnames -n rabbit@rabbitmq-0.rabbitmq-headless.{{ rabbitmq_namespace }}.svc.cluster.local ping; do
+                sleep 5
+              done
+              echo "RabbitMQ is up. Applying quorum queue policy..."
+              rabbitmqadmin \
+                -H rabbitmq.{{ rabbitmq_namespace }}.svc.cluster.local \
+                -P 15672 \
+                -u "$RABBITMQ_USER" \
+                -p "$RABBITMQ_PASSWORD" \
+                declare policy \
+                name={{ rabbitmq_ha_policy_name }} \
+                pattern="{{ rabbitmq_ha_policy_pattern }}" \
+                definition='{{ rabbitmq_ha_policy_definition }}'
+
+              if [ $? -eq 0 ]; then
+                echo "Policy applied successfully!"
+              else
+                echo "Error applying policies!"
+              fi
+              rabbitmqctl --longnames -n rabbit@rabbitmq-0.rabbitmq-headless.{{ rabbitmq_namespace }}.svc.cluster.local \
+                list_policies

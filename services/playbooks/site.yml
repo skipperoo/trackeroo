@@ -1,39 +1,13 @@
 - name: Deploy tsdb
-  hosts: servers
+  hosts: kubernetes
   tags:
     - tsdb
     - data
   roles:
     - tsdb
 
-- name: Deploy pgAdmin
-  hosts: servers
-  tags:
-    - pgadmin
-    - management
-  roles:
-    - pgadmin
-
-- name: Deploy Mongo Express
-  hosts: servers
-  tags:
-    - mongo-express
-    - management
-  roles:
-    - mongo-express
-
-- name: Deploy rabbitmq
-  hosts: servers
-  tags:
-    - rabbitmq
-    - trackeroo
-  vars_files:
-    - secrets.yml
-  roles:
-    - rabbitmq
-
 - name: Deploy mongo
-  hosts: servers
+  hosts: kubernetes
   tags:
     - mongo
     - data
@@ -41,48 +15,101 @@
     - mongo
 
 - name: Deploy redis
-  hosts: servers
+  hosts: kubernetes
   tags:
     - redis
     - data
   roles:
     - redis
 
-- name: Deploy trackeroo
-  hosts: servers
+- name: Deploy Kafka and Zookeeper
+  hosts: kubernetes
+  tags:
+    - kafka
+    - data
+  roles:
+    - kafka
+
+- name: Deploy Flink
+  hosts: kubernetes
+  tags:
+    - flink
+    - data
+  roles:
+    - flink
+
+- name: Deploy pgAdmin
+  hosts: kubernetes
+  tags:
+    - pgadmin
+    - management
+  roles:
+    - pgadmin
+
+- name: Deploy Mongo Express
+  hosts: kubernetes
+  tags:
+    - mongo-express
+    - management
+  roles:
+    - mongo-express
+
+- name: Deploy keda
+  hosts: kubernetes
   tags:
     - trackeroo
+    - keda
+  roles:
+    - keda
+
+- name: Deploy rabbitmq
+  hosts: kubernetes
+  tags:
+    - rabbitmq
+    - trackeroo
+  vars_files:
+    - secrets.yml
+  roles:
+    - rabbitmq
+
+- name: Deploy trackeroo-backend
+  hosts: kubernetes
+  tags:
+    - trackeroo
+    - trackeroo-backend
   vars_files:
     - secrets.yml
   roles:
     - trackeroo
 
-- name: Deploy Flink
-  hosts: servers
-  tags:
-    - flink
-    - data
-  roles:
-    - flink
-
 - name: Deploy Brokeroo
-  hosts: servers
+  hosts: kubernetes
   tags:
     - brokeroo
     - trackeroo
+  vars_files:
+    - secrets.yml
   roles:
     - brokeroo
 
 - name: Deploy Grafana
-  hosts: servers
+  hosts: kubernetes
   tags: grafana
   roles:
     - grafana
 
-- name: Deploy Kafka and Zookeeper
-  hosts: servers
+- name: Deploy Nginx
+  hosts: kubernetes
   tags:
-    - kafka
-    - data
+    - grafana
+    - nginx
   roles:
-    - kafka
+    - nginx
+
+- name: Deploy Prometheus
+  hosts: kubernetes
+  tags:
+    - grafana
+    - prometheus
+  roles:
+    - prometheus

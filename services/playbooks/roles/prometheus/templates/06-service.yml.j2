@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ prometheus_app_name }}
+  labels:
+    app: {{ prometheus_app_name }}
+spec:
+  type: LoadBalancer
+  loadBalancerIP: {{ prometheus_ip }}
+  ports:
+    - port: {{ prometheus_port }}
+      targetPort: {{ prometheus_port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ prometheus_app_name }}

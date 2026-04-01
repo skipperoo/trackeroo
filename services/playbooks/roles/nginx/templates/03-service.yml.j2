@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ nginx_app_name }}
+spec:
+  selector:
+    app: {{ nginx_app_name }}
+  ports:
+    - name: http
+      port: {{ nginx_port }}
+      targetPort: {{ nginx_port }}
+  type: LoadBalancer
+  loadBalancerIP: {{ nginx_service_ip }}

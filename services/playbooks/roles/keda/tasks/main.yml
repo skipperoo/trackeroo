@@ -1,0 +1,35 @@
+- name: Install KEDA to autoscale
+  kubernetes.core.k8s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: present
+    src: "https://github.com/kedacore/keda/releases/download/v{{ keda_version }}/keda-{{ keda_version }}.yaml"
+
+- name: Wait for KEDA operator to be ready
+  kubernetes.core.k8s_info:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    api_version: v1
+    kind: Pod
+    namespace: "{{ keda_namespace }}"
+    label_selectors:
+      - app=keda-operator
+  register: keda_pods
+  until:
+    - keda_pods.resources | length > 0
+    - keda_pods.resources[0].status.phase == "Running"
+  retries: 30
+  delay: 10
+
+- name: Wait for KEDA metrics server to be ready
+  kubernetes.core.k8s_info:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    api_version: v1
+    kind: Pod
+    namespace: "{{ keda_namespace }}"
+    label_selectors:
+      - app=keda-metrics-apiserver
+  register: keda_metrics_pods
+  until:
+    - keda_metrics_pods.resources | length > 0
+    - keda_metrics_pods.resources[0].status.phase == "Running"
+  retries: 30
+  delay: 10

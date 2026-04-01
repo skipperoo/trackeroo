@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: "{{ brokeroo_app_name }}-pdb"
+  namespace: "{{ brokeroo_namespace }}"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: "{{ brokeroo_app_name }}"

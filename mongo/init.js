@@ -3,62 +3,67 @@ db.users.insertMany([
   {
     username: "leonardo",
     role: "admin",
-    password_hash: "$2b$12$PHQyHC3QX7hSaSNk3otnJe90Htsf5nIqNeqSMKCWrmCHwbDvEUrwm",
+    password_hash:
+      "$2b$12$PHQyHC3QX7hSaSNk3otnJe90Htsf5nIqNeqSMKCWrmCHwbDvEUrwm",
     last_login: new Date(),
     session_token: "",
     issued_at: new Date(),
-    expires_at: new Date(Date.now() + 24*60*60*1000) // 24 hours from now
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
   },
   {
     username: "simone",
     role: "admin",
-    password_hash: "$2b$12$CCBM/Xy54gPzHkJyMWovm.fTmUUqjg73GWb1cBDTKPaMU4JsfSXd6",
+    password_hash:
+      "$2b$12$CCBM/Xy54gPzHkJyMWovm.fTmUUqjg73GWb1cBDTKPaMU4JsfSXd6",
     last_login: new Date(),
     session_token: "",
     issued_at: new Date(),
-    expires_at: new Date(Date.now() + 24*60*60*1000)
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
   },
   {
     username: "admin",
     role: "admin",
-    password_hash: "$2b$12$3CaXyt.SvoUeQiR5TAFdReV4AjnAlNe46/oL6SBd75souC5SvKLAu",
+    password_hash:
+      "$2b$12$3CaXyt.SvoUeQiR5TAFdReV4AjnAlNe46/oL6SBd75souC5SvKLAu",
     last_login: new Date(),
     session_token: "",
     issued_at: new Date(),
-    expires_at: new Date(Date.now() + 24*60*60*1000)
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
   },
   {
     username: "apps",
     role: "admin",
-    password_hash: "$2b$12$ZhKtxqqkFfrcEXiKjgvM0.BqM9sVXTEZAQCP5/qhRxMBZn2cWWbJ6",
+    password_hash:
+      "$2b$12$ZhKtxqqkFfrcEXiKjgvM0.BqM9sVXTEZAQCP5/qhRxMBZn2cWWbJ6",
     last_login: new Date(),
     session_token: "",
     issued_at: new Date(),
-    expires_at: new Date(Date.now() + 24*60*60*1000)
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
   },
   {
     username: "trackeroo",
     role: "admin",
-    password_hash: "$2b$12$NAfj6rvgE20aWfxfK9Y0j.aVUaA1k3eJak2a0.u11nO0/9ijsFX4W", // trackeroo
+    password_hash:
+      "$2b$12$NAfj6rvgE20aWfxfK9Y0j.aVUaA1k3eJak2a0.u11nO0/9ijsFX4W", // trackeroo
     last_login: new Date(),
     session_token: "",
     issued_at: new Date(),
-    expires_at: new Date(Date.now() + 24*60*60*1000)
-  }
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+  },
 ]);
 db.devices.insertMany([
   {
     _id: "trk-18608d12c8414acfcb9165b1",
     name: "wonderful_wirth",
-    status: { connected: true, last_message: "2025-08-02T16:40:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "m9mFoEWSL+GwWtoyPZsF2q4HpwLddf7JfsxmedN8h+Y=",
     created_at: ISODate("2025-08-18T03:36:46Z"),
   },
   {
     _id: "trk-18608d12c843cfc86452c8bc",
     name: "xenodochial_carmack",
-    status: { connected: false, last_message: "2025-08-18T20:34:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "QNiUX1DdBq9hNGToa8ynDbXZRF9aDbO4LWvm7QspLo8=",
     created_at: ISODate("2025-08-08T07:04:46Z"),
@@ -66,7 +71,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8443834a667d6c2",
     name: "merry_schwinger",
-    status: { connected: false, last_message: "2025-08-10T14:36:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "mS+C+G6Ut4mrbmz6v3EA5Fm7OvtcwrcRzvLOoIyIRDw=",
     created_at: ISODate("2025-08-08T17:05:46Z"),
@@ -74,7 +79,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8445101b3d3a3b8",
     name: "thirsty_henry",
-    status: { connected: false, last_message: "2025-08-22T18:58:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "4kKuUQSMJE9RckmbCFReQy5gtbRpY3sCgDjcTnxBxwI=",
     created_at: ISODate("2025-08-04T05:03:46Z"),
@@ -82,7 +87,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8446943ffbf2df9",
     name: "admiring_bohr",
-    status: { connected: true, last_message: "2025-08-06T01:33:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "5mp9W9wUVd50eqGqC/JpW/0/pG6wBrAsivSPg0bcC2M=",
     created_at: ISODate("2025-08-25T16:35:46Z"),
@@ -90,7 +95,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84480bd0ad4656f",
     name: "keen_bohr",
-    status: { connected: true, last_message: "2025-08-16T05:31:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "/3tiwn6woUzwRGe/TUqOZQNGvYWHYSHj4d/Fpq9eTS8=",
     created_at: ISODate("2025-08-01T14:09:46Z"),
@@ -98,7 +103,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8449838a8eb28eb",
     name: "clever_fermi",
-    status: { connected: true, last_message: "2025-08-08T23:13:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "pveqq6guV0EAQANRpMOQq5Yd8iSaZSH6QUMynO0ke6g=",
     created_at: ISODate("2025-08-05T16:46:46Z"),
@@ -106,7 +111,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c844b01d0d668fce",
     name: "brave_schrodinger",
-    status: { connected: false, last_message: "2025-08-04T16:28:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "+NrhtHayxZYPZnqA+C1C6uth3bORje/ka5uxXZ3E2zQ=",
     created_at: ISODate("2025-08-04T20:21:46Z"),
@@ -114,7 +119,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c844cb262515236b",
     name: "youthful_stallman",
-    status: { connected: false, last_message: "2025-08-22T21:24:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "dkvOCYpkWXr3WZs62jH9LfjOAbhm0TapSNQvcIzijLA=",
     created_at: ISODate("2025-08-04T10:00:46Z"),
@@ -122,7 +127,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c844e58e640b9ea1",
     name: "friendly_curie",
-    status: { connected: true, last_message: "2025-08-21T03:51:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "1l0SNynykdBFZVNfGlkTYiniGlmk5KVgyW3bp8HI6xg=",
     created_at: ISODate("2025-08-05T23:57:46Z"),
@@ -130,7 +135,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c844fccd26144714",
     name: "charming_dirac",
-    status: { connected: false, last_message: "2025-07-31T23:08:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "/Vi9D/RMiWilNw0jHA/fv4DbGwAEbqRAgQJulPl4DTQ=",
     created_at: ISODate("2025-08-08T18:10:46Z"),
@@ -138,7 +143,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8451452004ec96d",
     name: "iron_franklin",
-    status: { connected: true, last_message: "2025-08-02T12:47:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "V0exZwne86ptOGifjuWX7QmGjpN1W62szV6+WxX9m5s=",
     created_at: ISODate("2025-08-07T12:55:46Z"),
@@ -146,15 +151,15 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8456a397013ce6b",
     name: "gentle_church",
-    status: { connected: false, last_message: "2025-08-11T23:09:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "KH+3BS3QnEec8vME0ToemUn3mK9i0bwCg1ZlvgnRfkU=",
     created_at: ISODate("2025-08-15T20:23:46Z"),
   },
   {
     _id: "trk-18608d12c84581a0b80ca1c5",
     name: "practical_michelson",
-    status: { connected: false, last_message: "2025-08-11T11:15:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "ab3Wu7Glx9xhfSFUNRKzi1CZPfPeiCI7ujc/iJmYWpI=",
     created_at: ISODate("2025-08-04T21:37:46Z"),
@@ -162,7 +167,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c845ad105b9a60db",
     name: "phenomenal_born",
-    status: { connected: false, last_message: "2025-08-23T09:48:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "h3dT1JuyA/MhH1/o/n/IiPRFEyyEvXlMl3ZNtrCHZwY=",
     created_at: ISODate("2025-08-06T01:48:46Z"),
@@ -170,7 +175,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c845c8050d2973c1",
     name: "agitated_planck",
-    status: { connected: false, last_message: "2025-08-20T06:43:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "l/TRQN08IpMfwVHCWHpcNQ/SBuRWLeNcuJZDf28697c=",
     created_at: ISODate("2025-08-12T01:20:46Z"),
@@ -178,7 +183,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c845df659619c7e6",
     name: "determined_kelvin",
-    status: { connected: true, last_message: "2025-08-16T14:01:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "MlxmbBIfcGNpReS6GUgLDmTRrDDQQ6rlLxj4Eggrfjo=",
     created_at: ISODate("2025-08-10T07:50:46Z"),
@@ -186,7 +191,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c845f5d103e908ad",
     name: "thoughtful_weber",
-    status: { connected: false, last_message: "2025-08-18T05:54:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "WGmlcdPBvesFWds8BZ4UR4k7ze/25P1GpWhXaSmgNDQ=",
     created_at: ISODate("2025-08-04T22:08:46Z"),
@@ -194,15 +199,15 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8460bf33167dbdc",
     name: "hyper_shockley",
-    status: { connected: false, last_message: "2025-08-17T20:07:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "BzHUYgawXJvf458ZW6fLaKxbTEoOXBI1pgI4Z5ebMuM=",
     created_at: ISODate("2025-08-17T07:01:46Z"),
   },
   {
     _id: "trk-18608d12c8462309d5e746cc",
     name: "pious_planck",
-    status: { connected: true, last_message: "2025-08-12T19:59:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "DMAF8lJbDW/hdBvKttHueeokLXgQ9nlcTQBDMfypO4w=",
     created_at: ISODate("2025-08-15T02:45:46Z"),
@@ -210,7 +215,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84640a54b9bd528",
     name: "heuristic_fermi",
-    status: { connected: true, last_message: "2025-08-02T15:13:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "+crZGHsZ6r5ZN0UMsB0JFK/hveE6E267uzcAGdkQAZQ=",
     created_at: ISODate("2025-08-09T02:32:46Z"),
@@ -218,7 +223,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c846577d4ec97cfb",
     name: "sharp_edison",
-    status: { connected: true, last_message: "2025-08-14T03:13:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "eW16LWeR4CcKm0mRqkBnv9lU6WYKXyzS8csOmoTwt+c=",
     created_at: ISODate("2025-08-21T01:54:46Z"),
@@ -226,7 +231,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8466e529b599dc4",
     name: "romantic_hertz",
-    status: { connected: true, last_message: "2025-08-30T03:20:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "kbRJ702ADyEPki+ko7MbOZ7AGvhKPSql5A7fK6MGFGI=",
     created_at: ISODate("2025-08-17T20:13:46Z"),
@@ -234,7 +239,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84685251cdaf35c",
     name: "gallant_whitehead",
-    status: { connected: true, last_message: "2025-08-05T15:55:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "ZeGHStsNcbp56gDEk+nasq/BaaLklfzXfuG8BcX+lrs=",
     created_at: ISODate("2025-08-28T00:41:46Z"),
@@ -242,7 +247,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8469c00840cc49b",
     name: "laughing_rutherford",
-    status: { connected: false, last_message: "2025-08-13T10:56:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "n0LNbNhaIaW42aBkqCwDM0cJSwcwL8McL8im5CP91v4=",
     created_at: ISODate("2025-08-29T17:24:46Z"),
@@ -250,7 +255,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c846b3600123a417",
     name: "sad_marconi",
-    status: { connected: true, last_message: "2025-08-05T23:52:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "g2D4mb6ezOrfK/ft41lACByyeU4IQVF6RWlB/0P7zhc=",
     created_at: ISODate("2025-08-15T07:38:46Z"),
@@ -258,7 +263,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c846ca7bab489e30",
     name: "clever_newton",
-    status: { connected: true, last_message: "2025-08-18T06:39:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "hGz/4/osEsLT/5Q53TTlID+wA54Xb2p8Cxpj05jZsik=",
     created_at: ISODate("2025-08-18T00:25:46Z"),
@@ -266,15 +271,15 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c846e0a3e38974e5",
     name: "dazzling_maxwell",
-    status: { connected: false, last_message: "2025-08-10T04:46:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "KSG9WiZ6pWINfm9FH9vS/GSo3t1TmLf+eE5eGhU+Hik=",
     created_at: ISODate("2025-08-05T06:51:46Z"),
   },
   {
     _id: "trk-18608d12c847064ce1bdf7ee",
     name: "elegant_lagrange",
-    status: { connected: true, last_message: "2025-08-28T18:21:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "tlrnwpslaBwOChP+dAFPQ2sfItsoKERU+MR33NHk9yQ=",
     created_at: ISODate("2025-08-19T09:04:46Z"),
@@ -282,7 +287,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8472b9f0905b3ad",
     name: "ecstatic_riemann",
-    status: { connected: true, last_message: "2025-08-05T19:27:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "5v94oQP8pNQZrOZrYNTTl5c67qyrPDUJE4eZTfuBjVU=",
     created_at: ISODate("2025-08-08T11:59:46Z"),
@@ -290,15 +295,15 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84742df27b88f6b",
     name: "cranky_ampere",
-    status: { connected: false, last_message: "2025-08-19T19:18:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "cS34G/an+Z+MM1M5P5dh48B+y4kjyy0eI/8cw4ClkT4=",
     created_at: ISODate("2025-08-08T18:36:46Z"),
   },
   {
     _id: "trk-18608d12c84759c8a9ef04f8",
     name: "energetic_hilbert",
-    status: { connected: true, last_message: "2025-08-25T05:04:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "EInJWD1jh2t06pz3D5WZjspYvxzqs57NRKAxVhe9uIk=",
     created_at: ISODate("2025-08-28T01:57:46Z"),
@@ -306,15 +311,15 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84770f5153b97ef",
     name: "amazing_turing",
-    status: { connected: false, last_message: "2025-08-10T10:51:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "X9Lx6+KllLFtNDyvj/466CrOQmF6UewS+3xs9j18ILA=",
     created_at: ISODate("2025-08-03T11:49:46Z"),
   },
   {
     _id: "trk-18608d12c84786f21e4edc5e",
     name: "happy_einstein",
-    status: { connected: true, last_message: "2025-08-21T12:01:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "wzTOvpERsSN6QO4jgUD3XuRtcdqQLItdjSxSgrKmcoo=",
     created_at: ISODate("2025-08-17T21:31:46Z"),
@@ -322,7 +327,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8479d828433ff9a",
     name: "funny_peano",
-    status: { connected: true, last_message: "2025-08-11T05:13:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "cqseF4l1F5lAgCe7bD6EP+rEE+L1wFhc+10MQV48UJo=",
     created_at: ISODate("2025-08-24T04:47:46Z"),
@@ -330,7 +335,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c847b3e74258eb03",
     name: "vibrant_thompson",
-    status: { connected: false, last_message: "2025-08-15T07:02:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "O0XXGhe7rp/EsEYyXNAGIKjJk5T+FXCAdebGqh/dluo=",
     created_at: ISODate("2025-08-16T09:54:46Z"),
@@ -338,7 +343,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8480b18fe88b4af",
     name: "patient_wu",
-    status: { connected: false, last_message: "2025-08-21T22:36:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "bHzGkyOqJLG9GAnkC25B2OLoXhQhIUu3bPVIE9sBlzU=",
     created_at: ISODate("2025-08-24T18:56:46Z"),
@@ -346,7 +351,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84823aa3e06b7da",
     name: "epic_cantor",
-    status: { connected: true, last_message: "2025-08-07T10:15:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "G7MRIMBP24R0xdEXZRIV3me9dDDFRdxtTXuLXe28494=",
     created_at: ISODate("2025-08-02T10:17:46Z"),
@@ -354,7 +359,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8483aeb4dce2724",
     name: "hopeful_bardeen",
-    status: { connected: true, last_message: "2025-08-30T06:16:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "Xd5a7XzvWCVjDtduORbuAH1sykFtGHcvAhK/4BadcaI=",
     created_at: ISODate("2025-08-06T23:01:46Z"),
@@ -362,7 +367,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8486259917b5535",
     name: "frosty_dedekind",
-    status: { connected: false, last_message: "2025-08-07T10:35:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "I0ahyNHzwY2ax1RTIwkdAW1+4eErU6s1WISzCED2ImI=",
     created_at: ISODate("2025-08-05T02:16:46Z"),
@@ -370,15 +375,15 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8487a58b5c5651d",
     name: "heartwarming_bose",
-    status: { connected: true, last_message: "2025-08-15T11:05:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "LsgbCoMQG+opSUt9JrsiDIL4Z1k5VU+WnTGajUsfRMU=",
     created_at: ISODate("2025-08-04T01:01:46Z"),
   },
   {
     _id: "trk-18608d12c848919ae0a5ac8f",
     name: "kind_torvalds",
-    status: { connected: false, last_message: "2025-08-02T19:55:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "ij0mk0VXVo7nsb0cqpGJX0V5oChhDa830+CJ72ZW8xk=",
     created_at: ISODate("2025-08-20T23:21:46Z"),
@@ -386,15 +391,15 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c848b620cb14aa25",
     name: "fascinated_noether",
-    status: { connected: false, last_message: "2025-08-20T21:05:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "XJVLbd6UO12QkuIGo3EbZGXjG4xPKSvliiOLRLnMZmI=",
     created_at: ISODate("2025-08-09T07:11:46Z"),
   },
   {
     _id: "trk-18608d12c848d48480a5d5b6",
     name: "puzzled_fizeau",
-    status: { connected: true, last_message: "2025-08-22T09:43:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "ceSr36+tty8/YgIQuT7V66kMAXhi+K2JPN7EqEF7r3Y=",
     created_at: ISODate("2025-08-02T11:41:46Z"),
@@ -402,7 +407,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c848eb34f8760e19",
     name: "competent_rutherford",
-    status: { connected: true, last_message: "2025-08-04T03:29:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "e8kkc8+QotgP718tO8zL2+ukDwUiNfSmRl3UQFKnEwc=",
     created_at: ISODate("2025-08-02T23:24:46Z"),
@@ -410,7 +415,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8490334a6303366",
     name: "pedantic_pauli",
-    status: { connected: true, last_message: "2025-08-30T09:45:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "kXVOIOGZGLfPzYCPK55aVbR15kbwTZr9ezA6zSxHEig=",
     created_at: ISODate("2025-08-05T01:38:46Z"),
@@ -418,7 +423,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8491a91b1f888a9",
     name: "magical_dirac",
-    status: { connected: false, last_message: "2025-08-08T15:21:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "C9biy8JKSu1nQCKQxGTjuxkjHr4W46086h3KwjVBr/I=",
     created_at: ISODate("2025-08-05T22:46:46Z"),
@@ -426,7 +431,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84931d6fa2d6232",
     name: "serene_tesla",
-    status: { connected: false, last_message: "2025-08-03T19:17:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "xPGoSwT+dTYd6ZX1++0+CJC8iEwVscx3VoDDI+LXWw8=",
     created_at: ISODate("2025-08-05T07:06:46Z"),
@@ -434,15 +439,15 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8494897112ba78e",
     name: "peaceful_pascal",
-    status: { connected: true, last_message: "2025-08-05T08:37:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "WAVVSnHd8206VRwJOtgHDuUGDf0orqqYBIqodJA9L1I=",
     created_at: ISODate("2025-08-15T05:44:46Z"),
   },
   {
     _id: "trk-18608d12c8495fd71857ce3f",
     name: "stoic_ohm",
-    status: { connected: false, last_message: "2025-08-22T12:36:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "vzDwSMp/L6oyVEyYj3RKTY9UKyBj3V7LvhCD6cqe/nI=",
     created_at: ISODate("2025-08-22T20:43:46Z"),
@@ -450,7 +455,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84976fefd57d1ff",
     name: "fearless_galois",
-    status: { connected: false, last_message: "2025-08-10T16:04:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "PoHtJ2l8pTjJPJctSMrIII20agqTIk4LpVoiIdNLzgo=",
     created_at: ISODate("2025-08-03T14:47:46Z"),
@@ -458,7 +463,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c8498d777941e066",
     name: "distracted_planck",
-    status: { connected: true, last_message: "2025-08-24T07:49:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "W8F6g6HmjQAP3lwJjRqAfdQOIOsSq1vzEVbHMS8ZUAo=",
     created_at: ISODate("2025-08-21T20:41:46Z"),
@@ -466,7 +471,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c849a50c845c25a9",
     name: "optimistic_babbage",
-    status: { connected: true, last_message: "2025-08-12T09:06:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "zpX14uHmth5/ZzzNaL68qeoHLJRZjT3huaYns0LmnWU=",
     created_at: ISODate("2025-08-06T17:19:46Z"),
@@ -474,7 +479,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c849bd6d485879c1",
     name: "tender_faraday",
-    status: { connected: true, last_message: "2025-08-10T12:57:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "O8XxluA24EC4bsgPrBHWCwS8q8GmBK7mv0byordbYc8=",
     created_at: ISODate("2025-08-13T13:09:46Z"),
@@ -482,7 +487,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c849d409351613c2",
     name: "jaunty_pauling",
-    status: { connected: true, last_message: "2025-08-27T07:44:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "OLbAlVzxkhzr2wlaO/WV8fCB/m4jJQ5AIfrJ0tUgF0A=",
     created_at: ISODate("2025-08-20T22:21:46Z"),
@@ -490,7 +495,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84a2e54a6ffdd76",
     name: "suspicious_volta",
-    status: { connected: true, last_message: "2025-08-03T18:04:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "S30Z2mlkvsUR6yH8nULY8RqPhmUcxEHEcEVuP7ePmSM=",
     created_at: ISODate("2025-08-10T10:53:46Z"),
@@ -498,7 +503,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84a5f766256c9e2",
     name: "serene_hopper",
-    status: { connected: true, last_message: "2025-08-13T10:31:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "DTOj/Y2DiO0Ju5vwxOUgBtwXB5579pz30EEMYun7z00=",
     created_at: ISODate("2025-08-18T16:45:46Z"),
@@ -506,7 +511,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84a892c3aad3955",
     name: "eager_gauss",
-    status: { connected: false, last_message: "2025-08-06T19:07:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "Dl4fLpzCBXqNHjtrgm+5jrj+tSXPZRxttltQPvr/JcY=",
     created_at: ISODate("2025-08-29T10:30:46Z"),
@@ -514,15 +519,15 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84aa049b09a2169",
     name: "eager_darwin",
-    status: { connected: true, last_message: "2025-08-10T19:58:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "EC7AoSY05EyPbRVEl/eGTSfESGXZZ4OWF5FsPcaKdTU=",
     created_at: ISODate("2025-08-24T18:39:46Z"),
   },
   {
     _id: "trk-18608d12c84ab6d05b8082ad",
     name: "hardcore_bell",
-    status: { connected: true, last_message: "2025-08-25T03:22:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "Ar3WbxWHU8l2uyOZPnqJffGQ9vJpXAovM/ZoNRYd9RA=",
     created_at: ISODate("2025-08-20T22:33:46Z"),
@@ -530,7 +535,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84acd0d1c7fc74a",
     name: "enchanting_poincare",
-    status: { connected: false, last_message: "2025-08-12T07:20:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "0HbmI0I5esubDm4b6XvzgLgHJtXVxGTeIt4EiHJAKc0=",
     created_at: ISODate("2025-08-08T23:41:46Z"),
@@ -538,7 +543,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84ae3dffff2e52d",
     name: "proud_morley",
-    status: { connected: true, last_message: "2025-08-17T10:23:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "NYrTqrlsGqPo9r6nKF2+bVd+QshvHb00Z676LpK3R00=",
     created_at: ISODate("2025-08-30T11:59:46Z"),
@@ -546,15 +551,15 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84afa2c10aa6c55",
     name: "inspiring_bardeen",
-    status: { connected: false, last_message: "2025-08-15T18:29:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "6dU2H5RdD5VaZyXi5ZWaj5rkydlEV5f2PS1l9+fvL+c=",
     created_at: ISODate("2025-08-07T16:21:46Z"),
   },
   {
     _id: "trk-18608d12c84b11c367999861",
     name: "objective_glashow",
-    status: { connected: true, last_message: "2025-08-26T14:04:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "uW2kufM6EeR+tpJHDYRmd/5CPGLMn84jMBsu6mhWtRU=",
     created_at: ISODate("2025-08-19T03:27:46Z"),
@@ -562,7 +567,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84b2feca3792861",
     name: "modest_dyson",
-    status: { connected: false, last_message: "2025-08-25T10:25:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "5XYG/w/clJolar2hAO3n4D9+fJdckv7i0ZO0S2m2KRo=",
     created_at: ISODate("2025-08-02T00:09:46Z"),
@@ -570,7 +575,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84b469627a640d9",
     name: "boring_heisenberg",
-    status: { connected: false, last_message: "2025-08-25T03:19:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "EHPvNh8KnmQNbD8Kef2UZh+07Y6DiHKpNwTuuIcyemo=",
     created_at: ISODate("2025-08-10T16:52:46Z"),
@@ -578,7 +583,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84b5cae4cff3133",
     name: "strange_ampere",
-    status: { connected: true, last_message: "2025-08-28T04:31:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "fUqc7PB2fR3likQIUigerur96bUzz7dQZE/lMUiMJHY=",
     created_at: ISODate("2025-08-08T07:02:46Z"),
@@ -586,7 +591,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84b74702fe3e85c",
     name: "faithful_hardy",
-    status: { connected: false, last_message: "2025-08-27T20:37:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "etflzQEpsxaJqAlO2o/G45T+s80cWWaSV0KPobuWWFE=",
     created_at: ISODate("2025-08-02T15:50:46Z"),
@@ -594,7 +599,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84b8b83746dbc8b",
     name: "eloquent_leibniz",
-    status: { connected: true, last_message: "2025-08-14T14:03:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "nwdfO4d3o5nmJsO/i8xQrgcjsa2KNSQQ9PQzgMNbEc8=",
     created_at: ISODate("2025-08-13T23:17:46Z"),
@@ -602,23 +607,23 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84ba2911c4a675e",
     name: "cool_ohm",
-    status: { connected: false, last_message: "2025-08-12T06:22:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "7TXa0utsnnJXx7tHWYt5KC8nwv1xThn8iy12KI2zOvE=",
     created_at: ISODate("2025-08-12T01:49:46Z"),
   },
   {
     _id: "trk-18608d12c84bde9e8b791f18",
     name: "fervent_abel",
-    status: { connected: true, last_message: "2025-08-03T23:36:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "1doRBvIJsrXQIG1Ui9albOMUHxMjtrjU6VvNLZTZQak=",
     created_at: ISODate("2025-08-29T22:05:46Z"),
   },
   {
     _id: "trk-18608d12c84bf63dcc1fb3e7",
     name: "groovy_shannon",
-    status: { connected: true, last_message: "2025-08-10T16:58:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "4NnTHCSG64xQf807OjIJlzc+MdgrOv9/a83gDgRzUwQ=",
     created_at: ISODate("2025-08-16T23:38:46Z"),
@@ -626,7 +631,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84c23101fa0a8b6",
     name: "grieving_wiener",
-    status: { connected: true, last_message: "2025-08-14T09:38:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "BpChhURWcEyErTfXhnx6J9gg4L+Qy4FyWzdeL6e27u4=",
     created_at: ISODate("2025-08-14T21:20:46Z"),
@@ -634,15 +639,15 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84c3ae0fd8aad7e",
     name: "optimized_higgs",
-    status: { connected: false, last_message: "2025-08-21T14:05:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "csXqVuqw2AXm2A46aCt97ytsUzs5pA6t5Jnit25JFkI=",
     created_at: ISODate("2025-08-15T19:27:46Z"),
   },
   {
     _id: "trk-18608d12c84c5151bb792931",
     name: "boring_wozniak",
-    status: { connected: true, last_message: "2025-08-08T02:27:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "X3CHEXehWzXvRfQAJ6GGCoeEbVPcdX95JCzT3uEBYSs=",
     created_at: ISODate("2025-08-02T10:22:46Z"),
@@ -650,7 +655,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84c678173241105",
     name: "curious_feynman",
-    status: { connected: false, last_message: "2025-08-21T18:29:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "XxN0HpCbfzUE2AMRPcteDPSRLT5YgnAy4ILOxwIzm/g=",
     created_at: ISODate("2025-08-26T19:07:46Z"),
@@ -658,7 +663,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84c7e6385d059d6",
     name: "noble_weinberg",
-    status: { connected: true, last_message: "2025-08-07T01:06:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "SZzpdjeGSaaWEBBa8apWtQJdwscbjyJ4jC/nXgnxJu4=",
     created_at: ISODate("2025-08-21T16:34:46Z"),
@@ -666,7 +671,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84c9470140d32f6",
     name: "upbeat_ritchie",
-    status: { connected: false, last_message: "2025-08-10T09:04:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "65mhzIpZvOx51yE6nPxQgjgy3rwlv13lMSM5X7vEFeQ=",
     created_at: ISODate("2025-08-01T12:55:46Z"),
@@ -674,7 +679,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84caba1375500b4",
     name: "quizzical_doppler",
-    status: { connected: true, last_message: "2025-08-11T14:42:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "t/9N9FYcN12suJ/nZl5q6jC7OAWv0h2Pow6vJBSr4dA=",
     created_at: ISODate("2025-08-29T00:09:46Z"),
@@ -682,7 +687,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84cc3de436f7bde",
     name: "silly_westinghouse",
-    status: { connected: true, last_message: "2025-08-28T04:22:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "Ba4MVIb1YQL6dm2eYRiJOX0CljrdeuFtAI2HZ3nBtsE=",
     created_at: ISODate("2025-08-02T07:07:46Z"),
@@ -690,15 +695,15 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84cdbbc4c9327d2",
     name: "dreamy_tesla",
-    status: { connected: true, last_message: "2025-08-12T22:50:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "/kDru3xkiT7oAfKFD4Mp6nVl5IIFEMXponchC0ojKlo=",
     created_at: ISODate("2025-08-01T00:21:46Z"),
   },
   {
     _id: "trk-18608d12c84cf3df4741680f",
     name: "jovial_mendeleev",
-    status: { connected: true, last_message: "2025-08-06T08:10:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "voqhD27X8L+VW4e/Op93AyazBBx/a7mqhTbAsvn6tnc=",
     created_at: ISODate("2025-08-26T23:38:46Z"),
@@ -706,7 +711,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84d0b5fc332f041",
     name: "great_kolmogorov",
-    status: { connected: false, last_message: "2025-08-14T09:59:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "TH/tO2mmlgP3dnH6h+ickwu8IaEajnm+DpvDLcAZDC8=",
     created_at: ISODate("2025-08-29T11:27:46Z"),
@@ -714,15 +719,15 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84d2247a477b6ff",
     name: "interesting_watson",
-    status: { connected: true, last_message: "2025-08-20T09:29:46Z" },
-    device_type: "other",
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
+    device_type: "public_transport",
     private_key: "ZBNn287pTaxPwGShBOOICVcZDmQbcdr2vtmLYbelgoU=",
     created_at: ISODate("2025-08-19T19:46:46Z"),
   },
   {
     _id: "trk-18608d12c84d385e1d5c7bbc",
     name: "zealous_berners",
-    status: { connected: true, last_message: "2025-08-04T11:23:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "5Wx/7819jHalM4yOsTrhtswnTS8ItR5/n0BEaYFotQM=",
     created_at: ISODate("2025-08-18T18:58:46Z"),
@@ -730,7 +735,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84d62f4adb3c923",
     name: "condescending_volta",
-    status: { connected: true, last_message: "2025-08-15T00:32:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "CKwOOv0LRsGpDURy9iXE9tnUFdjtI6ZqtAFoJkal360=",
     created_at: ISODate("2025-08-26T02:07:46Z"),
@@ -738,7 +743,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84d9ce75be19956",
     name: "adoring_morse",
-    status: { connected: false, last_message: "2025-08-28T04:09:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "iL0T7kaXpwPrO6Z0mA7Kk2Gs+tHEBl6fNSbFV3rSgVM=",
     created_at: ISODate("2025-08-04T14:20:46Z"),
@@ -746,7 +751,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84db5aa45ada38e",
     name: "elastic_fourier",
-    status: { connected: true, last_message: "2025-08-22T06:00:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "8loHVYewF31YJGSlkcOrMZpfc5eQ2DFhuvpne8M68Xc=",
     created_at: ISODate("2025-08-09T06:44:46Z"),
@@ -754,7 +759,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84dccaa3ac843bd",
     name: "thrilled_gauss",
-    status: { connected: false, last_message: "2025-08-14T07:07:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "jhESuO3AwXCtX0TcH5E9l91DDRUUx3SIErqpjt+SpUk=",
     created_at: ISODate("2025-08-25T19:51:46Z"),
@@ -762,7 +767,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84de3a8df5efbcc",
     name: "goofy_markov",
-    status: { connected: false, last_message: "2025-08-20T02:12:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "1bmj0Qvq4D9EsyHZJpITpEqEBBrOcD9KsiUhDX4X7R4=",
     created_at: ISODate("2025-08-27T19:33:46Z"),
@@ -770,7 +775,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84dfa6590d8fbda",
     name: "relaxed_turing",
-    status: { connected: true, last_message: "2025-08-29T02:47:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "bMvQyF6Lu/h5zYPEn4TBAOAxjVj67QTXl3ifZYf3S7s=",
     created_at: ISODate("2025-08-09T23:16:46Z"),
@@ -778,7 +783,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84e12b161fb52f1",
     name: "exciting_godel",
-    status: { connected: true, last_message: "2025-08-19T23:11:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "L+ZecOMBWt0L7Ix8sPW8MZpDskk30MZydLOV1av++fk=",
     created_at: ISODate("2025-08-30T12:59:46Z"),
@@ -786,7 +791,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84e2a4a52da79d9",
     name: "sweet_galvani",
-    status: { connected: false, last_message: "2025-08-29T21:21:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "dDVOk5b+i7+npM3o7icJocZSNFaed64RKX6HuxK5TTk=",
     created_at: ISODate("2025-08-22T08:08:46Z"),
@@ -794,7 +799,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84e473a6d897698",
     name: "fabulous_ramanujan",
-    status: { connected: false, last_message: "2025-08-18T06:15:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "n/7uqrA1Xh7uzYaX4BouodyLFlU/HWXMF3Gjd5gRN6g=",
     created_at: ISODate("2025-08-19T16:05:46Z"),
@@ -802,7 +807,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84e67b817e2a8fd",
     name: "trusting_knuth",
-    status: { connected: true, last_message: "2025-08-28T09:04:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "private_transport",
     private_key: "frrz+vzXLVQV4HHhZf7MFMPo4iGIJQWsgSPIkHKJ8OE=",
     created_at: ISODate("2025-08-01T15:20:46Z"),
@@ -810,7 +815,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84e7f725b9dd529",
     name: "quirky_shannon",
-    status: { connected: false, last_message: "2025-08-16T17:49:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "443NJMtr5p+i0QIA8th2B9QTsh3aKhI1p51G0uwN1iQ=",
     created_at: ISODate("2025-08-09T21:36:46Z"),
@@ -818,7 +823,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84e95effa9dc925",
     name: "nervous_hawking",
-    status: { connected: true, last_message: "2025-08-15T23:40:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "food",
     private_key: "XTAux5J/tThXxN+5AoXR61Pxm0nfvJ92SOpCVo9HVpk=",
     created_at: ISODate("2025-08-18T09:24:46Z"),
@@ -826,7 +831,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84eaef489342f7e",
     name: "exotic_turing",
-    status: { connected: true, last_message: "2025-08-03T15:10:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "public_transport",
     private_key: "rrNb0cdFEBeDwGfwZXv8U1VqHz4QfxT6Re+o+HR8vGA=",
     created_at: ISODate("2025-08-16T03:12:46Z"),
@@ -834,7 +839,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84ec5eea3a8dae1",
     name: "gifted_kleene",
-    status: { connected: true, last_message: "2025-08-12T00:58:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "EaBPc3d6Edkfi3YYxsqc+sAMILGwn2RbsIkB4zmnSU0=",
     created_at: ISODate("2025-08-24T06:35:46Z"),
@@ -842,7 +847,7 @@ db.devices.insertMany([
   {
     _id: "trk-18608d12c84ee5a2e49c6f83",
     name: "lucid_heisenberg",
-    status: { connected: true, last_message: "2025-08-08T11:32:46Z" },
+    status: { connected: false, last_message: "1970-01-01T00:00:00Z" },
     device_type: "valuable",
     private_key: "Rb/XilBAyjcoGfgM4JkwZbZNEZsdf5pNWUXtF9/NqR8=",
     created_at: ISODate("2025-08-19T05:39:46Z"),

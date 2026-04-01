@@ -1,12 +1,10 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: {{ brokeroo_app_name }}
   labels:
     app: {{ brokeroo_app_name }}
 spec:
-  nodeSelector:
-    workload-type: apps
   replicas: {{ brokeroo_replicas }}
   selector:
     matchLabels:
@@ -25,26 +23,30 @@ spec:
           ports:
             - containerPort: {{ brokeroo_port }}
           env:
-            - name: MQTT_BROKER
-              value: "mqtt://rabbitmq:1883"
-            - name: MQTT_CLIENT_ID
+            - name: RABBITMQ_URL
               valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: MQTT_USERNAME
-              value: "apps"
-            - name: MQTT_PASSWORD
-              value: "apps"
+                secretKeyRef:
+                  name: "{{ brokeroo_app_name }}-secrets"
+                  key: brokeroo_rabbitmq_connection_string
             - name: POSTGRES_URL
-              value: "postgres://apps:apps@tsdb-rw.data.svc.cluster.local:5432/tracker_db?sslmode=disable"
-            - name: TOPIC_PATTERN
-              value: "j/data/+/+"
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ brokeroo_app_name }}-secrets"
+                  key: brokeroo_tsdb_connection_string
+            - name: QUEUE_NAME
+              value: "{{ brokeroo_amqp_queue_name }}"
+            - name: ROUTING_KEY
+              value: "j.data.*.*"
             - name: KAFKA_BROKER
-              value: "kafka.data.svc.cluster.local:9092"
+              value: "{{ brokeroo_kafka_broker }}"
+            - name: BATCH_SIZE
+              value: "50"
+            - name: BATCH_TIMEOUT_MS
+              value: "100"
           resources:
             requests:
-              cpu: "250m"
-              memory: "256Mi"
+              cpu: 500m
+              memory: 512Mi
             limits:
-              cpu: "1"
-              memory: "512Mi"
+              cpu: 2000m
+              memory: 2Gi

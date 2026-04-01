@@ -4,6 +4,8 @@ rabbitmq_namespace: "trackeroo"
 rabbitmq_app_name: "rabbitmq"
 rabbitmq_replicas: 3
 rabbitmq_erlang_cookie: "{{ rabbitmq_erlang_cookie_secret }}"
+rabbitmq_admin_user: "{{ rabbitmq_admin_user_secret }}"
+rabbitmq_admin_password: "{{ rabbitmq_admin_password_secret }}"
 
 # Docker image settings
 rabbitmq_image: "rabbitmq:3-management"
@@ -16,6 +18,8 @@ rabbitmq_pvc_storage_class: "longhorn"
 rabbitmq_pvc_storage_size: "5Gi"
 
 # HA settings
-rabbitmq_ha_policy_name: "ha-all"
+rabbitmq_ha_policy_name: "quorum"
+# rabbitmq_ha_policy_name: "ha-all"
 rabbitmq_ha_policy_pattern: ".*"
-rabbitmq_ha_policy_definition: '{"ha-mode":"all", "ha-sync-mode":"automatic"}'
+rabbitmq_ha_policy_definition: '{"queue-type":"quorum","queue-leader-locator":"balanced"}'
+# rabbitmq_ha_policy_definition: '{"ha-mode":"all", "ha-sync-mode":"automatic"}'

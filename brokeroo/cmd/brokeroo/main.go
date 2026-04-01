@@ -9,46 +9,63 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	_ "github.com/lib/pq"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/segmentio/kafka-go"
 )
 
 type Config struct {
-	MQTTBroker   string
-	MQTTClientID string
-	MQTTUsername string
-	MQTTPassword string
-	PostgresURL  string
-	TopicPattern string
-	KafkaBroker  string
-}
-
-type MQTTData struct {
-	TSUnix  int64           `json:"ts_unix"`
-	DevID   string          `json:"dev_id"`
-	Tag     string          `json:"tag"`
-	Payload json.RawMessage `json:"payload"`
+	RabbitMQURL   string
+	QueueName     string
+	ExchangeName  string
+	RoutingKey    string
+	PostgresURL   string
+	KafkaBroker   string
+	PrefetchCount int
+	BatchSize     int
+	BatchTimeout  time.Duration
+	MinPrefetch   int
+	MaxPrefetch   int
 }
 
 type Service struct {
 	config      *Config
-	mqttClient  mqtt.Client
+	amqpConn    *amqp.Connection
+	amqpChannel *amqp.Channel
 	db          *sql.DB
 	kafkaWriter *kafka.Writer
-	knownTopics map[string]bool /* for caching kafka topics  */
+	knownTopics map[string]bool
+	mu          sync.RWMutex
+
+	// metrics
+	dbLatencies      []time.Duration
+	saturatedBatches atomic.Int64
+	timeoutBatches   atomic.Int64
+	totalBatches     atomic.Int64
 }
 
 type Envelope struct {
+	Msg         amqp.Delivery   `json:"-"`
 	TsUnix      int64           `json:"ts_unix"`
 	Ts          string          `json:"ts"`
 	DevID       string          `json:"dev_id"`
 	Tag         string          `json:"tag"`
 	PayloadJSON json.RawMessage `json:"payloadJson"`
 }
+
+// type Envelope struct {
+// 	Msg   amqp.Delivery
+// 	DevID string
+// 	Tag   string
+// 	TS    int64
+// 	TSStr string
+// 	Body  json.RawMessage
+// }
 
 func NewService(config *Config) *Service {
 	return &Service{
@@ -63,37 +80,9 @@ func (s *Service) connectPostgres() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to postgres: %w", err)
 	}
-
 	if err = s.db.Ping(); err != nil {
 		return fmt.Errorf("failed to ping postgres: %w", err)
 	}
-
-	return nil
-}
-
-func (s *Service) connectKafka() error {
-	s.kafkaWriter = kafka.NewWriter(kafka.WriterConfig{
-		Brokers: []string{s.config.KafkaBroker},
-		Async:   true,
-	})
-
-	if err := s.ensureTopicExists("health-check"); err != nil {
-		log.Printf("failed to create first topic for healt-check: %v", err)
-	}
-
-	err := s.kafkaWriter.WriteMessages(context.Background(),
-		kafka.Message{
-			Topic: "health-check",
-			Value: []byte("ping"),
-		},
-	)
-
-	if err != nil {
-		log.Printf("Failed to write test message to Kafka: %v", err)
-		return err
-	}
-
-	log.Println("Successfully connected to Kafka at", s.config.KafkaBroker)
 	return nil
 }
 
@@ -131,236 +120,390 @@ func (s *Service) ensureTopicExists(topic string) error {
 	}
 
 	s.knownTopics[topic] = true
-	log.Printf("Topic pronto: %s", topic)
+	log.Printf("topic ready: %s", topic)
 	return nil
 }
 
-func (s *Service) connectMQTT() error {
-	opts := mqtt.NewClientOptions()
-	opts.AddBroker(s.config.MQTTBroker)
-	opts.SetClientID(s.config.MQTTClientID)
-	opts.SetUsername(s.config.MQTTUsername)
-	opts.SetPassword(s.config.MQTTPassword)
-	opts.SetCleanSession(false) // Keep unacked messages
-	opts.SetAutoReconnect(true)
-	opts.SetKeepAlive(60 * time.Second)
-	opts.SetPingTimeout(10 * time.Second)
-	opts.SetConnectTimeout(10 * time.Second)
-	opts.SetOrderMatters(false)
-	opts.SetAutoAckDisabled(true)
-	opts.SetProtocolVersion(4)
-
-	// Set connection lost handler
-	opts.SetConnectionLostHandler(func(client mqtt.Client, err error) {
-		log.Printf("MQTT connection lost: %v", err)
+func (s *Service) connectKafka() error {
+	s.kafkaWriter = kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{s.config.KafkaBroker},
+		Async:   true,
 	})
 
-	// Set reconnect handler
-	opts.SetOnConnectHandler(func(client mqtt.Client) {
-		log.Println("MQTT connected/reconnected")
-		s.subscribeToTopics()
-	})
+	if err := s.ensureTopicExists("health-check"); err != nil {
+		log.Printf("failed to create first topic for healt-check: %v", err)
+	}
 
-	s.mqttClient = mqtt.NewClient(opts)
+	err := s.kafkaWriter.WriteMessages(context.Background(),
+		kafka.Message{
+			Topic: "health-check",
+			Value: []byte("ping"),
+		},
+	)
 
-	c := 0
-	for {
-		if token := s.mqttClient.Connect(); token.Wait() && token.Error() != nil {
-			if c == 10 {
-				return fmt.Errorf("failed to connect to MQTT broker: %w", token.Error())
+	if err != nil {
+		log.Printf("failed to write test message to Kafka: %v", err)
+		return err
+	}
+
+	log.Println("Successfully connected to Kafka at", s.config.KafkaBroker)
+	return nil
+}
+
+func (s *Service) connectRabbitMQ() error {
+	var err error
+	s.amqpConn, err = amqp.Dial(s.config.RabbitMQURL)
+	if err != nil {
+		return fmt.Errorf("failed to connect to RabbitMQ: %w", err)
+	}
+
+	s.amqpChannel, err = s.amqpConn.Channel()
+	if err != nil {
+		return fmt.Errorf("failed to open channel: %w", err)
+	}
+
+	// QoS: start with configured prefetch
+	if err := s.amqpChannel.Qos(s.config.PrefetchCount, 0, false); err != nil {
+		return fmt.Errorf("failed to set QoS: %w", err)
+	}
+	args := amqp.Table{
+		"x-queue-type": "quorum",
+	}
+	q, err := s.amqpChannel.QueueDeclare(
+		s.config.QueueName,
+		true,  // durable
+		false, // auto-delete
+		false, // exclusive
+		false, // no-wait
+		args,
+	)
+	if err != nil {
+		_ = s.amqpChannel.Close()
+		_ = s.amqpConn.Close()
+		time.Sleep(5 * time.Second)
+		return fmt.Errorf("Queue declare failed: %v", err)
+	}
+	err = s.amqpChannel.QueueBind(
+		q.Name,                // queue name
+		s.config.RoutingKey,   // routing key (use "" for fanout exchanges)
+		s.config.ExchangeName, // exchange name
+		false,                 // no-wait
+		nil,                   // arguments
+	)
+	if err != nil {
+		_ = s.amqpChannel.Close()
+		_ = s.amqpConn.Close()
+		return fmt.Errorf("failed to bind queue: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) startConsuming(ctx context.Context) error {
+	msgs, err := s.amqpChannel.Consume(
+		s.config.QueueName, "", false, false, false, false, nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register consumer: %w", err)
+	}
+
+	batch := make([]Envelope, 0, s.config.BatchSize)
+	timer := time.NewTimer(s.config.BatchTimeout)
+
+	go func() {
+		defer timer.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg, ok := <-msgs:
+				if !ok {
+					return
+				}
+				incoming, valid := s.parseMessage(msg)
+				if !valid {
+					msg.Ack(false)
+					continue
+				}
+				batch = append(batch, incoming)
+
+				if len(batch) >= s.config.BatchSize {
+					s.processBatch(batch)
+					batch = batch[:0]
+					if !timer.Stop() {
+						<-timer.C
+					}
+					timer.Reset(s.config.BatchTimeout)
+				}
+			case <-timer.C:
+				if len(batch) > 0 {
+					s.processBatch(batch)
+					batch = batch[:0]
+				}
+				timer.Reset(s.config.BatchTimeout)
 			}
-			c += 1
-			log.Println("Connessione fallita, retry tra 2s:", token.Error())
-			time.Sleep(2 * time.Second)
-			continue
 		}
-		break
-	}
-
-	log.Println("Successfully connected to MQTT broker")
+	}()
 	return nil
 }
 
-func (s *Service) subscribeToTopics() {
-	token := s.mqttClient.Subscribe(s.config.TopicPattern, 1, s.messageHandler)
-	if token.Wait() && token.Error() != nil {
-		log.Printf("Failed to subscribe to topics: %v", token.Error())
-		return
-	}
-	log.Printf("Subscribed to topic pattern: %s", s.config.TopicPattern)
-}
-
-func (s *Service) messageHandler(client mqtt.Client, msg mqtt.Message) {
-	topic := msg.Topic()
-	payload := msg.Payload()
-
-	log.Printf("Received message on topic %s", topic)
-
-	// Parse topic: j/data/DEVID/TAG
+func (s *Service) parseMessage(msg amqp.Delivery) (Envelope, bool) {
+	topic := strings.ReplaceAll(msg.RoutingKey, ".", "/")
 	parts := strings.Split(topic, "/")
-	if len(parts) != 4 || parts[0] != "j" || parts[1] != "data" {
-		log.Printf("Invalid topic format: %s, expected j/data/DEVID/TAG", topic)
-		msg.Ack()
-		return
+	if len(parts) != 4 {
+		return Envelope{}, false
 	}
 
-	devID := parts[2]
-	tag := parts[3]
-
-	// Parse JSON payload
+	devID, tag := parts[2], parts[3]
 	var data map[string]any
-	if err := json.Unmarshal(payload, &data); err != nil {
-		log.Printf("Invalid JSON payload for topic %s: %v", topic, err)
-		msg.Ack()
-		return
+	if err := json.Unmarshal(msg.Body, &data); err != nil {
+		return Envelope{}, false
 	}
 
-	tsUnix, ok := data["ts"].(int64)
-	if !ok {
+	var tsUnix int64
+	if tsFloat, ok := data["ts"].(float64); ok {
+		tsUnix = int64(tsFloat)
+	} else {
 		tsUnix = time.Now().Unix()
 	}
-
 	ts := time.Unix(tsUnix, 0).UTC()
-	start := time.Now()
-	jsonPayload := json.RawMessage(payload)
-	if err := s.insertData(tsUnix, ts, devID, tag, jsonPayload); err != nil {
-		log.Printf("Failed to insert data: %v", err)
-		return
-	}
-	log.Printf("Time to write to DB %v", time.Since(start))
-	start = time.Now()
 
-	/* kafka */
-	kafkaTopic := sanitizeTopic(topic)
-	if err := s.ensureTopicExists(kafkaTopic); err != nil {
-		log.Printf("Error creating topic %s: %v", kafkaTopic, err)
-		return
-	}
-
-	log.Printf("Time to create topic %v", time.Since(start))
-	start = time.Now()
-	envelope := Envelope{
-		TsUnix:      tsUnix,
-		Ts:          ts.Format(time.RFC3339), // is this right?
+	return Envelope{
+		Msg:         msg,
 		DevID:       devID,
+		TsUnix:      tsUnix,
 		Tag:         tag,
-		PayloadJSON: payload, // il payload originale come stringa JSON
-	}
+		Ts:          ts.Format(time.RFC3339),
+		PayloadJSON: msg.Body,
+	}, true
+}
 
-	envelopeBytes, err := json.Marshal(envelope)
+func (s *Service) processBatch(batch []Envelope) {
+	if len(batch) >= s.config.BatchSize {
+		s.saturatedBatches.Add(1)
+	} else {
+		s.timeoutBatches.Add(1)
+	}
+	s.totalBatches.Add(1)
+	start := time.Now()
+	tx, err := s.db.Begin()
 	if err != nil {
-		log.Printf("Failed to marshal envelope: %v", err)
+		s.nackAll(batch)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) /* 5 second timeout */
-	defer cancel()
+	// Build multi-values INSERT
+	valueStrings := make([]string, 0, len(batch))
+	valueArgs := make([]interface{}, 0, len(batch)*5)
 
-	err = s.kafkaWriter.WriteMessages(ctx, kafka.Message{
-		Topic: kafkaTopic,
-		Value: envelopeBytes,
-	})
+	for i, m := range batch {
+		valueStrings = append(valueStrings,
+			fmt.Sprintf("($%d,$%d,$%d,$%d,$%d)", i*5+1, i*5+2, i*5+3, i*5+4, i*5+5))
+		valueArgs = append(valueArgs, m.TsUnix, m.Ts, m.DevID, m.Tag, m.PayloadJSON)
+	}
 
+	stmt := fmt.Sprintf(`INSERT INTO trackeroo.data (ts_unix, ts, dev_id, tag, payload)
+		VALUES %s ON CONFLICT (ts, dev_id) DO NOTHING`, strings.Join(valueStrings, ","))
+
+	_, err = tx.Exec(stmt, valueArgs...)
 	if err != nil {
-		log.Printf("Failed to write to Kafka: %v", err)
+		_ = tx.Rollback()
+		log.Println("Batch insert error:", err)
+		s.nackAll(batch)
 		return
 	}
-	log.Printf("Message forwarded to Kafka topic: %s", kafkaTopic)
-	log.Printf("Time to write to Kafka %v", time.Since(start))
 
-	log.Printf("Successfully inserted data for dev_id: %s, tag: %s", devID, tag)
-	msg.Ack()
+	if err := tx.Commit(); err != nil {
+		s.nackAll(batch)
+		return
+	}
+
+	// Kafka forward + ack
+	for _, m := range batch {
+		kafkaTopic := sanitizeTopic(m.Msg.RoutingKey)
+		if err := s.ensureTopicExists(kafkaTopic); err != nil {
+			log.Printf("error creating topic %s: %v", kafkaTopic, err)
+			s.nackAll(batch)
+			return
+		}
+		envelopeBytes, err := json.Marshal(m)
+		if err != nil {
+			log.Printf("failed to marshal envelope: %v", err)
+			s.nackAll(batch)
+			return
+		}
+		_ = s.kafkaWriter.WriteMessages(context.Background(), kafka.Message{
+			Topic: kafkaTopic,
+			Value: envelopeBytes,
+		})
+		m.Msg.Ack(false)
+	}
+
+	latency := time.Since(start)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.dbLatencies = append(s.dbLatencies, latency)
+	if len(s.dbLatencies) > 100 {
+		s.dbLatencies = s.dbLatencies[1:]
+	}
+	// log.Printf("batch of %d inserted in %v", len(batch), latency)
 }
 
-func (s *Service) insertData(tsUnix int64, ts time.Time, devID, tag string, payload json.RawMessage) error {
-	query := `INSERT INTO trackeroo.data (ts_unix, ts, dev_id, tag, payload)
-              VALUES ($1, $2, $3, $4, $5)
-              ON CONFLICT (ts, dev_id) DO NOTHING`
-	_, err := s.db.Exec(query, tsUnix, ts, devID, tag, payload)
-	if err != nil {
-		return fmt.Errorf("failed to insert into database: %w", err)
-	}
-	return nil
-}
-
-func (s *Service) Start() error {
-	// Connect to PostgreSQL
-	if err := s.connectPostgres(); err != nil {
-		return err
-	}
-
-	// Connect to MQTT
-	if err := s.connectMQTT(); err != nil {
-		return err
-	}
-
-	// Connect to Kafka
-	if err := s.connectKafka(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Service) Stop() {
-	log.Println("Shutting down service...")
-
-	if s.mqttClient != nil && s.mqttClient.IsConnected() {
-		s.mqttClient.Unsubscribe(s.config.TopicPattern)
-		s.mqttClient.Disconnect(250)
-		log.Println("Disconnected from MQTT broker")
-	}
-
-	if s.db != nil {
-		s.db.Close()
-		log.Println("Closed PostgreSQL connection")
-	}
-
-	if s.kafkaWriter != nil {
-		s.kafkaWriter.Close()
-		log.Println("Closed Kafka writer")
+func (s *Service) nackAll(batch []Envelope) {
+	for _, m := range batch {
+		m.Msg.Nack(false, true)
 	}
 }
 
-func loadConfig() *Config {
-	return &Config{
-		MQTTBroker:   getEnvOrDefault("MQTT_BROKER", "tcp://localhost:1883"),
-		MQTTClientID: getEnvOrDefault("MQTT_CLIENT_ID", "brokeroo"),
-		MQTTUsername: getEnvOrDefault("MQTT_USERNAME", ""),
-		MQTTPassword: getEnvOrDefault("MQTT_PASSWORD", ""),
-		PostgresURL:  getEnvOrDefault("POSTGRES_URL", "postgres://user:password@localhost/dbname?sslmode=disable"),
-		TopicPattern: getEnvOrDefault("TOPIC_PATTERN", "j/data/+/+"),
-		KafkaBroker:  getEnvOrDefault("KAFKA_BROKER", "kafka:9092"),
-	}
+// Auto prefetch adjuster
+func (s *Service) startPrefetchTuner(ctx context.Context) {
+	go func() {
+		current := s.config.PrefetchCount
+		last := s.config.PrefetchCount
+		ticker := time.NewTicker(10 * time.Second)
+		lastLog := time.Now()
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				avgLatency := s.avgDbLatency()
+				batchFillRate := s.getBatchFillRate() // New metric
+
+				current = s.calculateOptimalPrefetch(
+					avgLatency,
+					batchFillRate,
+					current,
+				)
+				if time.Since(lastLog) > 30*time.Second {
+					log.Printf("prefetch=%d, db_latency=%v, batch_fill=%.2f%%", current, avgLatency, batchFillRate*100)
+					lastLog = time.Now()
+				}
+
+				if last == current {
+					continue
+				}
+
+				if err := s.amqpChannel.Qos(current, 0, false); err == nil {
+					log.Printf(">>> adjusted prefetch=%d (db_latency=%v, batch_fill=%.2f%%)", current, avgLatency, batchFillRate*100)
+					last = current
+				}
+			}
+		}
+	}()
 }
 
-func getEnvOrDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+func (s *Service) calculateOptimalPrefetch(
+	avgLatency time.Duration,
+	batchFillRate float64,
+	current int,
+) int {
+
+	if batchFillRate > 0.95 && current > s.config.MinPrefetch {
+		return max(current-5, s.config.MinPrefetch)
 	}
-	return defaultValue
+
+	if batchFillRate < 0.5 && avgLatency < 10*time.Millisecond &&
+		current < s.config.MaxPrefetch {
+		return min(current+5, s.config.MaxPrefetch)
+	}
+
+	if avgLatency > 25*time.Millisecond && current > s.config.MinPrefetch {
+		return max(current-5, s.config.MinPrefetch)
+	}
+
+	return current
+}
+
+func (s *Service) getBatchFillRate() float64 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.totalBatches.Load() == 0 {
+		return 0
+	}
+	return float64(s.saturatedBatches.Load()) / float64(s.totalBatches.Load())
+}
+
+func (s *Service) avgDbLatency() time.Duration {
+	if len(s.dbLatencies) == 0 {
+		return 0
+	}
+	var sum time.Duration
+	for _, l := range s.dbLatencies {
+		sum += l
+	}
+	return sum / time.Duration(len(s.dbLatencies))
 }
 
 func sanitizeTopic(topic string) string {
-	return strings.ReplaceAll(topic, "/", "-")
+	return strings.ReplaceAll(topic, ".", "-")
+}
+
+func loadConfig() *Config {
+	batchSize := getEnvOrDefaultInt("BATCH_SIZE", 50)
+	config := &Config{
+		RabbitMQURL:   getEnvOrDefault("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
+		QueueName:     getEnvOrDefault("QUEUE_NAME", "brokeroo"),
+		ExchangeName:  getEnvOrDefault("EXCHANGE_NAME", "amq.topic"),
+		RoutingKey:    getEnvOrDefault("ROUTING_KEY", "j.data.*.*"),
+		PostgresURL:   getEnvOrDefault("POSTGRES_URL", "postgres://user:password@localhost/dbname?sslmode=disable"),
+		KafkaBroker:   getEnvOrDefault("KAFKA_BROKER", "kafka:9092"),
+		PrefetchCount: batchSize * 3,
+		BatchSize:     batchSize,
+		BatchTimeout:  time.Duration(getEnvOrDefaultInt("BATCH_TIMEOUT_MS", 100)) * time.Millisecond,
+		MinPrefetch:   batchSize * 2,
+		MaxPrefetch:   batchSize * 4,
+	}
+	log.Printf("config -> (queue_name=%s, exchange_name=%s, routing_key=%s, prefetch_count=%d, batch_size=%d)", config.QueueName, config.ExchangeName, config.RoutingKey, config.PrefetchCount, config.BatchSize)
+	return config
+}
+
+func getEnvOrDefault(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
+}
+
+func getEnvOrDefaultInt(key string, def int) int {
+	if v := os.Getenv(key); v != "" {
+		var iv int
+		if _, err := fmt.Sscanf(v, "%d", &iv); err == nil {
+			return iv
+		}
+	}
+	return def
 }
 
 func main() {
-	log.Println("Starting MQTT to Kafka and PostgreSQL service...")
-
 	config := loadConfig()
 	service := NewService(config)
 
-	if err := service.Start(); err != nil {
-		log.Fatalf("Failed to start service: %v", err)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := service.connectPostgres(); err != nil {
+		log.Fatal(err)
 	}
+	if err := service.connectRabbitMQ(); err != nil {
+		log.Fatal(err)
+	}
+	service.kafkaWriter = kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{config.KafkaBroker},
+		Async:   true,
+	})
 
-	log.Println("Service started successfully")
+	if err := service.startConsuming(ctx); err != nil {
+		log.Fatal(err)
+	}
+	service.startPrefetchTuner(ctx)
 
-	// Wait for interrupt signal to gracefully shutdown
+	log.Println("Service running...")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-
 	<-c
-	service.Stop()
-	log.Println("Service stopped")
+	cancel()
 }
